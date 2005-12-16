@@ -1,0 +1,76 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+build: build-stamp
+
+build-stamp:  
+	dh_testdir
+	# extract tar.gz and build them
+	for i in Kolab*.tar.gz;do tar xvfz $$i; done
+	for i in `find . -type d -name "Kolab*"`; do cd $$i && perl Makefile.PL && make && cd ..; done
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	# Add here commands to clean up after the build process.
+	find . -type d -name "Kolab*"|xargs rm -rf
+	dh_clean 
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k 
+	dh_installdirs
+	# Add here commands to install the package into debian/libkolab-perl.
+	# Kolab
+	install -D -m 644 Kolab/blib/lib/Kolab.pm debian/libkolab-perl/usr/share/perl5/
+	# Kolab-Conf
+	install -D -m 644 Kolab-Conf/blib/lib/Kolab/Conf.pm debian/libkolab-perl/usr/share/perl5/Kolab/
+	# Kolab-Cyrus
+	install -D -m 644 Kolab-Cyrus/blib/lib/Kolab/Cyrus.pm debian/libkolab-perl/usr/share/perl5/Kolab/
+	# Kolab-DirServ
+	install -D -m 644 Kolab-DirServ/blib/lib/Kolab/DirServ.pm debian/libkolab-perl/usr/share/perl5/Kolab/
+	# Kolab-LDAP
+	install -D -m 644 Kolab-LDAP/blib/lib/Kolab/LDAP.pm debian/libkolab-perl/usr/share/perl5/Kolab/
+	# Kolab-LDAP-Backend
+	install -D -m 644 Kolab-LDAP-Backend/blib/lib/Kolab/LDAP/Backend.pm debian/libkolab-perl/usr/share/perl5/Kolab/LDAP/
+	# Kolab-LDAP-Backend-ad
+	install -D -m 644 Kolab-LDAP-Backend-ad/blib/lib/Kolab/LDAP/Backend/ad.pm debian/libkolab-perl/usr/share/perl5/Kolab/LDAP/Backend/
+	# Kolab-LDAP-Backend-dirservd
+	install -D -m 644 Kolab-LDAP-Backend-dirservd/blib/lib/Kolab/LDAP/Backend/dirservd.pm debian/libkolab-perl/usr/share/perl5/Kolab/LDAP/Backend/
+	# Kolab-LDAP-Backend-slurpd
+	install -D -m 644 Kolab-LDAP-Backend-slurpd/blib/lib/Kolab/LDAP/Backend/slurpd.pm debian/libkolab-perl/usr/share/perl5/Kolab/LDAP/Backend/
+	# Kolab-Mailer
+	install -D -m 644 Kolab-Mailer/blib/lib/Kolab/Mailer.pm debian/libkolab-perl/usr/share/perl5/Kolab/
+	# Kolab-Util
+	install -D -m 644 Kolab-Util/blib/lib/Kolab/Util.pm debian/libkolab-perl/usr/share/perl5/Kolab/
+	# manpages
+	for i in `find . -name "*3pm"` ; do install -D -m 644 $$i debian/libkolab-perl/usr/share/man/man3/ ; done 
+
+# Build architecture-independent files here.
+binary-indep: build install
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+	dh_installdocs
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_perl
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install

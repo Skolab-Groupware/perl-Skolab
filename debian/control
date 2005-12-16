@@ -1,0 +1,34 @@
+Source: libkolab-perl
+Section: perl
+Priority: optional
+Maintainer: Debian Kolab Maintainers <pkg-kolab-devel@lists.alioth.debian.org>
+Uploaders: Noèl Köthe <noel@debian.org>, Steffen Jöris <steffen.joeris@skolelinux.de>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.2
+
+Package: libkolab-perl
+Architecture: all
+Depends: ${perl:Depends}, libconvert-asn1-perl, libcyrus-imap-perl22, libmail-imapclient-perl, libmime-perl, libnet-ldap-perl, liburi-perl
+Description: Perl extensions for the Kolab Groupware Suite
+ Kolab is a secure, scalable and reliable groupware server. It is
+ formed by a number of well-known and proven components or the
+ standards tasks such as E-Mail, Directory Service and Web Service.
+ Kolab adds intelligent interaction between the components, a web
+ administration interface, management of free-busy lists etc.
+ Various clients can access Kolab, among them Kontact (KDE), Outlook
+ (Windows) and Horde (Web).
+ .
+ The package includes the following Kolab Perl modules 
+   * Kolab - extension for general Kolab settings
+   * Kolab::Conf - extension for Kolab template generation
+   * Kolab::Cyrus - extension for interfacing with the Kolab Cyrus
+   * Kolab::DirServ - extension to publish address book
+   * Kolab::LDAP - extension for generic LDAP code
+   * Kolab::LDAP::Backend - extension for abstract directory
+   * Kolab::LDAP::Backend::ad - extension for an Active Directory backend
+   * Kolab::LDAP::Backend::dirservd -  extension for the Directory Services updater
+   * Kolab::LDAP::Backend::slurpd - extension for a slurpd backend
+   * Kolab::Mailer - extension for sending out email
+   * Kolab::Util - extension for general utility functions
+ .
+ http://www.kolab.org

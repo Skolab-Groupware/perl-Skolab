@@ -1,0 +1,8 @@
+libkolab-perl (0.9.2-1) experimental; urgency=low
+
+  * Initial release
+    part of the Kolab Groupware. See ITP #180634 or Kolab on alioth
+    https://alioth.debian.org/projects/pkg-kolab/
+
+ -- Noèl Köthe <noel@debian.org>  Fri, 16 Dec 2005 15:34:20 +0100
+
