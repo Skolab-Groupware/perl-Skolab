@@ -1,0 +1,128 @@
+#!/bin/sh -e
+## 10-perl-path-fixes.dpatch by Steffen Joeris <steffen.joeris@skolelinux.de>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: Here we correct the pathes of kolab.
+
+if [ $# -lt 1 ]; then
+echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+exit 1
+fi
+
+[ -f debian/patches/00patch-opts ] && . debian/patches/00patch-opts
+patch_opts="${patch_opts:--f --no-backup-if-mismatch}"
+
+case "$1" in
+      -patch) patch $patch_opts -p0 < $0;;
+      -unpatch) patch $patch_opts -p0 -R < $0;;
+      *)
+      echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+      exit 1;;
+esac
+
+exit 0
+
+@DPATCH@
+--- Kolab/Kolab.pm.bak	2006-01-09 15:39:44.000000000 +0100
++++ Kolab/Kolab.pm	2006-01-09 15:44:46.000000000 +0100
+@@ -82,12 +82,12 @@
+         &log('C', 'Unable to determine the kolab root directory', KOLAB_ERROR);	
+ 	$error = 1;
+     } else {
+-        %config = readConfig(%config, "$tempval/etc/kolab/kolab.globals");
++        %config = readConfig(%config, "/etc/kolab/kolab.globals");
+         $config{'prefix'} = $tempval;
+     }
+ 
+     # Now read `kolab.conf', overwriting values read from `kolab.globals'
+-    %config = readConfig(\%config, "$tempval/etc/kolab/kolab.conf");
++    %config = readConfig(\%config, "/etc/kolab/kolab.conf");
+ 
+ #    $config{'log_level'} = KOLAB_WARN if (!exists $config{'log_level'});
+     &log('C', 'Reloading configuration');
+@@ -126,7 +126,7 @@
+ 
+     # Make a hash of the bind password available too
+     if( !exists $config{'bind_pw_hash'} ) {
+-      my $hashcmd = $config{'prefix'}."/sbin/slappasswd -s '".$config{'bind_pw'}."'";
++      my $hashcmd = "/usr/sbin/slappasswd -s '".$config{'bind_pw'}."'";
+       $config{'bind_pw_hash'} = `$hashcmd`;
+       chomp($config{'bind_pw_hash'});
+     }
+@@ -382,50 +382,50 @@
+ 
+     if ($haschanged{'slapd'}) {
+         &log('K', 'Restarting OpenLDAP...');
+-        system("$prefix/bin/openpkg rc openldap restart &");
++        system("/etc/init.d/slapd restart &");
+     }
+ 
+     if ($haschanged{'saslauthd'}) {
+         &log('K', 'Restarting SASLAuthd...');
+-        system("$prefix/bin/openpkg rc sasl stop; sleep 1; $prefix/sbin/saslauthd -a ldap -n 5");
++        system("/etc/init.d/saslauthd restart");
+     }
+ 
+     if ($haschanged{'apache'}) {
+         &log('K', 'Reloading Apache...');
+-        system("$prefix/sbin/apachectl graceful");
++        system("/etc/init.d/apache2 graceful");
+     }
+ 
+     if ($haschanged{'postfix'}) {
+         &log('K', 'Reloading Postfix...');
+-        system("$prefix/sbin/postfix reload");
++        system("/etc/init.d/postfix reload");
+     }
+ 
+     if ($haschanged{'imapd'}) {
+         &log('K', 'Restarting imapd...');
+-        system("$prefix/bin/openpkg rc imapd restart");
++        system("/etc/init.d/kolab-cyrus restart");
+     }
+ 
+-    if ($haschanged{'amavisd'}) {
+-        &log('K', 'Restarting amavisd...');
+-        system("$prefix/bin/openpkg rc amavisd restart");
+-    }
+-
+-    if ($haschanged{'clamav'}) {
+-        &log('K', 'Restarting clamav...');
+-        system("$prefix/bin/openpkg rc clamav restart");
+-    }
+-
+-    if ($config{'proftpd-ftp'} =~ /true/i) {
+-        Kolab::log('K', 'Starting ProFTPd if not running');
+-        system("$prefix/bin/openpkg rc proftpd start");
+-        if ($haschanged{'proftpd'}) {
+-            &log('K', 'Reloading ProFTPd...');
+-            kill('SIGHUP', `cat $prefix/var/proftpd/proftpd.pid`);
+-        }
+-    } else {
+-        &log('K', 'Stopping ProFTPd, if running...');
+-        system("$prefix/bin/openpkg rc proftpd stop");
+-    }
++    #if ($haschanged{'amavisd'}) {
++    #    &log('K', 'Restarting amavisd...');
++    #    system("$prefix/bin/openpkg rc amavisd restart");
++    #}
++
++    #if ($haschanged{'clamav'}) {
++    #    &log('K', 'Restarting clamav...');
++    #    system("$prefix/bin/openpkg rc clamav restart");
++    #}
++
++    #if ($config{'proftpd-ftp'} =~ /true/i) {
++    #    Kolab::log('K', 'Starting ProFTPd if not running');
++    #    system("$prefix/bin/openpkg rc proftpd start");
++    #    if ($haschanged{'proftpd'}) {
++    #        &log('K', 'Reloading ProFTPd...');
++    #        kill('SIGHUP', `cat $prefix/var/proftpd/proftpd.pid`);
++    #    }
++    #} else {
++    #    &log('K', 'Stopping ProFTPd, if running...');
++    #    system("$prefix/bin/openpkg rc proftpd stop");
++    #}
+ 
+     %Kolab::Conf::haschanged = ();
+ 
