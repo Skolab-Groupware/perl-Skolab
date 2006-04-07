@@ -1,1 +1,3 @@
-10-Kolab.pm.dpatch
+10-Kolab.pm
+20-LDAP.pm-cachefiles
+30-slurpd.pm

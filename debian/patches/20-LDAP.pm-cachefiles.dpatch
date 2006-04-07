@@ -1,0 +1,51 @@
+#!/bin/sh -e
+## 20-LDAP.pm-cachefiles.dpatch by Noèl Köthe
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: Here we correct the path of cache files
+
+if [ $# -lt 1 ]; then
+echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+exit 1
+fi
+
+[ -f debian/patches/00patch-opts ] && . debian/patches/00patch-opts
+patch_opts="${patch_opts:--f --no-backup-if-mismatch}"
+
+case "$1" in
+      -patch) patch $patch_opts -p0 < $0;;
+      -unpatch) patch $patch_opts -p0 -R < $0;;
+      *)
+      echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+      exit 1;;
+esac
+
+exit 0
+
+@DPATCH@
+--- Kolab-LDAP/LDAP.pm.orig  2005-09-12 22:34:17.000000000 +0200
++++ Kolab-LDAP/LDAP.pm      2006-01-25 00:19:39.000000000 +0100
+@@ -67,19 +67,19 @@
+
+     Kolab::log('L', 'Opening mailbox uid cache DB');
+
+-    if (!dbmopen(%uid_db, $Kolab::config{'prefix'} . '/var/kolab/mailbox-uidcache.db', 0666)) {
++    if (!dbmopen(%uid_db, '/var/lib/kolab/mailbox-uidcache.db', 0666)) {
+         Kolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
+         exit(1);
+     }
+
+     Kolab::log('L', 'Opening graveyard uid/timestamp cache DB');
+
+-    if (!dbmopen(%gyard_db, $Kolab::config{'prefix'} . '/var/kolab/graveyard-uidcache.db', 0666)) {
++    if (!dbmopen(%gyard_db, '/var/lib/kolab/graveyard-uidcache.db', 0666)) {
+         Kolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
+         exit(1);
+     }
+
+-    if (!dbmopen(%gyard_ts_db, $Kolab::config{'prefix'} . '/var/kolab/graveyard-tscache.db', 0666)) {
++    if (!dbmopen(%gyard_ts_db, '/var/lib/kolab/graveyard-tscache.db', 0666)) {
+         Kolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
+         exit(1);
+     }
+ 

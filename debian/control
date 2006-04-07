@@ -3,7 +3,7 @@ Section: perl
 Priority: optional
 Maintainer: Debian Kolab Maintainers <pkg-kolab-devel@lists.alioth.debian.org>
 Uploaders: Noèl Köthe <noel@debian.org>, Steffen Jöris <steffen.joeris@skolelinux.de>
-Build-Depends: debhelper (>= 4.0.0), dpatch
+Build-Depends-Indep: debhelper (>= 4.0.0), dpatch
 Standards-Version: 3.6.2
 
 Package: libkolab-perl

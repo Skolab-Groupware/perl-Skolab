@@ -17,6 +17,7 @@ clean:
 	dh_testdir
 	dh_testroot
 	dpatch deapply-all
+	rm -rf debian/patched
 	rm -f build-stamp
 	# Add here commands to clean up after the build process.
 	find . -type d -name "Kolab*"|xargs rm -rf
