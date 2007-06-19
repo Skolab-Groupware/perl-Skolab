@@ -1,34 +1,35 @@
 Source: libkolab-perl
 Section: perl
-Priority: optional
+Priority: extra
 Maintainer: Debian Kolab Maintainers <pkg-kolab-devel@lists.alioth.debian.org>
-Uploaders: Noèl Köthe <noel@debian.org>, Steffen Jöris <steffen.joeris@skolelinux.de>
-Build-Depends-Indep: debhelper (>= 4.0.0), dpatch
-Standards-Version: 3.6.2
+Uploaders: Noèl Köthe <noel@debian.org>, Steffen Joeris <white@debian.org>, Peter Eisentraut <petere@debian.org>
+Build-Depends: debhelper (>= 4), dpatch
+Standards-Version: 3.7.2
+XS-Vcs-Svn: svn://svn.debian.org/pkg-kolab/libkolab-perl/
 
 Package: libkolab-perl
 Architecture: all
 Depends: ${perl:Depends}, libconvert-asn1-perl, libmail-imapclient-perl, libmime-perl, libnet-ldap-perl, liburi-perl, kolab-libcyrus-imap-perl
-Description: Perl extensions for the Kolab Groupware Suite
- Kolab is a secure, scalable and reliable groupware server. It is
- formed by a number of well-known and proven components or the
- standards tasks such as E-Mail, Directory Service and Web Service.
- Kolab adds intelligent interaction between the components, a web
- administration interface, management of free-busy lists etc.
- Various clients can access Kolab, among them Kontact (KDE), Outlook
- (Windows) and Horde (Web).
+Description: Perl modules for Kolab
+ Kolab is a secure, scalable, and reliable groupware server.  It consists
+ of a number of well-known and proven components for the standard tasks
+ such as e-mail, directory service, and web service.  Kolab adds
+ intelligent interaction between the components, a web administration
+ interface, management of free/busy lists, etc.  Various clients can
+ access Kolab, among them Kontact (KDE), Outlook (Windows), and Horde
+ (web).
  .
- The package includes the following Kolab Perl modules 
-   * Kolab - extension for general Kolab settings
-   * Kolab::Conf - extension for Kolab template generation
-   * Kolab::Cyrus - extension for interfacing with the Kolab Cyrus
-   * Kolab::DirServ - extension to publish address book
-   * Kolab::LDAP - extension for generic LDAP code
-   * Kolab::LDAP::Backend - extension for abstract directory
-   * Kolab::LDAP::Backend::ad - extension for an Active Directory backend
-   * Kolab::LDAP::Backend::dirservd -  extension for the Directory Services updater
-   * Kolab::LDAP::Backend::slurpd - extension for a slurpd backend
-   * Kolab::Mailer - extension for sending out email
-   * Kolab::Util - extension for general utility functions
+ This package contains the following Perl modules:
+   * Kolab - module for general Kolab settings
+   * Kolab::Conf - module for Kolab template generation
+   * Kolab::Cyrus - module for interfacing with the Kolab Cyrus server
+   * Kolab::DirServ - module to publish address book
+   * Kolab::LDAP - module for generic LDAP code
+   * Kolab::LDAP::Backend - module for abstract directory
+   * Kolab::LDAP::Backend::ad - module for an Active Directory backend
+   * Kolab::LDAP::Backend::dirservd -  module for the Directory Services updater
+   * Kolab::LDAP::Backend::slurpd - module for a slurpd backend
+   * Kolab::Mailer - module for sending e-mail
+   * Kolab::Util - module for general utility functions
  .
- http://www.kolab.org
+ Web site: http://www.kolab.org/

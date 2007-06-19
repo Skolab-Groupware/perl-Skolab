@@ -1,3 +1,2 @@
 10-Kolab.pm
-20-LDAP.pm-cachefiles
-30-slurpd.pm
+40-dist_conf

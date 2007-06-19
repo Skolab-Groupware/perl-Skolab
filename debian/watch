@@ -1,0 +1,2 @@
+version=3
+http://max.kde.org:8080/mirrors/ftp.kolab.org/server/release/kolab-server-(?:[\d.]+)/sources/perl-kolab-([\d._-]+).src.rpm

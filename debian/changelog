@@ -1,3 +1,39 @@
+libkolab-perl (5.8.7-20070420-1) unstable; urgency=low
+
+  [ Steffen Joeris ]
+  * Change my maintainer address
+
+  [ Peter Eisentraut ]
+  * New upstream release
+    - Updated patches
+    - Obsoleted patches: 20-LDAP.pm-cachefiles.dpatch, 30-slurpd.pm.dpatch
+  * Init scripts invocations in the code are now using invoke-rc.d
+  * Updated watch file
+
+ -- Peter Eisentraut <petere@debian.org>  Wed, 20 Jun 2007 00:56:02 +0200
+
+libkolab-perl (0.9.2-20060430-2) unstable; urgency=low
+
+  * Added patch to Kolab.pm to remove spurious checks for ids of unused
+    kolab-n and kolab-r users
+  * Added XS-X-Vcs-Svn field
+
+ -- Peter Eisentraut <petere@debian.org>  Wed, 25 Oct 2006 19:43:39 +0200
+
+libkolab-perl (0.9.2-20060430-1) unstable; urgency=low
+
+  * New upstream release
+  * Changed build process to use upstream makefile for installation
+    (closes: #361288)
+  * Build in binary-indep
+  * Improved package description
+  * Updated standards version
+  * Fixed Build-Depends vs. Build-Depends-Indep
+  * Added watch file
+  * Changed priority to extra for policy conformance
+
+ -- Peter Eisentraut <petere@debian.org>  Wed, 23 Aug 2006 11:14:32 +0200
+
 libkolab-perl (0.9.2-5) unstable; urgency=low
 
   * upload -5 to unstable to get fixes from -3 and -4

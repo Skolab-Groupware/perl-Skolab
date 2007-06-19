@@ -7,15 +7,15 @@ Copyright Holder:
 
 Kolab-Conf/Conf.pm
 Kolab-LDAP-Backend-slurpd/slurpd.pm
-##  Copyright (c) 2004  Klaralvdalens Datakonsult AB
+##  Copyright (c) 2004  Klaraelvdalens Datakonsult AB
 ##  Copyright (c) 2003  Code Fusion cc
 ##
 ##    Writen by Stuart Bingë <s.binge@codefusion.co.za>
 ##    Portions based on work by the following people:
 ##
-##      (c) 2003  Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
-##      (c) 2003  Martin Konold     <martin.konold@erfrakon.de>
-##      (c) 2003  Achim Frank       <achim.frank@erfrakon.de>
+##      (c) 2003       Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
+##      (c) 2003-2006  Martin Konold     <martin.konold@erfrakon.de>
+##      (c) 2003       Achim Frank       <achim.frank@erfrakon.de>
 
 
 Kolab-Cyrus/Cyrus.pm
@@ -31,7 +31,7 @@ Kolab-Util/Util.pm
 
 
 Kolab-LDAP/LDAP.pm
-##  Copyright (c) 2005  Klaralvdalens Datakonsult AB
+##  Copyright (c) 2005  Klaraelvdalens Datakonsult AB
 ##  Copyright (c) 2003  Code Fusion cc
 ##
 ##    Writen by Stuart Bingë <s.binge@codefusion.co.za>
