@@ -5,6 +5,7 @@ Maintainer: Debian Kolab Maintainers <pkg-kolab-devel@lists.alioth.debian.org>
 Uploaders: Noèl Köthe <noel@debian.org>, Steffen Joeris <white@debian.org>, Peter Eisentraut <petere@debian.org>
 Build-Depends: debhelper (>= 4), dpatch
 Standards-Version: 3.7.2
+XS-Vcs-Browser: http://svn.debian.org/wsvn/pkg-kolab/libkolab-perl/
 XS-Vcs-Svn: svn://svn.debian.org/pkg-kolab/libkolab-perl/
 
 Package: libkolab-perl
@@ -19,17 +20,7 @@ Description: Perl modules for Kolab
  access Kolab, among them Kontact (KDE), Outlook (Windows), and Horde
  (web).
  .
- This package contains the following Perl modules:
-   * Kolab - module for general Kolab settings
-   * Kolab::Conf - module for Kolab template generation
-   * Kolab::Cyrus - module for interfacing with the Kolab Cyrus server
-   * Kolab::DirServ - module to publish address book
-   * Kolab::LDAP - module for generic LDAP code
-   * Kolab::LDAP::Backend - module for abstract directory
-   * Kolab::LDAP::Backend::ad - module for an Active Directory backend
-   * Kolab::LDAP::Backend::dirservd -  module for the Directory Services updater
-   * Kolab::LDAP::Backend::slurpd - module for a slurpd backend
-   * Kolab::Mailer - module for sending e-mail
-   * Kolab::Util - module for general utility functions
+ This package contains Perl modules that support the internal Kolab
+ server functionality.  It is not intended for other purposes.
  .
  Web site: http://www.kolab.org/

@@ -2,40 +2,9 @@
 
 @DPATCH@
 diff -urNad libkolab-perl-5.8.7-20070420~/Kolab/Kolab.pm.in libkolab-perl-5.8.7-20070420/Kolab/Kolab.pm.in
---- libkolab-perl-5.8.7-20070420~/Kolab/Kolab.pm.in	2007-03-28 03:48:28.000000000 +0200
-+++ libkolab-perl-5.8.7-20070420/Kolab/Kolab.pm.in	2007-06-20 00:41:13.000000000 +0200
-@@ -112,30 +112,6 @@
- 	$error = 1;
-     }
- 
--    $config{'kolab_n_uid'} = (getpwnam('@kolab_usr@'))[2];
--    if (!defined $config{'kolab_n_uid'}) {
--        &log('C', "Unable to determine the uid of user '@kolab_usr@'", KOLAB_ERROR);
--	$error = 1;
--    }
--
--    $config{'kolab_n_gid'} = (getgrnam('@kolab_grp@'))[2];
--    if (!defined $config{'kolab_n_gid'}) {
--        &log('C', "Unable to determine the gid of user @kolab_grp@'", KOLAB_ERROR);
--	$error = 1;
--    }
--
--    $config{'kolab_r_uid'} = (getpwnam('@kolab_rusr@'))[2];
--    if (!defined $config{'kolab_r_uid'}) {
--        &log('C', "Unable to determine the uid of user '@kolab_rusr@'", KOLAB_ERROR);
--	$error = 1;
--    }
--
--    $config{'kolab_r_gid'} = (getgrnam('@kolab_rgrp@'))[2];
--    if (!defined $config{'kolab_r_gid'}) {
--        &log('C', "Unable to determine the gid of user '@kolab_rgrp@'", KOLAB_ERROR);
--	$error = 1;
--    }
--
-     # Make sure the critical variables we need were defined in kolab.conf
-     if (!exists $config{'bind_dn'} || !exists $config{'bind_pw'} || !exists $config{'ldap_uri'} || !exists $config{'base_dn'}) {
-         &log('C', "One or more required configuration variables (`bind_dn', `bind_pw', `ldap_uri' and/or `base_dn') are missing in `kolab.conf'", KOLAB_ERROR);
-@@ -399,50 +375,28 @@
+--- libkolab-perl-5.8.7-20070420~/Kolab/Kolab.pm.in	2007-07-27 19:17:42.000000000 +0200
++++ libkolab-perl-5.8.7-20070420/Kolab/Kolab.pm.in	2007-07-27 19:17:44.000000000 +0200
+@@ -399,50 +399,28 @@
  {
      if ($haschanged{'slapd'}) {
          &log('K', 'Restarting OpenLDAP...');

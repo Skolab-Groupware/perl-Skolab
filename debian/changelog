@@ -1,3 +1,14 @@
+libkolab-perl (5.8.7-20070420-2) unstable; urgency=low
+
+  * Removed no longer necessary parts from 10-Kolab.pm.dpatch
+  * Don't ignore errors from make distclean, as per lintian check
+  * Added XS-Vcs-Browser control field
+  * Disabled buildCyrusConfig function, because we don't want to provide the
+    necessary template files.  This unbreaks kolabconf.
+  * Wrote more useful description
+
+ -- Peter Eisentraut <petere@debian.org>  Mon, 30 Jul 2007 18:08:13 +0200
+
 libkolab-perl (5.8.7-20070420-1) unstable; urgency=low
 
   [ Steffen Joeris ]
