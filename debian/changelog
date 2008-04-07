@@ -1,3 +1,14 @@
+libkolab-perl (5.8.7-20070420-3) unstable; urgency=low
+
+  * Internal Subversion repository reorganization to keep common patches in
+    common location, in particular patches/common/dist_conf.dpatch
+  * Fixed watch file
+  * Updated standards version
+  * Added Homepage control field
+  * Changed control fields XS-Vcs-* to Vcs-*
+
+ -- Peter Eisentraut <petere@debian.org>  Mon, 07 Apr 2008 14:02:16 +0200
+
 libkolab-perl (5.8.7-20070420-2) unstable; urgency=low
 
   * Removed no longer necessary parts from 10-Kolab.pm.dpatch
