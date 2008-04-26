@@ -1,9 +1,13 @@
 package Kolab::Cyrus;
 
+##  COPYRIGHT
+##  ---------
 ##
-##  Copyright (c) 2003  Code Fusion cc
+##  See AUTHORS file
 ##
-##    Written by Stuart Bingë <s.binge@codefusion.co.za>
+##
+##  LICENSE
+##  -------
 ##
 ##  This  program is free  software; you can redistribute  it and/or
 ##  modify it  under the terms of the GNU  General Public License as
@@ -18,6 +22,7 @@ package Kolab::Cyrus;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
+##  $Revision: 1.5 $
 
 use 5.008;
 use strict;
@@ -53,7 +58,7 @@ sub create
 {
     Kolab::log('Y', 'Connecting to local Cyrus admin interface');
 
-    my $cyrus = Cyrus::IMAP::Admin->new('localhost');
+    my $cyrus = Cyrus::IMAP::Admin->new($Kolab::config{'connect_addr'});
 
     if (!$cyrus) {
         Kolab::log('Y', 'Unable to connect to local Cyrus admin interface', KOLAB_ERROR);
@@ -211,13 +216,11 @@ admin module.
   Kolab::Cyrus contains cyrus-related functions, such as
   adding/deleting mailboxes, etc.
 
-=head1 AUTHOR
+=head1 COPYRIGHT AND AUTHORS
 
-Stuart Bingë E<lt>s.binge@codefusion.co.zaE<gt>
+Stuart Bingë and others (see AUTHORS file)
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2003  Code Fusion cc
+=head1 LICENSE
 
 This  program is free  software; you can redistribute  it and/or
 modify it  under the terms of the GNU  General Public License as

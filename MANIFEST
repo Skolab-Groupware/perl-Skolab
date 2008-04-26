@@ -1,0 +1,14 @@
+AUTHORS
+ChangeLog
+INSTALL
+lib/Kolab.pm
+lib/Kolab/Cyrus.pm
+lib/Kolab/LDAP.pm
+lib/Kolab/LDAP/Backend.pm
+lib/Kolab/LDAP/Backend/ad.pm
+lib/Kolab/LDAP/Backend/slurpd.pm
+lib/Kolab/Util.pm
+Makefile.PL
+MANIFEST
+README
+META.yml                                 Module meta-data (added by MakeMaker)

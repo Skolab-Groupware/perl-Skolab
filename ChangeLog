@@ -1,9 +1,112 @@
+2008-03-13  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP/Backend/slurpd.pm (run):
+
+	Wait for our children.
+	kolab/issue2478 (kolabd memory leak)
+
+2008-03-07  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP/Backend/slurpd.pm (run):
+
+	kolab/issue2478 (kolabd memory leak)
+
+2008-03-05  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* lib/Kolab.pm: Fix kolab/issue2358 (mistmatch between cyrus-admins
+	and cyrus-admin)
+
+2008-02-15  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/Cyrus.pm (create): Reverted last change. (It was
+	totally wrong and kolab even refused to start...).
+
+2008-02-14  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/Cyrus.pm (create): Added call to reloadConfig, without
+	this create failed (as $Kolab::config returned empty values).
+
+2008-02-04  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm: Fix synchronization of mailboxes with newer perl.
+	kolab/issue2411 (perl error in LDAP.pm)
+
+2007-11-28  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (syncDomains, createObject):
+
+	Added syncing for the domins the user specified. We need one
+	calendar user in each domain and resource/group accounts should
+	allow the calendar user to access the mailbox.
+
+	kolab/issue1313 (resmngr cannot create calendar folder in multidomain setup)
+
+2007-10-23  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab.pm: Show component and log level when sending debug
+	log to stdout.
+
+2007-10-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab.pm: kolab/issue934 (Remove FTP FreeBusy Service (proftpd))
+
+2007-08-01    Gunnar Wrobel  <p@rdus.de>
+
+	Converted the perl-kolab package into a standard perl library.
+
+2007-07-31    Gunnar Wrobel  <p@rdus.de>
+
+	* Kolab/Kolab.pm.in:
+	* Kolab-Conf/Conf.pm.in:
+
+	Require that the configuration load call is provided with the path
+	to the global Kolab configuration settings. This way we remove the
+	knowledge that the kolabd package exist from the Kolab.pm script.
+
+	In addition the reload() function was moved to the Conf.pm
+	module.
+
+2007-07-27    Gunnar Wrobel  <p@rdus.de>
+
+	* Kolab-LDAP/LDAP.pm.in (startup):
+
+	Require that the startup call is provided with the path to the
+	statedir. This way we remove knowledge of the kolabd package from
+	LDAP.pm script
+
+	* Kolab-LDAP-Backend-slurpd/slurpd.pm.in (run):
+
+	Removed explicit reference to the kolabconf script. The path is
+	now read from the Kolab Server configuration. This removes the
+	knowledge that the kolabd package exists from the slurpd.pm
+	script.
+
+2007-07-26  Gunnar Wrobel  <p@rdus.de>
+
+	* Makefile.am:
+	* Kolab-Mailer/*:
+
+	Removed the Kolab-Mailer module. It was only used by the
+	"dirserv"-code.
+
+	* Makefile.am:
+	* Kolab/Kolab.pm.in:
+	* Kolab-LDAP/LDAP.pm.in:
+	* Kolab-LDAP-Backend-dirservd/*:
+	* Kolab-DirServ/*:
+
+	Removed outdated "dirserv"-support from perl-kolab.
+
+2007-06-21  Marcus Hüwe		<suse-tux@gmx.de>
+
+	* Makefile.am: added Makefile dependencies
+
 2006-12-04  Gunnar Wrobel  <wrobel@pardus.de>
 
 	* Kolab-Conf/Conf.pm.in (build): Only print "No configuration
 	variable corresponding to `$1' exists" in case we are NOT skipping
 	the section.
-	
+
 2006-03-20 Marcus Hüwe <suse-tux@gmx.de>
 	Patch commited by Richard Bos
 	* Kolab-Conf/Conf.pm.in: introduce a new variable phpinit_dir for the

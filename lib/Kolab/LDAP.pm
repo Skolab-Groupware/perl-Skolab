@@ -1,11 +1,13 @@
 package Kolab::LDAP;
 
+##  COPYRIGHT
+##  ---------
 ##
-##  Copyright (c) 2005  Klaralvdalens Datakonsult AB
-##  Copyright (c) 2003  Code Fusion cc
+##  See AUTHORS file
 ##
-##    Writen by Stuart BingÃ« <s.binge@codefusion.co.za>
-##              Steffen Hansen <steffen@klaralvdalens-datakonsult.se>
+##
+##  LICENSE
+##  -------
 ##
 ##  This  program is free  software; you can redistribute  it and/or
 ##  modify it  under the terms of the GNU  General Public License as
@@ -20,6 +22,7 @@ package Kolab::LDAP;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
+##  $Revision: 1.3 $
 
 use 5.008;
 use strict;
@@ -33,7 +36,8 @@ use DB_File;
 use Kolab;
 use Kolab::Util;
 use Kolab::Cyrus;
-use Kolab::DirServ;
+use Digest::SHA1 qw(sha1);
+use MIME::Base64 qw(encode_base64);
 use vars qw(%uid_db %gyard_db %newuid_db %gyard_ts_db %quota_db);
 
 require Exporter;
@@ -70,30 +74,32 @@ our $group_timestamp = "";
 
 sub startup
 {
+    my $statedir = shift;
+
     Kolab::log('L', 'Starting up');
 
     Kolab::log('L', 'Opening mailbox uid cache DB');
 
-    if (!dbmopen(%uid_db, "@kolab_statedir@/mailbox-uidcache.db", 0666)) {
+    if (!dbmopen(%uid_db, "$statedir/mailbox-uidcache.db", 0666)) {
         Kolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
         exit(1);
     }
 
     Kolab::log('L', 'Opening graveyard uid/timestamp cache DB');
 
-    if (!dbmopen(%gyard_db, "@kolab_statedir@/graveyard-uidcache.db", 0666)) {
+    if (!dbmopen(%gyard_db, "$statedir/graveyard-uidcache.db", 0666)) {
         Kolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
         exit(1);
     }
 
-    if (!dbmopen(%gyard_ts_db, "@kolab_statedir@/graveyard-tscache.db", 0666)) {
+    if (!dbmopen(%gyard_ts_db, "$statedir/graveyard-tscache.db", 0666)) {
         Kolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
         exit(1);
     }
 
     Kolab::log('L', 'Opening mailbox quota cache DB');
 
-    if (!dbmopen(%quota_db, "@kolab_statedir@/mailbox-quotacache.db", 0666)) {
+    if (!dbmopen(%quota_db, "$statedir/mailbox-quotacache.db", 0666)) {
         Kolab::log('L', 'Unable to open mailbox quota cache DB', KOLAB_ERROR);
         exit(1);
     }
@@ -308,7 +314,6 @@ sub createObject
             Kolab::log('L', "Object `$uid' already exists, skipping", KOLAB_DEBUG);
 	}
         # Nothing changed; nothing to do
-        #Kolab::DirServ::genericRequest($object, "modify alias");
     } else {
         # No official records - check the graveyard
         my $oldgyarduid = $gyard_db{$guid} || '';
@@ -348,18 +353,17 @@ sub createObject
 		# the groups/resources folder.
 		# TODO: Don't hardcode username
 		Kolab::log('L', "Detected group or resource account, adding ACL for calendar", KOLAB_ERROR );
+		my $domain;
+		if ($uid =~ /.*\@(.*)/) {
+		    $domain = $1;
+		} else {
+		    $domain = $Kolab::config{'postfix-mydomain'};
+		}
 		Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid all", 
-						     'calendar@'.$Kolab::config{'postfix-mydomain'}
+						     'calendar@' . $domain
 						     .' all']);		
 	      }
 	    }
-#	    if( $p ne 'sf' ) {
-#	      # Create FB dir for user
-#	      my $fbdir = '@webserver_document_root@/freebusy/'.$uid;
-#	      mkdir( $fbdir, 0750);
-#	      chown( $Kolab::config{'kolab_n_uid'},$Kolab::config{'kolab_n_gid'},$fbdir );
-#	    }
-            Kolab::DirServ::genericRequest($object, "new alias") if $p eq 'user';
         }
     }
 
@@ -508,14 +512,7 @@ sub deleteObject
         return;
     }
 
-    Kolab::DirServ::genericRequest($object, "remove alias") if $p eq 'user';
-
     Kolab::Cyrus::deleteMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0));
-#    if( $p ne 'sf' ) {
-#      # Create FB dir for user
-#      my $fbdir = '@webserver_document_root@/freebusy/'.$uid;
-#      system("rm -rf \"$fbdir\"" );
-#    }
     delete $uid_db{$guid};
     delete $quota_db{$guid};
     return 1;
@@ -543,7 +540,7 @@ sub sync
     my %objects;
     my $mailbox;
     foreach $mailbox (@mailboxes) {
-        my $u = ${@{$mailbox}}[0];
+        my $u = @{$mailbox}[0];
         $u =~ /user[\/\.]([^\/]*)\/?.*/;
         $objects{$1} = 1 if ($1);
     }
@@ -578,6 +575,8 @@ sub sync
     }
 
     %uid_db = %newuid_db;
+
+    syncDomains();
 
     Kolab::log('L', 'Finished synchronisation');
 }
@@ -696,6 +695,101 @@ sub syncBasic
     return $ts;
 }
 
+sub syncDomains
+{
+    Kolab::log('L', "Synchronising domains");
+
+    my $ldapmesg;
+    my $uid;
+    my $ldapobject;
+    my @domains;
+    my $domain;
+
+    my $ldap = &create(
+        $Kolab::config{'ldap_ip'},
+        $Kolab::config{'ldap_port'},
+        $Kolab::config{'bind_dn'},
+        $Kolab::config{'bind_pw'}
+    );
+
+    # If we have an old "cn=calendar" we need to fix the DN of that
+    # object
+    my $dn = 'cn=calendar,cn=internal,' . $Kolab::config{'base_dn'};
+    $ldapmesg = $ldap->search(
+        base    => 'cn=internal,' . $Kolab::config{'base_dn'},
+        scope   => 'one',
+	filter  => '(&(objectClass=kolabInetOrgPerson)(cn=calendar))',
+            attrs   => [
+                'objectClass',
+                'uid',
+	],
+        );
+
+    if ( UNIVERSAL::isa( $ldapmesg, 'Net::LDAP::Search') && $ldapmesg->count() > 0) {
+        Kolab::log('L', "Identified old calendar user with DN `$dn'", KOLAB_DEBUG);
+        my $cn = 'cn=' . $Kolab::config{'calendar_id'} . '@' . $Kolab::config{'postfix-mydomain'};
+        $ldap->moddn($dn, newrdn => $cn, deleteoldrdn => 1);
+        Kolab::log('L', "Renamed old calendar user with DN `$dn' to DN `$cn'", KOLAB_INFO);
+    } else {
+	Kolab::log('L', "Unable to locate old calendar user with DN `$dn'", KOLAB_DEBUG);
+    }
+
+    if( ref($Kolab::config{'postfix-mydestination'}) eq 'ARRAY' ) {
+	@domains = @{$Kolab::config{'postfix-mydestination'}};
+    } else {
+	@domains =( $Kolab::config{'postfix-mydestination'} );
+    }
+
+    my $sha_pw = hash_pw($Kolab::config{'calendar_pw'});
+    foreach $domain (@domains) {
+	$uid = $Kolab::config{'calendar_id'} . '@' . $domain;
+	$dn = 'cn=' . $uid . ',cn=internal,' . $Kolab::config{'base_dn'};
+	$ldapmesg = $ldap->search(
+	    base    => $dn,
+	    scope   => 'one',
+	    filter  => '(&(objectClass=kolabInetOrgPerson))',
+            attrs   => [
+                'objectClass',
+                'uid',
+	    ],
+	    );
+	if ( UNIVERSAL::isa( $ldapmesg, 'Net::LDAP::Search') && $ldapmesg->code() <= 0) {
+	    Kolab::log('L', "Calendar user for domain `$domain' exists", KOLAB_DEBUG);
+	} else {
+	    $ldapobject = Net::LDAP::Entry->new;
+	    $ldapobject->replace('cn' => $uid, 
+				 'sn' => 'n/a n/a',
+				 'uid' => $uid,
+				 'userPassword' => $sha_pw, 
+				 'objectclass' => ['top','inetorgperson','kolabinetorgperson']);
+	    $ldapobject->dn($dn);
+	    $ldapobject->update($ldap);
+	    undef $ldapobject;
+	    Kolab::log('L', "Created new calendar user with DN `$dn' for domain `$domain'", KOLAB_INFO);
+	}
+    }
+
+}
+
+# Taken from Samba::LDAP::User.pm
+sub hash_pw {
+    my $pass   = shift;
+
+    # Generate SSHA hash (SHA1 with salt)
+    my $salt = make_salt(4);
+    return '{SSHA}' . encode_base64(sha1($pass . $salt) . $salt, '');
+}
+
+sub make_salt {
+    my $self   = shift;
+    my $length = shift || '32';
+
+    my @tab = ('.', '/', 0 .. 9, 'A' .. 'Z', 'a' .. 'z');
+
+    return join "", @tab[ map {rand 64} (1 .. $length) ];
+}
+
+
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!
@@ -709,13 +803,11 @@ Kolab::LDAP - Perl extension for generic LDAP code
   Kolab::LDAP contains functions used to create/delete objects,
   as well as synchronise LDAP and Cyrus.
 
-=head1 AUTHOR
+=head1 COPYRIGHT AND AUTHORS
 
-Stuart Bingë¬ E<lt>s.binge@codefusion.co.zaE<gt>
+Stuart Bingë and others (see AUTHORS file)
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2003  Code Fusion cc
+=head1 LICENSE
 
 This  program is free  software; you can redistribute  it and/or
 modify it  under the terms of the GNU  General Public License as

@@ -1,2 +1,5 @@
 version=3
-ftp://ftp.belnet.be/packages/kolab/server/release/kolab-server-(?:[\d.]+)/sources/perl-kolab-([\d.-]+).src.rpm
+# original URL for stable releases:
+#ftp://ftp.belnet.be/packages/kolab/server/release/kolab-server-(?:[\d.]+)/sources/perl-kolab-([\d.-]+).src.rpm
+opts=dversionmangle=s/~rc/.rc/ \
+ftp://ftp.belnet.be/packages/kolab/server/development-2.2/current/sources/perl-kolab-([\d\w.-]+).src.rpm  debian  debian/uupdate-wrapper

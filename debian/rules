@@ -2,10 +2,10 @@
 
 include /usr/share/dpatch/dpatch.make
 
-config.status: configure patch-stamp
+config.status: patch-stamp
 	dh_testdir
-	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --with-dist=debian
-
+	perl Makefile.PL
+	
 build: build-stamp
 build-stamp:  config.status
 	dh_testdir
@@ -26,7 +26,6 @@ install: build
 	dh_clean -k 
 	dh_installdirs
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/libkolab-perl
-	rm -rf $(CURDIR)/debian/libkolab-perl/usr/share/doc/kolab/
 
 binary-indep: build install
 	dh_testdir

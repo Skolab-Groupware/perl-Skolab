@@ -1,3 +1,21 @@
+libkolab-perl (1:2.2~rc2-20080314-1) experimental; urgency=low
+
+  [ Mathieu Parent ]
+  * New upstream version: 2.2-rc2
+  * Use the new Makefile.PL, and drop ./configure way
+  * Add libnet-ldap-perl in Build-Depends as Kolab.pm needs it
+  * Disable patch 10-Kolab.pm, gone in kolabconf (30-invoke-rc)
+  * Disable patch 20-buildCyrusConfig, function is missing
+  * Disable patch 40-dist_conf, dist_conf has gone
+  * Added FDS LDAP Backend, for persistent searches (OpenLDAP 2.4 doesn't have
+    slurpd anymore)
+  * Updated fds patch to have the good kolabconf path 
+
+  [ Peter Eisentraut ]
+  * Adjusted Vcs-* control fields
+
+ -- Peter Eisentraut <petere@debian.org>  Sat, 26 Apr 2008 13:39:23 +0200
+
 libkolab-perl (5.8.7-20070420-3) unstable; urgency=low
 
   * Internal Subversion repository reorganization to keep common patches in

@@ -1,42 +1,33 @@
 This package was debianized by
 Noèl Köthe <noel@debian.org> on Fri, 16 Dec 2005 15:34:20 +0100.
 
-It was downloaded from http://max.kde.org:8080/mirrors/ftp.kolab.org/server/release/
+It was downloaded from <http://kolab.org/>
 
-Copyright Holder:
+Copyright holder (taken from AUTHORS):
 
-Kolab-Conf/Conf.pm
-Kolab-LDAP-Backend-slurpd/slurpd.pm
-##  Copyright (c) 2004  Klaraelvdalens Datakonsult AB
-##  Copyright (c) 2003  Code Fusion cc
-##
-##    Writen by Stuart Bingë <s.binge@codefusion.co.za>
-##    Portions based on work by the following people:
-##
-##      (c) 2003       Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
-##      (c) 2003-2006  Martin Konold     <martin.konold@erfrakon.de>
-##      (c) 2003       Achim Frank       <achim.frank@erfrakon.de>
+Originally written by Stuart Bingë <s.binge@codefusion.co.za>
 
+  Copyright (c) 2003 - 2004  Stuart Bingë
+  Copyright (c) 2003 - 2004  Code Fusion cc
 
-Kolab-Cyrus/Cyrus.pm
-Kolab-DirServ/DirServ.pm
-Kolab/Kolab.pm
-Kolab-LDAP-Backend/Backend.pm
-Kolab-LDAP-Backend-dirservd/dirservd.pm
-Kolab-Mailer/Mailer.pm
-Kolab-Util/Util.pm
-##  Copyright (c) 2003  Code Fusion cc
-##
-##    Writen by Stuart Bingë <s.binge@codefusion.co.za>
+Portions based on work by the following people:
 
+  (c) 2003         Tassilo Erlewein     <tassilo.erlewein@erfrakon.de>
+  (c) 2003         Achim Frank          <achim.frank@erfrakon.de>
+  (c) 2004         Stephan Buys         <s.buys@codefusion.co.za>
+  (c) 2005 - 2006  Richard Bos          <richard@radoeka.nl>
+  (c) 2005 - 2006  Marcus Hüwe          <suse-tux@gmx.de>
+  (c) 2004 - 2006  Steffen Hansen       <steffen@klaralvdalens-datakonsult.se>
+  (c) 2007         Thomas Arendsen Hein <thomas@intevation.de>
+  (c) 2006 - 2007  Gunnar Wrobel        <wrobel@pardus.de>
+  (c) 2003 - 2007  Martin Konold        <martin.konold@erfrakon.de>
 
-Kolab-LDAP/LDAP.pm
-##  Copyright (c) 2005  Klaraelvdalens Datakonsult AB
-##  Copyright (c) 2003  Code Fusion cc
-##
-##    Writen by Stuart Bingë <s.binge@codefusion.co.za>
-##              Steffen Hansen <steffen@klaralvdalens-datakonsult.se>
+Portions based on work by the following companies:
 
+  (c) 2004 - 2006  Klaraelvdalens Datakonsult AB
+  (c) 2007         Intevation GmbH
+  (c) 2006 - 2007  p@rdus
+  (c) 2003 - 2007  erfrakon Partnerschaftsgesellschaft
 
 License:
 
@@ -50,10 +41,5 @@ License:
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this package; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-
-On Debian systems, the complete text of the GNU General
-Public License can be found in `/usr/share/common-licenses/GPL'.
-
+On Debian systems, the complete text of the GNU General Public License can be
+found in '/usr/share/common-licenses/GPL'.
