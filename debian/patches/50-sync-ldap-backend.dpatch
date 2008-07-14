@@ -1,0 +1,314 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 50-sync-ldap-backend.dpatch by Mathieu Parent <math.parent@gmail.com>
+##
+## DP: LDAP backend using content synchronization (RFC4533)
+## DP: which is not activated by default
+
+@DPATCH@
+diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libkolab-perl-2.2~rc3-20080521/lib/Kolab/LDAP/Backend/sync.pm
+--- libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm	1970-01-01 01:00:00.000000000 +0100
++++ libkolab-perl-2.2~rc3-20080521/lib/Kolab/LDAP/Backend/sync.pm	2008-06-18 21:31:37.000000000 +0200
+@@ -0,0 +1,303 @@
++package Kolab::LDAP::Backend::sync;
++
++##
++##  Copyright (c) 2008  Mathieu Parent <math.parent@gmail.com>
++##
++##  This  program is free  software; you can redistribute  it and/or
++##  modify it  under the terms of the GNU  General Public License as
++##  published by the  Free Software Foundation; either version 2, or
++##  (at your option) any later version.
++##
++##  This program is  distributed in the hope that it will be useful,
++##  but WITHOUT  ANY WARRANTY; without even the  implied warranty of
++##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++##  General Public License for more details.
++##
++##  You can view the  GNU General Public License, online, at the GNU
++##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
++##
++use 5.008;
++use strict;
++use warnings;
++use Kolab;
++use Kolab::LDAP;
++use Net::LDAP;
++use Net::LDAP::Control;
++use Net::LDAP::Entry;
++use vars qw($ldap $cookie $disconnected);
++my $cookie = '';
++my $disconnected = 1;
++
++require Exporter;
++
++our @ISA = qw(Exporter);
++
++our %EXPORT_TAGS = (
++    'all' => [ qw(
++    &startup
++    &run
++    ) ]
++);
++
++our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
++
++our @EXPORT = qw(
++    
++);
++
++our $VERSION = '0.1';
++
++# LDAP Content Synchronization Operation -- RFC 4533
++use constant LDAP_SYNC_OID => "1.3.6.1.4.1.4203.1.9.1";
++use constant {
++	LDAP_CONTROL_SYNC => LDAP_SYNC_OID.".1",
++	LDAP_CONTROL_SYNC_STATE => LDAP_SYNC_OID.".2",
++	LDAP_CONTROL_SYNC_DONE => LDAP_SYNC_OID.".3",
++	LDAP_SYNC_INFO => LDAP_SYNC_OID.".4",
++
++	LDAP_SYNC_NONE => 0x00,
++	LDAP_SYNC_REFRESH_ONLY => 0x01,
++	LDAP_SYNC_RESERVED => 0x02,
++	LDAP_SYNC_REFRESH_AND_PERSIST => 0x03,
++
++	LDAP_SYNC_REFRESH_PRESENTS => 0,
++	LDAP_SYNC_REFRESH_DELETES => 1,
++
++	LDAP_TAG_SYNC_NEW_COOKIE => 0x80,
++	LDAP_TAG_SYNC_REFRESH_DELETE => 0xa1,
++	LDAP_TAG_SYNC_REFRESH_PRESENT => 0xa2,
++	LDAP_TAG_SYNC_ID_SET => 0xa3,
++
++	LDAP_TAG_SYNC_COOKIE => 0x04,
++	LDAP_TAG_REFRESHDELETES => 0x01,
++	LDAP_TAG_REFRESHDONE => 0x01,
++	LDAP_TAG_RELOAD_HINT => 0x01,
++
++	LDAP_SYNC_PRESENT => 0,
++	LDAP_SYNC_ADD => 1,
++	LDAP_SYNC_MODIFY => 2,
++	LDAP_SYNC_DELETE => 3,
++};
++
++use Convert::ASN1;
++use Data::Dumper;
++
++my $asn = Convert::ASN1->new;
++
++$asn->prepare(<<'LDAP_ASN') or die $asn->error;
++syncUUID ::= OCTET STRING -- (SIZE(16))
++
++syncCookie ::= OCTET STRING
++
++syncRequestValue ::= SEQUENCE {
++    mode ENUMERATED {
++        -- 0 unused
++        refreshOnly       (1),
++        -- 2 reserved
++        refreshAndPersist (3)
++    }
++    cookie     syncCookie OPTIONAL,
++    reloadHint BOOLEAN -- DEFAULT FALSE
++}
++
++syncStateValue ::= SEQUENCE {
++    state ENUMERATED {
++        present (0),
++        add (1),
++        modify (2),
++        delete (3)
++    }
++    entryUUID syncUUID,
++    cookie    syncCookie OPTIONAL
++}
++
++syncDoneValue ::= SEQUENCE {
++    cookie          syncCookie OPTIONAL,
++    refreshDeletes  BOOLEAN -- DEFAULT FALSE
++}
++
++syncInfoValue ::= CHOICE {
++      newcookie      [0] syncCookie,
++      refreshDelete  [1] SEQUENCE {
++          refreshDeleteCookie         syncCookie OPTIONAL,
++          refreshDeleteDone    BOOLEAN -- DEFAULT TRUE
++      }
++      refreshPresent [2] SEQUENCE {
++          refreshDeletecookie         syncCookie OPTIONAL,
++          refreshDeleteDone    BOOLEAN -- DEFAULT TRUE
++      }
++      syncIdSet      [3] SEQUENCE {
++          cookie         syncCookie OPTIONAL,
++          refreshDeletes BOOLEAN, -- DEFAULT FALSE
++          syncUUIDs      SET OF syncUUID
++      }
++}
++
++LDAP_ASN
++
++
++sub startup { 1; }
++
++sub shutdown
++{
++  Kolab::log('SYNC', 'Shutting down');
++  exit(0);
++}
++
++sub abort
++{
++    Kolab::log('SYNC', 'Aborting');
++    exit(1);
++}
++
++sub run {
++  # This should be called from a separate thread, as we set our
++  # own interrupt handlers here
++
++  $SIG{'INT'} = \&shutdown;
++  $SIG{'TERM'} = \&shutdown;
++
++  END {
++    alarm 0;
++    Kolab::LDAP::destroy($ldap);
++  }
++  my $mesg;
++
++  while (1) {
++    Kolab::log('SYNC', 'Creating LDAP connection to LDAP server', KOLAB_DEBUG);
++
++    $ldap = Kolab::LDAP::create($Kolab::config{'user_ldap_ip'},
++                                $Kolab::config{'user_ldap_port'},
++                                $Kolab::config{'user_bind_dn'},
++                                $Kolab::config{'user_bind_pw'},
++                                1
++                               );
++    if (!$ldap) {
++        Kolab::log('SYNC', 'Sleeping 5 seconds...');
++        sleep 5;
++        next;
++    }
++    $disconnected = 0;  
++
++    Kolab::log('SYNC', 'LDAP connection established', KOLAB_DEBUG);
++
++    Kolab::LDAP::ensureAsync($ldap);
++    Kolab::log('SYNC', 'Async checked', KOLAB_DEBUG);
++
++    Kolab::log('SYNC', "Cookie: $cookie", KOLAB_DEBUG);
++
++    while($ldap and not $disconnected) {
++	    #sync control
++      my $asn_syncRequestValue = $asn->find('syncRequestValue');
++	    my $ctrl = Net::LDAP::Control->new(
++		    type  => LDAP_CONTROL_SYNC, 
++		    value => $asn_syncRequestValue->encode(mode       => LDAP_SYNC_REFRESH_ONLY,
++                                               cookie     => $cookie,
++                                               reloadHint => 0),
++		                                           critical   => 0
++	                                            );
++      Kolab::log('SYNC', 'Control created', KOLAB_DEBUG);
++    
++	    #search
++	    my $mesg = $ldap->search(base     => $Kolab::config{'base_dn'},
++                               scope    => 'sub',
++                               control  => [ $ctrl ],
++                               callback => \&searchCallback, # call for each entry
++                               filter   => "(objectClass=*)",
++                               attrs    => [ '*',
++                                             $Kolab::config{'user_field_guid'},
++                                             $Kolab::config{'user_field_modified'},
++                                             $Kolab::config{'user_field_quota'},
++                                             $Kolab::config{'user_field_deleted'},
++                                           ],
++				                      );
++      Kolab::log('SYNC', 'Search created', KOLAB_DEBUG);
++      $mesg->sync;
++      Kolab::log('SYNC', "Finished Net::LDAP::Search::sync sleeping 30s", KOLAB_DEBUG);
++      sleep 30;
++    }
++  }
++  1;
++}
++
++#search callback
++sub searchCallback {
++  my $mesg = shift;
++  my $entry = shift;
++  my $issearch = $mesg->isa("Net::LDAP::Search");
++  my @controls = $mesg->control;
++  if(not $issearch) {
++    Kolab::log('SYNC', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
++    if ($mesg->code == 88) {
++        Kolab::log('SYNC', 'searchCallback() -> Exit code received, returning', KOLAB_DEBUG);
++        return;
++    } elsif ($mesg->code) {
++        Kolab::log('SYNC', "Not a search: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
++        &abort;
++    }   
++  } elsif(@controls == 0) {
++    if ($mesg->code == 1) {
++        Kolab::log('SYNC', 'No control: Communications Error: disconnecting', KOLAB_DEBUG);
++        $disconnected = 1;
++        return;
++    } elsif ($mesg->code) {
++      Kolab::log('SYNC', "No control: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
++        &abort;
++    }   
++  } elsif($controls[0]->type eq LDAP_CONTROL_SYNC_STATE) {
++    Kolab::log('SYNC', 'Received Sync State Control', KOLAB_DEBUG);
++    Kolab::log('SYNC', "Entry (".$entry->changetype."): ".$entry->dn(), KOLAB_DEBUG);
++  } elsif($controls[0]->type eq LDAP_CONTROL_SYNC_DONE) {
++    Kolab::log('SYNC', 'Received Sync Done Control', KOLAB_DEBUG);
++    my $asn_syncDoneValue = $asn->find('syncDoneValue');
++    my $out = $asn_syncDoneValue->decode($controls[0]->value);
++	  #we have a new cookie
++	  if(defined($out->{cookie}) and not $out->{cookie} eq '' and not $out->{cookie} eq $cookie) {
++		  $cookie = $out->{cookie};
++		  Kolab::log('SYNC', "New cookie: $cookie", KOLAB_DEBUG);
++      Kolab::log('SYNC', "Calling Kolab::LDAP::sync", KOLAB_DEBUG);
++      Kolab::LDAP::sync;
++      system($Kolab::config{'kolabconf_script'}) == 0 || Kolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
++      Kolab::log('SYNC', "Finished Kolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
++      sleep 1; # we get too many bogus change notifications!
++	  } 
++  } else {
++    Kolab::log('SYNC', 'Received unknown control: '.$controls[0]->type, KOLAB_DEBUG);
++  }
++  return 0;
++}
++
++1;
++__END__
++
++=head1 NAME
++
++Kolab::LDAP::Backend::sync - Perl extension for RFC 4533 compliant LDAP server backend
++
++=head1 ABSTRACT
++
++  Kolab::LDAP::Backend::sync handles OpenLDAP backend to the kolab daemon.
++
++=head1 AUTHOR
++
++Mathieu Parent <math.parent@gmail.com>
++
++=head1 COPYRIGHT AND LICENSE
++
++Copyright (c) 2008  Mathieu Parent <math.parent@gmail.com>
++
++
++This  program is free  software; you can redistribute  it and/or
++modify it  under the terms of the GNU  General Public License as
++published by the  Free Software Foundation; either version 2, or
++(at your option) any later version.
++
++This program is  distributed in the hope that it will be useful,
++but WITHOUT  ANY WARRANTY; without even the  implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++General Public License for more details.
++
++You can view the  GNU General Public License, online, at the GNU
++Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
++
++=cut

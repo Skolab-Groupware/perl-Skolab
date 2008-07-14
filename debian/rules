@@ -2,13 +2,10 @@
 
 include /usr/share/dpatch/dpatch.make
 
-config.status: patch-stamp
+build: build-stamp
+build-stamp:
 	dh_testdir
 	perl Makefile.PL
-	
-build: build-stamp
-build-stamp:  config.status
-	dh_testdir
 	$(MAKE)
 	touch build-stamp
 

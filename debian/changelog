@@ -1,20 +1,22 @@
-libkolab-perl (1:2.2~rc2-20080314-1) experimental; urgency=low
+libkolab-perl (1:2.2.0-1) unstable; urgency=low
 
   [ Mathieu Parent ]
-  * New upstream version: 2.2-rc2
+  * New upstream version: 2.2.0
+    * FDS LDAP Backend, for persistent searches (OpenLDAP 2.4 doesn't have
+      slurpd anymore)
   * Use the new Makefile.PL, and drop ./configure way
-  * Add libnet-ldap-perl in Build-Depends as Kolab.pm needs it
+  * Add libnet-ldap-perl in Build-Depends-Indep as Kolab.pm needs it
   * Disable patch 10-Kolab.pm, gone in kolabconf (30-invoke-rc)
   * Disable patch 20-buildCyrusConfig, function is missing
   * Disable patch 40-dist_conf, dist_conf has gone
-  * Added FDS LDAP Backend, for persistent searches (OpenLDAP 2.4 doesn't have
-    slurpd anymore)
-  * Updated fds patch to have the good kolabconf path 
+  * New patch 50-sync-ldap-backend for experimental rfc4533 LDAP backend (not
+    enabled by default: use "directory_mode: sync" in kolab.globals to enable)
+  * Bump Standards-Version to 3.8.0 (no change needed)
 
   [ Peter Eisentraut ]
-  * Adjusted Vcs-* control fields
+  * Changed from libmime-perl to libmime-tools-perl
 
- -- Peter Eisentraut <petere@debian.org>  Sat, 26 Apr 2008 13:39:23 +0200
+ -- Mathieu Parent <math.parent@gmail.com>  Mon, 14 Jul 2008 16:27:49 +0200
 
 libkolab-perl (5.8.7-20070420-3) unstable; urgency=low
 

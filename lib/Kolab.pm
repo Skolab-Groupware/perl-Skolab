@@ -22,7 +22,7 @@ package Kolab;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.16 $
+##  $Revision: 1.20 $
 
 use 5.008;
 use strict;
@@ -59,7 +59,7 @@ our @EXPORT = qw(
 );
 
 # The Kolab version number for the perl-kolab package
-our $KOLAB_BASE_VERSION = "2.2.rc2";
+our $KOLAB_BASE_VERSION = "2.2.0";
 
 # Are current releases cvs based or is this a real release?
 my $KOLAB_CVS = 0;
