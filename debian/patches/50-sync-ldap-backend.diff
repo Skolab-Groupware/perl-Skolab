@@ -5,11 +5,11 @@
 ## DP: which is not activated by default
 
 @DPATCH@
-diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libkolab-perl-2.2~rc3-20080521/lib/Kolab/LDAP/Backend/sync.pm
---- libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm	1970-01-01 01:00:00.000000000 +0100
-+++ libkolab-perl-2.2~rc3-20080521/lib/Kolab/LDAP/Backend/sync.pm	2008-06-18 21:31:37.000000000 +0200
-@@ -0,0 +1,303 @@
-+package Kolab::LDAP::Backend::sync;
+diff -urNad libkolab-perl-2.2.0~/lib/Kolab/LDAP/Backend/syncrepl.pm libkolab-perl-2.2.0/lib/Kolab/LDAP/Backend/syncrepl.pm
+--- libkolab-perl-2.2.0~/lib/Kolab/LDAP/Backend/syncrepl.pm	1970-01-01 01:00:00.000000000 +0100
++++ libkolab-perl-2.2.0/lib/Kolab/LDAP/Backend/syncrepl.pm	2008-08-02 01:06:03.000000000 +0200
+@@ -0,0 +1,318 @@
++package Kolab::LDAP::Backend::syncrepl;
 +
 +##
 +##  Copyright (c) 2008  Mathieu Parent <math.parent@gmail.com>
@@ -151,13 +151,13 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +
 +sub shutdown
 +{
-+  Kolab::log('SYNC', 'Shutting down');
++  Kolab::log('SYNCREPL', 'Shutting down');
 +  exit(0);
 +}
 +
 +sub abort
 +{
-+    Kolab::log('SYNC', 'Aborting');
++    Kolab::log('SYNCREPL', 'Aborting');
 +    exit(1);
 +}
 +
@@ -175,7 +175,7 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +  my $mesg;
 +
 +  while (1) {
-+    Kolab::log('SYNC', 'Creating LDAP connection to LDAP server', KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'Creating LDAP connection to LDAP server', KOLAB_DEBUG);
 +
 +    $ldap = Kolab::LDAP::create($Kolab::config{'user_ldap_ip'},
 +                                $Kolab::config{'user_ldap_port'},
@@ -184,30 +184,30 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +                                1
 +                               );
 +    if (!$ldap) {
-+        Kolab::log('SYNC', 'Sleeping 5 seconds...');
++        Kolab::log('SYNCREPL', 'Sleeping 5 seconds...');
 +        sleep 5;
 +        next;
 +    }
 +    $disconnected = 0;  
 +
-+    Kolab::log('SYNC', 'LDAP connection established', KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'LDAP connection established', KOLAB_DEBUG);
 +
 +    Kolab::LDAP::ensureAsync($ldap);
-+    Kolab::log('SYNC', 'Async checked', KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'Async checked', KOLAB_DEBUG);
 +
-+    Kolab::log('SYNC', "Cookie: $cookie", KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', "Cookie: $cookie", KOLAB_DEBUG);
 +
 +    while($ldap and not $disconnected) {
 +	    #sync control
 +      my $asn_syncRequestValue = $asn->find('syncRequestValue');
-+	    my $ctrl = Net::LDAP::Control->new(
-+		    type  => LDAP_CONTROL_SYNC, 
-+		    value => $asn_syncRequestValue->encode(mode       => LDAP_SYNC_REFRESH_ONLY,
-+                                               cookie     => $cookie,
-+                                               reloadHint => 0),
-+		                                           critical   => 0
-+	                                            );
-+      Kolab::log('SYNC', 'Control created', KOLAB_DEBUG);
++	    my $ctrl = Net::LDAP::Control->new(type  => LDAP_CONTROL_SYNC, 
++		                                     value => $asn_syncRequestValue->encode(mode       => LDAP_SYNC_REFRESH_ONLY,
++                                                                                cookie     => $cookie,
++                                                                                reloadHint => 0
++                                                                               ),
++                                         critical   => 0
++	                                      );
++      Kolab::log('SYNCREPL', 'Control created', KOLAB_DEBUG);
 +    
 +	    #search
 +	    my $mesg = $ldap->search(base     => $Kolab::config{'base_dn'},
@@ -222,10 +222,10 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +                                             $Kolab::config{'user_field_deleted'},
 +                                           ],
 +				                      );
-+      Kolab::log('SYNC', 'Search created', KOLAB_DEBUG);
++      Kolab::log('SYNCREPL', 'Search created', KOLAB_DEBUG);
 +      $mesg->sync;
-+      Kolab::log('SYNC', "Finished Net::LDAP::Search::sync sleeping 30s", KOLAB_DEBUG);
-+      sleep 30;
++      Kolab::log('SYNCREPL', "Finished Net::LDAP::Search::sync sleeping 10s", KOLAB_DEBUG);
++      sleep 10;
 +    }
 +  }
 +  1;
@@ -238,42 +238,42 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +  my $issearch = $mesg->isa("Net::LDAP::Search");
 +  my @controls = $mesg->control;
 +  if(not $issearch) {
-+    Kolab::log('SYNC', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
 +    if ($mesg->code == 88) {
-+        Kolab::log('SYNC', 'searchCallback() -> Exit code received, returning', KOLAB_DEBUG);
++        Kolab::log('SYNCREPL', 'searchCallback() -> Exit code received, returning', KOLAB_DEBUG);
 +        return;
 +    } elsif ($mesg->code) {
-+        Kolab::log('SYNC', "Not a search: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
++        Kolab::log('SYNCREPL', "Not a search: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
 +        &abort;
 +    }   
 +  } elsif(@controls == 0) {
 +    if ($mesg->code == 1) {
-+        Kolab::log('SYNC', 'No control: Communications Error: disconnecting', KOLAB_DEBUG);
++        Kolab::log('SYNCREPL', 'No control: Communications Error: disconnecting', KOLAB_DEBUG);
 +        $disconnected = 1;
 +        return;
 +    } elsif ($mesg->code) {
-+      Kolab::log('SYNC', "No control: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
++      Kolab::log('SYNCREPL', "No control: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
 +        &abort;
 +    }   
 +  } elsif($controls[0]->type eq LDAP_CONTROL_SYNC_STATE) {
-+    Kolab::log('SYNC', 'Received Sync State Control', KOLAB_DEBUG);
-+    Kolab::log('SYNC', "Entry (".$entry->changetype."): ".$entry->dn(), KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'Received Sync State Control', KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', "Entry (".$entry->changetype."): ".$entry->dn(), KOLAB_DEBUG);
 +  } elsif($controls[0]->type eq LDAP_CONTROL_SYNC_DONE) {
-+    Kolab::log('SYNC', 'Received Sync Done Control', KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'Received Sync Done Control', KOLAB_DEBUG);
 +    my $asn_syncDoneValue = $asn->find('syncDoneValue');
 +    my $out = $asn_syncDoneValue->decode($controls[0]->value);
 +	  #we have a new cookie
 +	  if(defined($out->{cookie}) and not $out->{cookie} eq '' and not $out->{cookie} eq $cookie) {
 +		  $cookie = $out->{cookie};
-+		  Kolab::log('SYNC', "New cookie: $cookie", KOLAB_DEBUG);
-+      Kolab::log('SYNC', "Calling Kolab::LDAP::sync", KOLAB_DEBUG);
++		  Kolab::log('SYNCREPL', "New cookie: $cookie", KOLAB_DEBUG);
++      Kolab::log('SYNCREPL', "Calling Kolab::LDAP::sync", KOLAB_DEBUG);
 +      Kolab::LDAP::sync;
 +      system($Kolab::config{'kolabconf_script'}) == 0 || Kolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
-+      Kolab::log('SYNC', "Finished Kolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
++      Kolab::log('SYNCREPL', "Finished Kolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
 +      sleep 1; # we get too many bogus change notifications!
 +	  } 
 +  } else {
-+    Kolab::log('SYNC', 'Received unknown control: '.$controls[0]->type, KOLAB_DEBUG);
++    Kolab::log('SYNCREPL', 'Received unknown control: '.$controls[0]->type, KOLAB_DEBUG);
 +  }
 +  return 0;
 +}
@@ -283,11 +283,11 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +
 +=head1 NAME
 +
-+Kolab::LDAP::Backend::sync - Perl extension for RFC 4533 compliant LDAP server backend
++Kolab::LDAP::Backend::syncrepl - Perl extension for RFC 4533 compliant LDAP server backend
 +
 +=head1 ABSTRACT
 +
-+  Kolab::LDAP::Backend::sync handles OpenLDAP backend to the kolab daemon.
++  Kolab::LDAP::Backend::syncrepl handles OpenLDAP backend to the kolab daemon.
 +
 +=head1 AUTHOR
 +
@@ -310,5 +310,20 @@ diff -urNad libkolab-perl-2.2~rc3-20080521~/lib/Kolab/LDAP/Backend/sync.pm libko
 +
 +You can view the  GNU General Public License, online, at the GNU
 +Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
++
++=head1 NOTES
++We use refreshOnly mode as refreshAndPersist mode uses LDAP Intermediate
++Response Messages [RFC4511] that are not supported by current Net::LDAP.
++
++However (quoting from RFC, page 21):
++
++   The server SHOULD transfer a new cookie frequently to avoid having to
++   transfer information already provided to the client.  Even where DIT
++   changes do not cause content synchronization changes to be
++   transferred, it may be advantageous to provide a new cookie using a
++   Sync Info Message.  However, the server SHOULD avoid overloading the
++   client or network with Sync Info Messages.
++
++
 +
 +=cut

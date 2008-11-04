@@ -2,8 +2,8 @@ Source: libkolab-perl
 Section: perl
 Priority: extra
 Maintainer: Debian Kolab Maintainers <pkg-kolab-devel@lists.alioth.debian.org>
-Uploaders: Noèl Köthe <noel@debian.org>, Steffen Joeris <white@debian.org>, Peter Eisentraut <petere@debian.org>, Mathieu Parent <math.parent@gmail.com>
-Build-Depends: debhelper (>= 4), dpatch
+Uploaders: Noèl Köthe <noel@debian.org>, Steffen Joeris <white@debian.org>, Mathieu Parent <math.parent@gmail.com>
+Build-Depends: debhelper (>= 4), quilt (>= 0.40)
 Build-Depends-Indep: libnet-ldap-perl
 Standards-Version: 3.8.0
 Homepage: http://www.kolab.org/
@@ -12,7 +12,7 @@ Vcs-Svn: svn://svn.debian.org/pkg-kolab/libkolab-perl/trunk/
 
 Package: libkolab-perl
 Architecture: all
-Depends: ${perl:Depends}, libconvert-asn1-perl, libmail-imapclient-perl, libmime-tools-perl, libnet-ldap-perl, liburi-perl, kolab-libcyrus-imap-perl
+Depends: ${perl:Depends}, libconvert-asn1-perl, libmail-imapclient-perl, libmime-tools-perl, libnet-ldap-perl (>= 1:0.39-1), liburi-perl, kolab-libcyrus-imap-perl
 Description: Perl modules for Kolab
  Kolab is a secure, scalable, and reliable groupware server.  It consists
  of a number of well-known and proven components for the standard tasks

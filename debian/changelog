@@ -1,3 +1,15 @@
+libkolab-perl (1:2.2.0-2) unstable; urgency=medium
+
+  * Setting urgency as medium as previous upload was missing syncrepl LDAP
+    backend
+  * debian/rules: enabling patches to enable syncrepl LDAP backend
+  * renamed sync LDAP backend to syncrepl to match upstream 
+  * debian/control: added versioned dependency on libnet-ldap-perl as needed
+    by the syncrepl LDAP backend 
+  * switch from dpatch to quilt
+
+ -- Mathieu Parent <math.parent@gmail.com>  Wed, 05 Nov 2008 01:18:39 +0200
+
 libkolab-perl (1:2.2.0-1) unstable; urgency=low
 
   [ Mathieu Parent ]
