@@ -1,3 +1,9 @@
+libkolab-perl (1:2.2.0-3) unstable; urgency=low
+
+  * update to current syncrepl patch
+
+ -- Mathieu Parent <math.parent@gmail.com>  Fri, 12 Dec 2008 20:48:44 +0100
+
 libkolab-perl (1:2.2.0-2) unstable; urgency=medium
 
   * Setting urgency as medium as previous upload was missing syncrepl LDAP
