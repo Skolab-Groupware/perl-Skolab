@@ -1,0 +1,87 @@
+Goal: kolab_bootstrap debian specificic stuff
+
+Author: Noèl Köthe <noel@debian.org>
+
+Upstream status: Parts can be included
+
+Index: b/sbin/kolab_bootstrap.in
+===================================================================
+--- a/sbin/kolab_bootstrap.in
++++ b/sbin/kolab_bootstrap.in
+@@ -74,7 +74,7 @@
+     print ("Error: Found $name running on Port $port\n");
+     print ("Check your installation!\n");
+     print ("You must stop the service $name before running Kolab\n");
+-    print ("You may try to execute \"$Kolab::config{'KOLABRC'} rc all stop\" initially\n");
++    print ("You may try to execute \"/etc/init.d/\$DAEMON stop\" initially\n");
+     exit 1;
+   }
+ }
+@@ -186,7 +186,7 @@
+ 
+ print ("Excellent all required Ports are available!\n");
+ 
+-system("$Kolab::config{'sbindir'}/slapcat >/dev/null 2>&1");
++system("su  --shell /bin/sh --command $Kolab::config{'sbindir'}/slapcat >/dev/null 2>&1");
+ if ($?==0) {
+   print ("\nFound existing configuration\n");
+   print "\nBootstrapping Kolab will overwrite old configuration\n";
+@@ -285,6 +285,18 @@
+   print "Proceeding with master server setup\n\n";
+ }
+ 
++# enable saslauthd by default
++copy("/etc/default/saslauthd", "/etc/default/saslauthd.orig") || die "could not read /etc/default/saslauthd.orig";
++my $saslauthd_orig = IO::File->new("/etc/default/saslauthd.orig", "r") || die "could not read /etc/default/saslauthd.orig";
++my $saslauthd = IO::File->new("/etc/default/saslauthd", "w") || die "could not read /etc/default/saslauthd";
++foreach (<$saslauthd_orig>) {
++  s/^(# )?START=.*$/START=yes/g;
++  s/^MECHANISMS="pam"/MECHANISMS="ldap"/g;
++      print $saslauthd $_;
++}
++undef $saslauthd;
++undef $saslauthd_orig;
++
+ if ( $is_master eq "true" ) {
+   ##### Master server setup
+   getopt('f');
+@@ -373,6 +385,9 @@
+     }
+   };
+ 
++  if (! -e "/etc/postfix/sasl/") {
++    mkdir( "/etc/postfix/sasl/", 0750) || die "cannot mkdir : $!";
++  }
+   my $confname = "$Kolab::config{'sasl_smtpconffile'}";
+   copy("@CONFIG_DIR@/templates/smtpd.conf.template", $confname) || die "could not write to $confname";
+ 
+@@ -406,12 +421,15 @@
+       Kolab::Conf::bootstrapConfig();
+       $Kolab::config{"bootstrap_config"} = 'false';
+ 
++      #ldap server should access to certificate key
++      system("adduser --quiet $Kolab::config{'ldapserver_rusr'} $Kolab::config{'pki_grp'}");
++
+       # now we must startup slapd
+       print "temporarily starting slapd\n";
+       $ldap_uri = "ldap://127.0.0.1:389/";
+       # ensure that the database has correct permissions
+       system("chown $Kolab::config{'ldapserver_rusr'}:$Kolab::config{'ldapserver_grp'} $Kolab::config{'ldapserver_dir'}/*");
+-      (system("$Kolab::config{'libexecdir'}/openldap/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
++      (system("/usr/sbin/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
+       print ("Waiting for OpenLDAP to start\n");
+       sleep 10;
+ 
+@@ -836,8 +854,11 @@
+   chmod 0600, $kolab_config;
+ }
+ 
++#run postfix newaliases
++kolab_system("/usr/bin/newaliases");
++
+ #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
+ print "kolab is now ready to run!\n";
+-print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
++print "please restart all the daemons'\n";
+ print ("Use login=manager and passwd=$bind_pw when you log into\n");
+ print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");

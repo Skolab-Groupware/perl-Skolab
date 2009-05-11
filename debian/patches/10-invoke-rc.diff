@@ -1,0 +1,53 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 30-invoke-rc.dpatch by  <math.parent@gmail.com>
+##
+## DP: Debian specific invocation of services
+
+@DPATCH@
+diff -urNad kolabconf-2.2.0~/lib/Kolab/Conf.pm kolabconf-2.2.0/lib/Kolab/Conf.pm
+--- kolabconf-2.2.0~/lib/Kolab/Conf.pm	2008-10-14 19:50:45.000000000 +0200
++++ kolabconf-2.2.0/lib/Kolab/Conf.pm	2008-10-14 19:51:43.000000000 +0200
+@@ -724,38 +724,28 @@
+ {
+     if ($haschanged{'slapd'}) {
+         &Kolab::log('K', 'Restarting OpenLDAP...');
+-        system("$Kolab::config{'KOLABRC'} rc openldap restart &");
++        system("invoke-rc.d slapd restart &");
+     }
+ 
+     if ($haschanged{'saslauthd'}) {
+         &Kolab::log('K', 'Restarting SASLAuthd...');
+-        system("$Kolab::config{'KOLABRC'} rc sasl stop; sleep 1; $Kolab::config{sbindir}/saslauthd -a ldap -n 5");
++        system("invoke-rc.d saslauthd restart");
+     }
+ 
+     if ($haschanged{'apache'}) {
+         &Kolab::log('K', 'Reloading Apache...');
+-        system("$Kolab::config{sbindir}/apachectl graceful");
++        system("invoke-rc.d apache2 graceful");
+     }
+ 
+     if ($haschanged{'postfix'}) {
+         &Kolab::log('K', 'Reloading Postfix...');
+-        system("$Kolab::config{sbindir}/postfix reload");
++        system("invoke-rc.d postfix reload");
+     }
+ 
+     if ($haschanged{'imapd'}) {
+         &Kolab::log('K', 'Restarting imapd...');
+ 	# Would it be enough with a reload here? /steffen
+-        system("$Kolab::config{'KOLABRC'} rc imapd restart");
+-    }
+-
+-    if ($haschanged{'amavisd'}) {
+-        &Kolab::log('K', 'Restarting amavisd...');
+-        system("$Kolab::config{'KOLABRC'} rc amavisd restart");
+-    }
+-
+-    if ($haschanged{'clamav'}) {
+-        &Kolab::log('K', 'Restarting clamav...');
+-        system("$Kolab::config{'KOLABRC'} rc clamav restart");
++        system("invoke-rc.d kolab-cyrus restart");
+     }
+ 
+     %Kolab::Conf::haschanged = ();

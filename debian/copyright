@@ -1,7 +1,10 @@
-This package was debianized by
-Noèl Köthe <noel@debian.org> on Fri, 16 Dec 2005 15:34:20 +0100.
+This package was debianized by:
 
-It was downloaded from <http://kolab.org/>
+    Noèl Köthe <noel@debian.org> on Fri, 16 Dec 2005 15:34:20 +0100
+
+It was downloaded from:
+
+    <http://kolab.org/>
 
 Copyright holder (taken from AUTHORS):
 
@@ -41,5 +44,6 @@ License:
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-On Debian systems, the complete text of the GNU General Public License can be
-found in '/usr/share/common-licenses/GPL'.
+On Debian systems, the complete text of the GNU General Public License
+version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+

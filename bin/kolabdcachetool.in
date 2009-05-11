@@ -1,0 +1,93 @@
+#!perl
+
+=head1 NAME
+
+kolabdcachetool - Kolab cache tool
+
+=head1 SYNOPSIS
+
+B<kolabdcachetool> I<CACHE> I<FUNCTION>
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item I<CACHE>
+
+one of `mbox' or `gyard' (i.e. the cache to operate on)
+
+=item I<FUNCTION>
+
+one of `list', `delete' or `flush' (i.e. the function to perform on CACHE)
+
+=back
+
+=head1 COPYRIGHT AND AUTHORS
+
+Stuart Bingë and others (see AUTHORS file)
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+use strict;
+use Getopt::Long;
+use DB_File;
+use POSIX qw(strftime);
+use Kolab;
+
+my $progname = `basename $0`;
+chomp($progname);
+
+sub usage
+{
+    print "Usage: $progname CACHE FUNCTION
+  where CACHE is one of `mbox' or `gyard' (i.e. the cache to operate
+  on) and FUNCION is one of `list', `delete' or `flush' (i.e. the
+  function to perform on CACHE)\n";
+    exit(1);
+    1;
+}
+
+my $cache = shift || usage;
+my $func = shift || usage;
+my (%db, %db2, %sorted);
+
+usage if ($func !~ /list/i && $func !~ /del/i && $func !~ /flush/i);
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+if ($cache =~ /mbox/i) {
+    dbmopen(%db, $Kolab::config{'kolab_mailboxuiddb'}, 0666)
+        || die "Unable to open mail uid cache";
+} elsif ($cache =~ /gyard/i) {
+    dbmopen(%db, $Kolab::config{'graveyard_uidcache'}, 0666)
+        || die "Unable to open graveyard uid cache";
+
+    dbmopen(%db2, $Kolab::config{'graveyard_tscache'}, 0666)
+        || die "Unable to open graveyard timestamp cache";
+} else { usage; }
+
+my ($guid, $ts);
+foreach $guid (keys %db) {
+    #$sorted{
+    $ts = "";
+    $ts = ", deleted " . strftime("%F %T", localtime($db2{$guid})) if exists($db2{$guid});
+    print "GUID: `$guid', mailbox: `" . $db{$guid} . "'$ts\n";
+}
+
+dbmclose(%db);
+dbmclose(%db2);

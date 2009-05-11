@@ -1,3 +1,7 @@
 version=3
-opts="dversionmangle=s/~rc/.rc/,uversionmangle=s/-20\d{6}$//" \
-ftp://ftp.gwdg.de/pub/linux/kolab/server/release/kolab-server-(?:[\d.]+)/sources/perl-kolab-([\d.-]+).src.rpm debian debian/uupdate-wrapper
+# original URL for stable releases:
+http://files.kolab.org/server/release/kolab-server-(?:[\d.]+)/sources/perl-kolab-([\d.-]+).src.rpm debian debian/uupdate-wrapper
+# URL for development releases:
+#http://files.kolab.org/server/development-2.2/current/sources/perl-kolab-([\d\w.-]+).src.rpm  debian  debian/uupdate-wrapper
+# URL for beta releases:
+#http://files.kolab.org/server/beta/kolab-server-([\d\w.-]*)/sources/perl-kolab-([\d\w.-]*).src.rpm  debian  debian/uupdate-wrapper

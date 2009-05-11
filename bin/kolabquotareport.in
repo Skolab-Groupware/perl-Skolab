@@ -1,0 +1,134 @@
+#!perl
+
+=head1 NAME
+
+kolabquotareport - Kolab quota report tool
+
+=head1 SYNOPSIS
+
+B<kolabquotareport> [B<-d>]
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<-d>
+
+=back
+
+=head1 COPYRIGHT AND AUTHORS
+
+Copyright (c) 2004 Klarälvdalens Datakonsult AB
+
+Writen by Steffen Hansen <steffen@klaralvdalens-datakonsult.se>
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+## Local variables:
+## mode: perl
+## indent-tabs-mode: t
+## tab-width: 4
+## buffer-file-coding-system: utf-8
+## End:
+
+
+use strict;
+use warnings;
+use Getopt::Std;
+use IO::File;
+use DB_File;
+use Mail::Message;
+use Cyrus::IMAP::Admin;
+use Kolab;
+use Kolab::Util;
+use Kolab::LDAP;
+use vars qw($opt_d);
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+Kolab::LDAP::startup($Kolab::config{'kolab_statedir'});
+
+getopts('d');
+if ($opt_d) {
+    foreach my $key (sort keys %Kolab::config) {
+        print "$key : " . $Kolab::config{$key} . "\n";
+    }
+    exit 0;
+}
+
+my $warnmessage = '';
+my $quotawarnpct = $Kolab::config{'cyrus-quotawarn'};
+
+sub mailadmin {
+  my ( $mailbox, $used, $total, $pct ) = @_;
+  my $msg = $warnmessage;
+
+  my ($user) = ( $mailbox =~ /.*\/(.*)/ );
+  $msg =~ s/<user>/$user/;
+  $msg =~ s/<mailbox>/$mailbox/;
+  $msg =~ s/<percent>/$pct/;
+  $msg =~ s/<used>/$used/;
+  $msg =~ s/<total>/$total/;
+  my $mail = Mail::Message->build(  From => "MAILER-DAEMON",
+									To => $user,
+									Subject => "Quota warning",
+									data => $msg );
+  $mail->send();
+}
+
+sub createreport {
+  my ( $cyrus, $pattern, $ref, $warnpct ) = @_;
+  my @mailboxes = $cyrus->list($pattern, $ref);
+  my @report;
+  foreach my $mailbox (@mailboxes) {
+    my $name = $mailbox->[0];
+    my $attr = $mailbox->[1];
+    my $sep  = $mailbox->[2];
+    my %quota = $cyrus->quota($name);
+    if( $quota{'STORAGE'} ) {
+      my $used  = $quota{'STORAGE'}[0];
+      my $total = $quota{'STORAGE'}[1];
+      my $pct   = $used * 100 / $total;
+      if( $pct >= $warnpct ) {
+	print STDERR "$name over quota\n";
+	my ($user) = ( $name =~ /.*\/(.*)/ );	
+	push(@report, "$user\t".$used." kB\t".$total." kB\n");
+      }
+    }
+  }
+  return @report;
+}
+
+
+### Connect to Cyrus
+my $cyrus = Cyrus::IMAP::Admin->new($Kolab::config{'connect_addr'});
+$cyrus || die 'Unable to connect to local Cyrus admin interface\n';
+$cyrus->authenticate(
+					 'User'          => $Kolab::config{'cyrus_admin'},
+					 'Password'      => $Kolab::config{'cyrus_admin_pw'},
+					 'mechanisms'    => 'plaintext', )
+  || die("Unable to authenticate with Cyrus admin interface, Error = `" . $cyrus->error. "'");
+
+### Mail offending users
+my @report = createreport( $cyrus, 'user/*', '*', $quotawarnpct );
+if( scalar(@report) > 0 ) {
+  print STDOUT "User\tUsed\tTotal\n";
+  print STDOUT @report;
+}
+#print "\nSHARED FOLDERS:\n---------------\n";
+#kolablistquotas( $cyrus, 'user.*', '*', 80 );

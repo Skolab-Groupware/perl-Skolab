@@ -1,0 +1,186 @@
+#!perl
+
+=head1 NAME
+
+kolabd - Kolab daemon
+
+=head1 SYNOPSIS
+
+B<kolabd>
+
+=head1 COPYRIGHT AND AUTHORS
+
+Copyright (c) 2004  Klaraelvdalens Datakonsult AB
+
+Copyright (c) 2003  Code Fusion cc
+
+Writen by Stuart Bing?<s.binge@codefusion.co.za>
+
+Portions based on work by the following people:
+
+Copyright (c) 2003  Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
+
+Copyright (c) 2003  Martin Konold     <martin.konold@erfrakon.de>
+
+Copyright (c) 2003  Achim Frank       <achim.frank@erfrakon.de>
+
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+#
+#  Module prefixes in the logs:
+#    K: kolabd
+#    C: Config
+#    T: Templates
+#    L: LDAP
+#    Y: Cyrus
+#    B: Backend
+#    KC: kolabconf
+#    Anything else: the various backends
+#
+
+use strict;
+use Sys::Syslog;
+use IO::File;
+use Kolab;
+use Kolab::Util;
+use Kolab::LDAP;
+use Kolab::LDAP::Backend;
+use vars qw(%pids);
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+openlog('kolabd', 'cons, pid', ($Kolab::config{'syslog_facility'} || 'user'));
+
+# won't be needed now (i think)
+# my $prefix = $Kolab::config{'prefix'};
+
+my $pidfile = IO::File->new($Kolab::config{'kolab_pidfile'}, 'w+')
+    || die "Unable to open PID file `$Kolab::config{'kolab_pidfile'}";
+print $pidfile $$;
+undef $pidfile;
+
+sub sigInt
+{
+    Kolab::Util::superLog('Kolab is shutting down');
+
+    Kolab::log('K', 'SIGINT/SIGTERM detected, kill()ing children');
+
+    foreach my $pid (keys %pids) {
+        kill('INT', $pid);
+        waitpid($pid, 0);
+    }
+
+    Kolab::LDAP::shutdown;
+
+    Kolab::log('K', 'Exiting');
+    exit(0);
+}
+
+sub sigHup
+{
+    Kolab::log('K', 'Refreshing configuration');
+    foreach my $pid (keys %pids) {
+        kill('INT', $pid);
+        waitpid($pid, 0);
+    }
+    %pids = ();
+    Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+    Kolab::log('K', 'Synchronising');
+    Kolab::LDAP::sync;
+    Kolab::log('K', 'Reloading addressbook.peers');
+    Kolab::log('K', 'Finished refresh');
+    &run;
+}
+
+sub sigDie {
+  Kolab::log( 'K', $_[0], KOLAB_ERROR );
+}
+
+sub run
+{
+    my $pid;
+    my $finished = 0;
+    foreach my $backend (keys %Kolab::LDAP::Backend::backends) {
+        Kolab::log('K', "Forking `$backend' listener");
+        $pid = fork;
+        if (!defined($pid)) {
+	    Kolab::log('K', "Unable to fork `$backend' listener", KOLAB_ERROR);
+            exit(1);
+        }
+
+        if ($pid) {
+            $pids{$pid} = 1;
+            $finished++;
+            next;
+        }
+        Kolab::LDAP::Backend::run($backend);
+
+        Kolab::log('K', "`$backend' returned");
+	# exit with 0 status to avoid killing daemon
+	exit(0);
+    }
+
+    $SIG{'INT'} = \&sigInt;
+    $SIG{'TERM'} = \&sigInt;
+    $SIG{'HUP'} = \&sigHup;
+    $SIG{__DIE__} = \&sigDie;
+
+    Kolab::log('K', 'Listeners spawned, wait()ing');
+
+    while ($finished > 0) {
+        wait;
+        if ($?) {
+            Kolab::log('K', 'Abnormal child exit status encountered, aborting');
+            kill('INT', $$);
+        } else {
+            Kolab::log('K', 'Child terminated normally');
+        }
+    }
+}
+
+print 'kolabd - Kolab Backend Daemon
+
+  Copyright (c) 2004  Klaraelvdalens Datakonsult AB
+  Copyright (c) 2003  Code Fusion cc
+  Copyright (c) 2003  Tassilo Erlewein, Martin Konold, Achim Frank
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+';
+
+Kolab::Util::superLog('Kolab is starting up');
+
+eval {
+  Kolab::LDAP::startup($Kolab::config{'kolab_statedir'});
+
+  Kolab::log('K', 'Loading backends');
+  Kolab::LDAP::Backend::load;
+  Kolab::LDAP::Backend::load('user');
+  Kolab::LDAP::Backend::load('sf');
+  
+  Kolab::log('K', 'Performing backend startup');
+  &Kolab::LDAP::Backend::startup;
+  
+  Kolab::log('K', 'Synchronising');
+  Kolab::LDAP::sync;
+  
+  Kolab::log('K', 'Synchronisation complete, starting up daemon');
+  run;
+}; Kolab::log( 'K', $@, KOLAB_ERROR ) if $@;
+

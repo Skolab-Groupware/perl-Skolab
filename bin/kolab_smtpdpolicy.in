@@ -1,0 +1,443 @@
+#!perl
+
+=head1 NAME
+
+kolab_smtpdpolicy - Kolab SMTP policy
+
+=head1 SYNOPSIS
+
+B<kolab_smtpdpolicy> [B<-v>]
+
+=head1 DESCRIPTION
+
+kolabdelegated Postfix SMTPD policy server for Kolab. This server implements
+various policies for Kolab:
+
+1) Only authenticated users can use sender <username>@$domain
+
+2) Some distribution lists are only available to authenticated users
+
+Logging is sent to syslogd.
+
+How it works: each time a Postfix SMTP server process is started
+it connects to the policy service socket, and Postfix runs one
+instance of this PERL script.  By default, a Postfix SMTP server
+process terminates after 100 seconds of idle time, or after serving
+100 clients. Thus, the cost of starting this PERL script is smoothed
+out over time.
+
+To run this from /etc/postfix/master.cf:
+
+    policy  unix  -       n       n       -       -       spawn
+      user=kolab-n argv=/usr/bin/perl /usr/libexec/postfix/kolab_smtpdpolicy
+
+To use this from Postfix SMTPD, use in /etc/postfix/main.cf:
+
+    smtpd_recipient_restrictions =
+	...
+	reject_unauth_destination
+	check_policy_service unix:private/policy
+	...
+    smtpd_sender_restrictions =
+	...
+	check_policy_service unix:private/policy
+	...
+
+NOTE: specify check_policy_service AFTER reject_unauth_destination
+or else your system can become an open relay.
+
+To test this script by hand, execute kolab_smtpdpolicy, optionally
+with the option -v to print debugging output.
+Example for OpenPKG based installations:
+
+    # su - kolab
+    $ /kolab/etc/kolab/kolab_smtpdpolicy -v
+
+Each query is a bunch of attributes. Order does not matter, and
+the demo script uses only a few of all the attributes shown below:
+
+    request=smtpd_access_policy
+    protocol_state=RCPT
+    protocol_name=SMTP
+    helo_name=some.domain.tld
+    queue_id=8045F2AB23
+    sender=foo@bar.tld
+    recipient=bar@foo.tld
+    client_address=1.2.3.4
+    client_name=another.domain.tld
+    instance=123.456.7
+    sasl_method=plain
+    sasl_username=you
+    sasl_sender=
+    size=12345
+    [empty line]
+
+The policy server script will answer in the same style, with an
+attribute list followed by a empty line:
+
+    action=DUNNO
+    [empty line]
+
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<-v>
+
+=back
+
+=head1 COPYRIGHT AND AUTHORS
+
+See AUTHORS file
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+##  $Revision: 1.2 $
+
+use strict;
+use Fcntl;
+use Sys::Syslog qw(:DEFAULT setlogsock);
+use URI;
+use Net::LDAP qw(LDAP_NO_SUCH_OBJECT);
+use Net::LDAP::Entry;
+use Net::hostent;
+use Socket;
+use Kolab::Util;
+
+
+#
+# Syslogging options for verbose mode and for fatal errors.
+# NOTE: comment out the $syslog_socktype line if syslogging does not
+# work on your system.
+#
+my %conf;
+my %attr;
+my $ldap;
+my $verbose;
+my $syslog_socktype = 'unix'; # inet, unix, stream, console
+my $syslog_facility="mail";
+my $syslog_options="pid";
+my $syslog_priority="info";
+
+my $ldap_max_tries = 5;
+
+#
+# Read options from config-file
+#
+my $conf_allowunauth = 0;
+
+%conf = readConfig( %conf, "@CONFIG_DIR@/kolab_smtpdpolicy.conf" );
+my $conf_ldapuri = $conf{'ldap_uri'};
+my $conf_basedn  = $conf{'basedn'};
+my $conf_binddn   = $conf{'binddn'};
+my $conf_bindpw  = $conf{'bindpw'};
+my @conf_domain  = $conf{'domain'};
+$conf_allowunauth = 1 if( $conf{'allow_unauth'} );
+my @conf_permithosts = split /\s*,\s*/, $conf{'permithosts'};
+
+sub mylog {
+  my $prio = shift;
+  my $fmt = shift;
+
+  my $text = sprintf( $fmt, @_ );
+
+  #Kolab::log( 'P', $text );
+  syslog $prio, $text;
+  print "$text\n";
+}
+
+sub contains {
+  my $needle = lc(shift);
+  my $haystack = shift;
+  map { return 1 if $needle eq lc($_) } @$haystack;
+  return 0;
+}
+
+sub ldap_connect {
+    my $ldapuri = URI->new($conf_ldapuri) || fatal_exit("error: could not parse given uri $conf_ldapuri");
+    $ldap = Net::LDAP->new($conf_ldapuri) || fatal_exit("could not connect ldap server $conf_ldapuri: $@");
+    if ($ldap) {
+	if( $conf_binddn ) {
+	    $ldap->bind( $conf_binddn, password => $conf_bindpw ) 
+	      || fatal_exit( "could not bind as $conf_binddn: $@" );
+	} else {
+	    $ldap->bind || fatal_exit("could not bind: $@");
+	}
+    } else {
+	fatal_exit( "Could not contact LDAP server" );
+    }
+}
+
+sub lookup_uid {
+  my $tries = 0;
+  my $uid = shift;
+ AGAIN:
+  my $mesg = $ldap->search( base=> $conf_basedn,
+			    scope=> 'sub',
+			    filter=> "(&(objectClass=kolabinetorgperson)(|(mail=$uid)(uid=$uid)))",
+			    attrs => [ 'uid'] );
+  if( !$mesg->code && $mesg->count() > 0 ) {
+      mylog($syslog_priority, "LDAP search returned ".$mesg->count()." objects") if $verbose;
+      my $ldapobject = $mesg->entry(0);
+      $uid = lc($ldapobject->get_value('uid'));
+      mylog($syslog_priority, "Translated username to $uid") if $verbose;
+  } elsif( $mesg->code && $mesg->code != LDAP_NO_SUCH_OBJECT ) {
+      if( $tries++ <= $ldap_max_tries ) {
+	  ldap_connect;
+	  goto AGAIN;
+      } else {
+	  mylog($syslog_priority, "LDAP Connection error during LOOKUPUID: ".
+		$mesg->error." after $ldap_max_tries attempts to reconnect. Giving up!" );
+	  die( "LDAP Error looking up uid: ".$mesg->error );
+      }
+  }
+  return $uid;
+}
+
+sub check_permithosts {
+  my $client_addr = shift;
+  for my $host (@conf_permithosts) {
+    my $h;
+    unless ($h = gethost($host)) {
+      mylog($syslog_priority,"No such host $host\n");
+      next;
+    }
+    for my $addr ( @{$h->addr_list} ) {
+      return 1 if inet_ntoa($addr) eq $client_addr;
+    }
+  }
+  return undef;
+}
+
+sub lookup_sender_uids {
+  my $sender = shift;
+  my $tries = 0;
+  my @result;
+ AGAIN:
+  my $mesg = $ldap->search( base=> $conf_basedn,
+			    scope=> 'sub',
+			    filter=> "(&(objectClass=kolabinetorgperson)(|(mail=$sender)(alias=$sender)))",
+			    attrs => [ 'uid', 'kolabDelegate' ]);
+  if( !$mesg->code && $mesg->count() > 0 ) {
+    mylog($syslog_priority, "LDAP search returned ".$mesg->count()." objects") if $verbose;
+    foreach my $entry ( $mesg->entries ) {
+      mylog($syslog_priority, lc($entry->get_value('uid')." is the uid of ".$sender)) if $verbose;
+      push @result, lc($entry->get_value('uid'));
+      my $delegate;
+      for $delegate ($entry->get_value('kolabDelegate')) {
+	$delegate = lookup_uid($delegate);
+        mylog($syslog_priority, lc($delegate)." is a delegate of ".$sender) if $verbose;
+     	push @result, lc($delegate);
+      }
+    }
+  } elsif( $mesg->code && $mesg->code != LDAP_NO_SUCH_OBJECT ) {
+    if( $tries++ <= $ldap_max_tries ) {
+      ldap_connect;
+      goto AGAIN;
+    } else {
+      die( "LDAP Error looking up uid for sender: ".$mesg->error );
+    }
+  }
+  return @result;
+};
+
+sub check_dist_list {
+  my $username = shift;
+  my $recipient = shift;
+  my $tries = 0;
+ AGAIN:
+  if( !$username ) {
+    my $mesg = $ldap->search( base=> "cn=internal,".$conf_basedn,
+			   scope=> 'one', filter=> "(&(mail=$recipient)(objectClass=kolabgroupofnames))");
+    if( !$mesg->code && $mesg->count() > 0 ) {
+      # Ups, recipient is a restricted list, reject
+      mylog( $syslog_priority, "Attempt from $username to access restricted list $recipient" ) if $verbose;	
+      return undef;
+    } elsif( $mesg->code && $mesg->code != LDAP_NO_SUCH_OBJECT && $tries++ <= $ldap_max_tries ) {
+      mylog($syslog_priority, "LDAP Connection error during CHECKDISTLIST: ".$mesg->error.", trying to reconnect" );
+      ldap_connect;
+      goto AGAIN;
+    } elsif( $mesg->code ) {
+      mylog( $syslog_priority, "LDAP Error during CHECKDISTLIST: ".$mesg->error ) if $verbose;
+      # Just fall through and accept the message in case there was an LDAP problem.
+    }
+  }
+  return 1;
+}
+
+#
+# SMTPD access policy routine. The result is an action just like
+# it would be specified on the right-hand side of a Postfix access
+# table.  Request attributes are available via the %attr hash.
+#
+sub smtpd_access_policy {
+
+  # Get relevant attributes
+  my $sender      = lc($attr{'sender'});
+  my $recipient   = lc($attr{'recipient'});
+  my $username    = lc($attr{'sasl_username'});
+  my $client_addr = lc($attr{'client_address'});
+
+  mylog($syslog_priority, "Checking sender=\"$sender\", recipient=\"$recipient\", username=\"$username\", domains=".join(',',@conf_domain)." permithosts=".join(',',@conf_permithosts).", conf_allowunauth=$conf_allowunauth") if $verbose;
+
+  # First check if the sender is a privileged kolabhost
+  # Kolab hosts use un-authenticated smtp currently
+  # We also just accept the email here is conf_allowunauth is set
+  return "DUNNO" if( !$username && ( $conf_allowunauth || check_permithosts($client_addr) ) );
+
+  # Reject anything else from unauthenticated users
+  # if conf_allowunauth is false
+  return "REJECT Access denied" if( !$username && !$conf_allowunauth );
+
+  eval{ $username = lookup_uid($username) }; return "DEFER_IF_PERMIT $@" if $@;
+
+  # See if sender is owned by someone
+  my @uids;
+  eval { @uids = lookup_sender_uids($sender) }; return "DEFER_IF_PERMIT $@" if $@;
+  if( scalar(@uids) > 0 ) {
+    if( contains( $username, \@uids ) ) {
+      mylog($syslog_priority, "$username using $sender is OK, accepting") if $verbose;
+      return "DUNNO";
+    } else {
+      mylog($syslog_priority, "$username trying to use $sender is NOT OK, rejecting") if $verbose;
+      return "REJECT Invalid sender";
+    }
+  } else {
+    # OK, here things get fishy! The above check
+    # ensures that nobody is using someone else's
+    # email address. That is perfectly valid, but
+    # people want tighter restrictions and disallow
+    # use of _any_ (real or imagined) email address
+    # that the user is not explicitly allowed to use.
+    # Do _have_ to allow the empty sender though,
+    # otherwise hell breaks loose...
+    if( $username ne '' && $sender ne '' ) {
+      mylog($syslog_priority, "$username trying to use $sender is NOT OK, rejecting") if $verbose;
+      return "REJECT Invalid sender";
+    }
+  }
+
+  # Check for valid access to restricted distribution lists
+  return "REJECT Access denied" unless check_dist_list($username, $recipient);
+
+  # The result can be any action that is allowed in a Postfix access(5) map.
+  #
+  # To label mail, return ``PREPEND'' headername: headertext
+  #
+  # In case of success, return ``DUNNO'' instead of ``OK'' so that the
+  # check_policy_service restriction can be followed by other restrictions.
+  #
+  # In case of failure, specify ``DEFER_IF_PERMIT optional text...''
+  # so that mail can still be blocked by other access restrictions.
+
+  mylog($syslog_priority, "sender $sender, recipient $recipient seems ok") if $verbose;
+
+  return "DUNNO";
+}
+
+#
+# Log an error and abort.
+#
+sub fatal_exit {
+    my($first) = shift(@_);
+    mylog("err", "fatal: $first", @_);
+    print STDOUT "action=DEFER_IF_PERMIT $first\n\n";
+    exit 1;
+}
+
+#
+# Signal 11 means that we have crashed perl
+#
+sub sigsegv_handler {
+    fatal_exit "Caught signal 11;";
+}
+
+$SIG{'SEGV'} = 'sigsegv_handler';
+
+#
+# This process runs as a daemon, so it can't log to a terminal. Use
+# syslog so that people can actually see our messages.
+#
+setlogsock $syslog_socktype;
+openlog $0, $syslog_options, $syslog_facility;
+
+#
+# Allow user to override on commandline
+#
+while (my $option = shift(@ARGV)) {
+  if ($option eq "-v") {
+    $verbose = 1;
+  } elsif ($option eq '-ldap') {
+    $conf_ldapuri = shift(@ARGV);
+  } elsif ($option eq '-basedn') {
+    $conf_basedn = shift(@ARGV);
+  } elsif ($option eq '-binddn' ) {
+    $conf_binddn = shift(@ARGV);
+  } elsif ($option eq '-bindpw' ) {
+    $conf_bindpw = shift(@ARGV);
+  } elsif ($option eq '-domain') {
+    push @conf_domain, shift(@ARGV);
+  } elsif ($option eq '-allow-unauth') {
+    $conf_allowunauth = 1;
+  } elsif ($option eq '-permithosts') {
+    @conf_permithosts = ();
+    for my $h (split /\s*,\s*/, shift(@ARGV)) {
+      push @conf_permithosts, $h;
+    }
+  } else {
+    mylog( $syslog_priority, "Invalid option: %s. Usage: %s [-v] -ldap <uri> -basedn <base_dn> [-binddn <bind_dn> -bindpw <bind_pw>] [-domain <domain>] [-permithosts <host,host,...>]",
+	   $option, $0);
+    exit 1;
+  }
+}
+
+#
+# Unbuffer standard output.
+#
+select((select(STDOUT), $| = 1)[0]);
+
+if( $verbose ) {
+  mylog( $syslog_priority, "ldap=$conf_ldapuri, basedn=$conf_basedn, binddn=$conf_binddn");
+}
+
+ldap_connect;
+
+#
+# Receive a bunch of attributes, evaluate the policy, send the result.
+#
+while (<STDIN>) {
+    if (/([^=]+)=(.*)\n/) {
+	$attr{substr($1, 0, 512)} = substr($2, 0, 512);
+    } elsif ($_ eq "\n") {
+	if ($verbose) {
+	    for (keys %attr) {
+		mylog( $syslog_priority, "Attribute: %s=%s", $_, $attr{$_});
+	    }
+	}
+	fatal_exit("unrecognized request type: '".$attr{'request'}."'")
+	    unless $attr{'request'} eq "smtpd_access_policy";
+	my $action = smtpd_access_policy();
+	mylog( $syslog_priority, "Action: %s", $action) if $verbose;
+	print STDOUT "action=$action\n\n";
+	%attr = ();
+    } else {
+	chop;
+	mylog( $syslog_priority, "warning: ignoring garbage: %.100s", $_);
+    }
+}

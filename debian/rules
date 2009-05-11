@@ -4,7 +4,7 @@ include /usr/share/quilt/quilt.make
 
 build: patch
 	dh_testdir
-	perl Makefile.PL
+	perl Makefile.PL --config=/etc/kolab --bin=/usr/bin --sbin=/usr/sbin --etc=/etc/kolab
 	$(MAKE)
 	touch build-stamp
 
@@ -19,9 +19,15 @@ clean-patched:
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k 
+	dh_prep
 	dh_installdirs
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/libkolab-perl
+	# Man pages
+	mkdir -p $(CURDIR)/debian/libkolab-perl/usr/share/man/man1
+	#make install creates empty manpages, delete them
+	find $(CURDIR)/debian/libkolab-perl/usr/share/man/man1/ -size 0 -exec rm '{}' \;
+	#remove empty directories
+	find $(CURDIR)/debian/libkolab-perl -type d -empty -delete
 
 binary-indep: build install
 	dh_testdir

@@ -1,3 +1,51 @@
+libkolab-perl (1:2.2.1-20090331-1) unstable; urgency=low
+
+  * Upload to unstable
+  * New release 2.2.1 (20090331)
+  * debian/watch: use the release url
+  * debian/svn-deblayout: updated paths
+  * debian/watch: 
+    - Use main download server files.kolab.org
+    - No more mangle
+  * debian/uupdate-wrapper: Updated
+
+ -- Mathieu Parent <math.parent@gmail.com>  Mon, 11 May 2009 19:08:47 +0200
+
+libkolab-perl (1:2.2.1-20090304-1) experimental; urgency=low
+
+  * New beta release 2.2.1-beta1 (20081212)
+    + Integrated patch: 50-sync-ldap-backend
+    + Moved patch: 30-bootstrap from kolabd
+      - updated
+    + Moved patch: 40-disable-amavis from kolabd
+    + kolabconf package integrated:
+      - added versioned conflicts 
+      - removed 10-kolabconf-perl-path.diff
+      - imported 30-invoke-rc.diff (now 10-invoke-rc)
+      - removed 85-slapd-syncrepl-24.diff, integrated upstream
+      - removed 95-runonchange.diff, integrated upstream
+    + added conflict with previous kolabd as binaries are now here
+  * New rc release 2.2.1-rc1 (2.2.1-20090304). Integrated patches:
+    + create manpages for bin/* and sbin/*
+      - 70-manpages.diff: add POD manpages to bin/* and sbin/* (issue/3355)
+      - 71-install-sbin-manpages.diff: install sbin/* manpages (issue/3363)
+    + 90-slapd-conf-optional: slapd.replicas.template and slapd.access.template
+      can be absent (kolab/issue3321)
+  * debian/rules:
+    + remove empty manpages
+    + makefile parameters 
+  * debian/copyright: refers to versionned license version
+  * debian/uupdate-wrapper: updated to keep upsteam version
+  * debian/watch:
+    - include url for dev, beta and release
+    - use the beta url
+  * updated Standards-Version to 3.8.1: no changes
+  * debian/compat: switching to compatibility-version 7:
+    - build-depends on debhelper 7
+    - replace 'dh_clean -k' by 'dh_prep'
+
+ -- Mathieu Parent <math.parent@gmail.com>  Fri, 27 Mar 2009 20:12:03 +0100
+
 libkolab-perl (1:2.2.0-3) unstable; urgency=low
 
   * update to current syncrepl patch

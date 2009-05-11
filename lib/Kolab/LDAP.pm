@@ -22,13 +22,14 @@ package Kolab::LDAP;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.6 $
+##  $Revision: 1.11.2.2 $
 
 use 5.008;
 use strict;
 use warnings;
 use UNIVERSAL;
 use Time::Local;
+use Net::Domain qw(hostfqdn);
 use Net::LDAP qw( LDAP_SUCCESS LDAP_PROTOCOL_ERROR LDAP_REFERRAL );
 use Net::LDAPS;
 use Net::LDAP::Util;
@@ -95,7 +96,7 @@ sub uidcacheOpen
     Kolab::log('L', 'Opening mailbox uid cache DB');
 
     my %uid_db;
-    if (!dbmopen(%uid_db, "$db_statedir/mailbox-uidcache.db", 0666)) {
+    if (!dbmopen(%uid_db, $Kolab::config{'kolab_mailboxuiddb'}, 0666)) {
         Kolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
         exit(1);
     }
@@ -151,13 +152,13 @@ sub graveyardOpen
     Kolab::log('L', 'Opening graveyard uid/timestamp cache DB');
 
     my %gyard_db;
-    if (!dbmopen(%gyard_db, "$db_statedir/graveyard-uidcache.db", 0666)) {
+    if (!dbmopen(%gyard_db, $Kolab::config{'graveyard_uidcache'}, 0666)) {
         Kolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
         exit(1);
     }
 
     my %gyard_ts_db;
-    if (!dbmopen(%gyard_ts_db, "$db_statedir/graveyard-tscache.db", 0666)) {
+    if (!dbmopen(%gyard_ts_db, $Kolab::config{'graveyard_tscache'}, 0666)) {
         Kolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
         exit(1);
     }
@@ -451,34 +452,51 @@ sub createObject
     return if( $objuidfield eq 'mail' && !$object->get_value('uid') );
 
     my $kolabhomeserver = lc($object->get_value('kolabhomeserver'));
+    my $kolabimapserver = lc($object->get_value('kolabimapserver'));
     my $islocal = 1;
     my $del = $object->get_value($Kolab::config{$p . '_field_deleted'}, asref => 1);
     if( ref($del) eq 'ARRAY' && @$del > 0 ) {
-      Kolab::log('L', "Kolab::LDAP::createObject() skipping object ".lc($object->get_value($objuidfield))
-		 ." because it is deleted", KOLAB_DEBUG);
-      return;
+        Kolab::log('L', "Kolab::LDAP::createObject() skipping object ".lc($object->get_value($objuidfield))
+            ." because it is deleted", KOLAB_DEBUG);
+        return;
     }
-    if( $kolabhomeserver && $kolabhomeserver ne lc($Kolab::config{'fqdnhostname'}) ) {
-      if( $p eq 'sf' ) {
-	# Dont create shared folders on other hosts than it's kolabhomeserver
-	Kolab::log('L', "Kolab::LDAP::createObject() skipping shared folder for other server $kolabhomeserver", KOLAB_DEBUG);
-	return;
-      }
-      Kolab::log('L', "Kolab::LDAP::createObject() for other server $kolabhomeserver. TODO: Create referral or something, for now we just create ", KOLAB_DEBUG);
-      $islocal = 0;
+    if( ($kolabhomeserver && $kolabhomeserver ne lc($Kolab::config{'fqdnhostname'})) 
+        || $kolabimapserver && $kolabimapserver ne lc(hostfqdn()) ) {
+        # We are not on the home server
+        if( $p eq 'sf' ) {
+            # Dont create shared folders on other hosts than it's kolabhomeserver
+            Kolab::log('L', "Kolab::LDAP::createObject() skipping shared folder for other server $kolabhomeserver", KOLAB_DEBUG);
+            return;
+        }
+        my $kolabhomeserveronly = $object->get_value('kolabhomeserveronly');
+        if( defined($kolabhomeserveronly) && $kolabhomeserveronly eq 'true' ) {
+            # Don't create the user's mailbox if it should be created on the kolabHomeServer only
+            Kolab::log('L', "Kolab::LDAP::createObject() skipping user mailbox creation for other server $kolabhomeserver", KOLAB_DEBUG);
+            return;
+        }
+        Kolab::log('L', "Kolab::LDAP::createObject() for other server than $kolabhomeserver. TODO: Create referral or something, for now we just create an empty INBOX", KOLAB_DEBUG);
+        # We create INBOX on other servers also, to allow access to shared/published
+        # folders on those servers because some IMAP clients abort the connection
+        # to an IMAP server if they cannot access the INBOX.
+        $islocal = 0;
+    }
+
+    if (!$cyrus) {
+        Kolab::log('L', 'object wants mailbox, but not connected to imap, returning', KOLAB_DEBUG);
+        return;
     }
 
     # Intermediate multidomain support:
     # We accept domain encoded in CN...
     if( $p eq 'sf' && index( $uid, '@' ) < 0 ) {
-      # We have to create shared folders
-      # with names shared.<fldrname>@<domain>
-      my @dcs = split(/,/,$object->dn());
-      my @dn;
-      while( pop( @dcs ) =~ /dc=(.*)/ ) {
-	push(@dn, $1);
-      }
-      if( $#dn > 0 ) { $uid .= '@'.join('.',reverse(@dn)); }
+        # We have to create shared folders
+        # with names shared.<fldrname>@<domain>
+        my @dcs = split(/,/,$object->dn());
+        my @dn;
+        while( pop( @dcs ) =~ /dc=(.*)/ ) {
+            push(@dn, $1);
+        }
+        if( $#dn > 0 ) { $uid .= '@'.join('.',reverse(@dn)); }
     }
     if (!$uid) {
         Kolab::log('L', "Kolab::LDAP::createObject() called with null id attribute `$objuidfield', returning", KOLAB_DEBUG);
@@ -498,7 +516,7 @@ sub createObject
             Kolab::log('L', "Object `$uid' already exists as `$olduid'; refusing to create", KOLAB_WARN);
         } else {
             Kolab::log('L', "Object `$uid' already exists, skipping", KOLAB_DEBUG);
-	}
+        }
         # Nothing changed; nothing to do
     } else {
         # No official records - check the graveyard
@@ -510,40 +528,40 @@ sub createObject
             # We have a object that we have no previous record of, so create everything
             if ($sync) { $newuid_db{$guid} = $uid; } else { uidcacheStore($guid, $uid); }
             Kolab::Cyrus::createMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0));
-	      if( $p eq 'sf' ){
-    		my $foldertype = lc($object->get_value('kolabfoldertype'));
+            if( $p eq 'sf' ){
+                my $foldertype = lc($object->get_value('kolabfoldertype'));
 
-		if ( $foldertype ne '' ){
-		  Kolab::Cyrus::setFolderType($cyrus,$uid,1,$foldertype);
-		}
-	      }
-	    if( $p ne 'sf' && !$islocal ) {
-	      # Hide user mailboxes on other servers
-	      Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid rswipcda"]);
-	    } elsif( $p ne 'sf' ) {
-	      # Deal with group and resource accounts
-	      my $edn = Net::LDAP::Util::ldap_explode_dn($object->dn(), casefold=>'lower' );
-	      my $gcn = $edn->[1]->{'cn'};
-	      if( $gcn && ($gcn eq 'groups' || $gcn eq 'resources') ) {
-		# We need to give the calendar user access to the
-		# group's/resource's Calendar folder.
-		# TODO: Don't hardcode user and folder name
-		Kolab::log('L', "Detected group or resource account, creating calendar folder", KOLAB_ERROR );
-		my $domain;
-		my $user;
-		if ($uid =~ /(.*)\@(.*)/) {
-		    $user = $1;
-		    $domain = $2;
-		} else {
-		    $user = $uid;
-		    $domain = $Kolab::config{'postfix-mydomain'};
-		}
-		my $folder = $user . '/Calendar@' . $domain;
-		Kolab::Cyrus::createMailbox($cyrus, $folder, 0);
-		Kolab::Cyrus::setFolderType($cyrus, $folder, 0, 'event.default');
-		Kolab::Cyrus::setACL($cyrus, $folder, 0, ["$uid all", 'calendar@' . $domain .' all']);
-	      }
-	    }
+                if ( $foldertype ne '' ){
+                    Kolab::Cyrus::setFolderType($cyrus,$uid,1,$foldertype);
+                }
+            }
+            if( $p ne 'sf' && !$islocal ) {
+                # Hide user mailboxes on other servers
+                Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid rswipcda"]);
+            } elsif( $p ne 'sf' ) {
+                # Deal with group and resource accounts
+                my $edn = Net::LDAP::Util::ldap_explode_dn($object->dn(), casefold=>'lower' );
+                my $gcn = $edn->[1]->{'cn'};
+                if( $gcn && ($gcn eq 'groups' || $gcn eq 'resources') ) {
+                    # We need to give the calendar user access to the
+                    # group's/resource's Calendar folder.
+                    # TODO: Don't hardcode user and folder name
+                    Kolab::log('L', "Detected group or resource account, creating calendar folder", KOLAB_DEBUG );
+                    my $domain;
+                    my $user;
+                    if ($uid =~ /(.*)\@(.*)/) {
+                        $user = $1;
+                        $domain = $2;
+                    } else {
+                        $user = $uid;
+                        $domain = $Kolab::config{'postfix-mydomain'};
+                    }
+                    my $folder = $user . '/Calendar@' . $domain;
+                    Kolab::Cyrus::createMailbox($cyrus, $folder, 0);
+                    Kolab::Cyrus::setFolderType($cyrus, $folder, 0, 'event.default');
+                    Kolab::Cyrus::setACL($cyrus, $folder, 0, ["$uid all", 'calendar@' . $domain .' all']);
+                }
+            }
         }
     }
 
@@ -556,12 +574,12 @@ sub createObject
     defined($quota) or ($quota = 0);
     my $oldquota = quotaFetch($guid);
     if( $quota != $oldquota ) {
-	Kolab::Cyrus::setQuota($cyrus, $uid, $quota*1024, ($p eq 'sf' ? 1 : 0));
-	if( $quota == 0 ) {
-	    quotaDelete{$guid};
-	} else {
-	    quotaStore($guid, $quota);
-	}
+        Kolab::Cyrus::setQuota($cyrus, $uid, $quota*1024, ($p eq 'sf' ? 1 : 0));
+        if( $quota == 0 ) {
+            quotaDelete{$guid};
+        } else {
+            quotaStore($guid, $quota);
+        }
     }
     Kolab::log('L', "createObject() done", KOLAB_DEBUG );
 }
@@ -603,6 +621,13 @@ sub deleteObject
     my $object = shift;
     my $remfromldap = shift || 0;
     my $p = shift || 'user';
+
+    my $guid = $object->get_value($Kolab::config{$p . '_field_guid'});
+    my $uid = uidcacheFetch($guid);
+    if ($uid && !$cyrus) {
+        Kolab::log('L', 'object found in mboxcache, but not connected to imap, returning', KOLAB_DEBUG);
+        return;
+    }
 
     if ($remfromldap) {
         my $dn = $object->dn;
@@ -685,8 +710,18 @@ sub deleteObject
 	}
     }
 
-    my $guid = $object->get_value($Kolab::config{$p . '_field_guid'});
-    my $uid = uidcacheFetch($guid);
+    # FIXME
+    # This is a horrible fix for kolab/issue3472. kolabd is a simple
+    # deamon that should react to changes within LDAP. It should NOT
+    # however have any application knowledge. It would be better if
+    # each application that requires cleanup operations after user
+    # removal could add a script in a directory collecting such
+    # operations.
+    if (-e $Kolab::config{'webserver_document_root'} . '/client/storage/' . $uid . '.prefs' ) {
+	unlink($Kolab::config{'webserver_document_root'} . '/client/storage/' . $uid . '.prefs');
+        Kolab::log('L', "Deleted web client user preferences for user $uid.", KOLAB_DEBUG);
+    }
+
     if (!$uid) {
         Kolab::log('L', 'Deleted object not found in mboxcache, returning', KOLAB_DEBUG);
         return;
@@ -703,16 +738,16 @@ sub sync
     Kolab::log('L', 'Synchronising');
 
     my $cyrus = Kolab::Cyrus::create;
-    if( !$cyrus ) {
-      # We could not connect, bail out for now
-      return 0;
-    }
     %newuid_db = ();
 
     $user_timestamp  = syncBasic($cyrus, 'user', '', $user_timestamp, 0);
     $sf_timestamp    = syncBasic($cyrus, 'sf', '', $sf_timestamp, 1);
     $group_timestamp = syncBasic($cyrus, 'group', '', $group_timestamp, 0);
 
+    if( !$cyrus ) {
+      # We could not connect, bail out for now
+      return 0;
+    }
     # Check that all mailboxes correspond to LDAP objects
     Kolab::log('L', 'Synchronising mailboxes');
 

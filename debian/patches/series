@@ -1,2 +1,3 @@
-50-sync-ldap-backend.diff
-
+10-invoke-rc.diff
+30-bootstrap.diff
+40-disable-amavis.diff
