@@ -2,22 +2,13 @@ Goal: kolab_bootstrap debian specificic stuff
 
 Author: Noèl Köthe <noel@debian.org>
 
-Upstream status: Parts can be included
+Upstream status: Parts can be or have been included
 
 Index: b/sbin/kolab_bootstrap.in
 ===================================================================
 --- a/sbin/kolab_bootstrap.in
 +++ b/sbin/kolab_bootstrap.in
-@@ -74,7 +74,7 @@
-     print ("Error: Found $name running on Port $port\n");
-     print ("Check your installation!\n");
-     print ("You must stop the service $name before running Kolab\n");
--    print ("You may try to execute \"$Kolab::config{'KOLABRC'} rc all stop\" initially\n");
-+    print ("You may try to execute \"/etc/init.d/\$DAEMON stop\" initially\n");
-     exit 1;
-   }
- }
-@@ -186,7 +186,7 @@
+@@ -221,7 +221,7 @@
  
  print ("Excellent all required Ports are available!\n");
  
@@ -26,7 +17,7 @@ Index: b/sbin/kolab_bootstrap.in
  if ($?==0) {
    print ("\nFound existing configuration\n");
    print "\nBootstrapping Kolab will overwrite old configuration\n";
-@@ -285,6 +285,18 @@
+@@ -320,6 +320,18 @@
    print "Proceeding with master server setup\n\n";
  }
  
@@ -45,7 +36,7 @@ Index: b/sbin/kolab_bootstrap.in
  if ( $is_master eq "true" ) {
    ##### Master server setup
    getopt('f');
-@@ -373,6 +385,9 @@
+@@ -408,6 +420,9 @@
      }
    };
  
@@ -55,7 +46,7 @@ Index: b/sbin/kolab_bootstrap.in
    my $confname = "$Kolab::config{'sasl_smtpconffile'}";
    copy("@CONFIG_DIR@/templates/smtpd.conf.template", $confname) || die "could not write to $confname";
  
-@@ -406,12 +421,15 @@
+@@ -441,12 +456,15 @@
        Kolab::Conf::bootstrapConfig();
        $Kolab::config{"bootstrap_config"} = 'false';
  
@@ -72,7 +63,16 @@ Index: b/sbin/kolab_bootstrap.in
        print ("Waiting for OpenLDAP to start\n");
        sleep 10;
  
-@@ -836,8 +854,11 @@
+@@ -781,7 +799,7 @@
+   chmod 0600, $kolab_config;
+   kolab_chown "$Kolab::config{'kolab_musr'}","$Kolab::config{'kolab_mgrp'}",$kolab_config;
+ 
+-  if ($kolab_config{'directory_mode'} ne "syncrepl" ) {
++  if ($Kolab::config{'directory_mode'} ne "syncrepl" ) {
+     print << 'EOS';
+ Now the master server needs to be stopped briefly while the contents of the LDAP database
+ is copied over to this slave. Please make sure that this slave is entered into the list
+@@ -878,6 +896,9 @@
    chmod 0600, $kolab_config;
  }
  
@@ -81,7 +81,4 @@ Index: b/sbin/kolab_bootstrap.in
 +
  #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
  print "kolab is now ready to run!\n";
--print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
-+print "please restart all the daemons'\n";
- print ("Use login=manager and passwd=$bind_pw when you log into\n");
- print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");
+ print "please restart all the daemons\n";

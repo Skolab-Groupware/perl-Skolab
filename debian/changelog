@@ -1,3 +1,14 @@
+libkolab-perl (1:2.2.1-20090331-2) unstable; urgency=low
+
+  * Updated Standards-Version to 3.8.3: no changes
+  * Add README.source as required by policy 4.14
+  * Change my email address, as I am now Debian developer
+  * 10-invoke-rc.diff: Fix from upstream
+    sbin/kolab_bootstrap.in.diff r1.10
+  * Now 30-bootstrap.diff contains all non- invoke-rc stuff 
+
+ -- Mathieu Parent <sathieu@debian.org>  Sat, 17 Oct 2009 19:43:40 +0200
+
 libkolab-perl (1:2.2.1-20090331-1) unstable; urgency=low
 
   * Upload to unstable

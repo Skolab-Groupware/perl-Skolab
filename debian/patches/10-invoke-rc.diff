@@ -4,10 +4,11 @@
 ## DP: Debian specific invocation of services
 
 @DPATCH@
-diff -urNad kolabconf-2.2.0~/lib/Kolab/Conf.pm kolabconf-2.2.0/lib/Kolab/Conf.pm
---- kolabconf-2.2.0~/lib/Kolab/Conf.pm	2008-10-14 19:50:45.000000000 +0200
-+++ kolabconf-2.2.0/lib/Kolab/Conf.pm	2008-10-14 19:51:43.000000000 +0200
-@@ -724,38 +724,28 @@
+Index: b/lib/Kolab/Conf.pm
+===================================================================
+--- a/lib/Kolab/Conf.pm
++++ b/lib/Kolab/Conf.pm
+@@ -843,38 +843,28 @@
  {
      if ($haschanged{'slapd'}) {
          &Kolab::log('K', 'Restarting OpenLDAP...');
@@ -51,3 +52,54 @@ diff -urNad kolabconf-2.2.0~/lib/Kolab/Conf.pm kolabconf-2.2.0/lib/Kolab/Conf.pm
      }
  
      %Kolab::Conf::haschanged = ();
+Index: b/sbin/kolab_bootstrap.in
+===================================================================
+--- a/sbin/kolab_bootstrap.in
++++ b/sbin/kolab_bootstrap.in
+@@ -109,7 +109,7 @@
+     print ("Error: Found $name running on Port $port\n");
+     print ("Check your installation!\n");
+     print ("You must stop the service $name before running Kolab\n");
+-    print ("You may try to execute \"$Kolab::config{'KOLABRC'} rc all stop\" initially\n");
++    print ("You may try to execute \"/etc/init.d/\$DAEMON stop\" initially\n");
+     exit 1;
+   }
+ }
+@@ -612,7 +612,7 @@
+ 
+    if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
+       print "\nkill temporary slapd\n\n";
+-      system("$Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} stop");
++      system("invoke-rc.d slapd stop");
+       sleep 1; # actually race should be impossible
+       system("killall -9 slapd >/dev/null 2>&1");
+    }
+@@ -665,7 +665,7 @@
+   ##### Slave server setup
+ 
+   print "stop running slapd (if any)\n";
+-  kolab_system("$Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} stop");
++  kolab_system("invoke-rc.d slapd stop");
+ 
+   # Make sure that no rogue demons are running
+   tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
+@@ -787,9 +787,9 @@
+ is copied over to this slave. Please make sure that this slave is entered into the list
+ of kolabhosts on the master before proceeding.
+ EOS
+-    kolab_system("ssh -C $master_host \'$Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} stop".
++    kolab_system("ssh -C $master_host \'invoke-rc.d slapd stop".
+                  " && $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pcf - openldap-data".
+-                 " && $Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} start\'".
++                 " && invoke-rc.d slapd start\'".
+                  " | $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pxf -");
+   }
+ 
+@@ -880,6 +880,6 @@
+ 
+ #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
+ print "kolab is now ready to run!\n";
+-print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
++print "please restart all the daemons\n";
+ print ("Use login=manager and passwd=$bind_pw when you log into\n");
+ print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");

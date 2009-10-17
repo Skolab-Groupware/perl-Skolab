@@ -8,7 +8,7 @@ Index: b/sbin/kolab_bootstrap.in
 ===================================================================
 --- a/sbin/kolab_bootstrap.in
 +++ b/sbin/kolab_bootstrap.in
-@@ -517,7 +517,7 @@
+@@ -498,7 +498,7 @@
          'postfix-mynetworks' => $mynetworkinterfaces,
          #'postfix-relayhost' => "",
          #'postfix-transport' => "",
