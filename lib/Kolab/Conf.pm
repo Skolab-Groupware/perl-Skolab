@@ -22,7 +22,7 @@ package Kolab::Conf;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.4 $
+##  $Revision: 1.4.2.1 $
 
 use 5.008;
 use strict;
@@ -774,6 +774,18 @@ sub rebuildTemplates
 	{
 	    Kolab::log('T', 'Actioning RUNONCHANGE for '.$key, KOLAB_DEBUG );
 	    my $cmd = $runonchange{$key};
+	    # $cmd can contain:
+	    # - /usr/sbin/postmap: should always be executed
+	    # - openpkg rc imapd restart (in openpkg distribution)
+	    # - kolabsrv rc post reload  (in other distributions)
+	    # The commands with ' rc ' may only be executed when reloading is not
+	    # prohibited by the user with the "-n" option.
+	    if ($Kolab::do_reload || $cmd !~ / rc \S+ re(start|load)/) {
+		Kolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+		system($cmd);
+	    } else {
+		Kolab::log('T', 'Reload not allowed, not executing command: '.$cmd, KOLAB_DEBUG );
+	    }
 	    system($cmd);
 	    Kolab::log('T', 'Executing command', KOLAB_DEBUG );
 	}

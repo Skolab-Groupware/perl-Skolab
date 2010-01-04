@@ -8,7 +8,7 @@ Index: b/lib/Kolab/Conf.pm
 ===================================================================
 --- a/lib/Kolab/Conf.pm
 +++ b/lib/Kolab/Conf.pm
-@@ -843,38 +843,28 @@
+@@ -855,38 +855,28 @@
  {
      if ($haschanged{'slapd'}) {
          &Kolab::log('K', 'Restarting OpenLDAP...');
@@ -56,7 +56,7 @@ Index: b/sbin/kolab_bootstrap.in
 ===================================================================
 --- a/sbin/kolab_bootstrap.in
 +++ b/sbin/kolab_bootstrap.in
-@@ -109,7 +109,7 @@
+@@ -112,7 +112,7 @@
      print ("Error: Found $name running on Port $port\n");
      print ("Check your installation!\n");
      print ("You must stop the service $name before running Kolab\n");
@@ -65,7 +65,7 @@ Index: b/sbin/kolab_bootstrap.in
      exit 1;
    }
  }
-@@ -612,7 +612,7 @@
+@@ -645,7 +645,7 @@
  
     if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
        print "\nkill temporary slapd\n\n";
@@ -74,7 +74,7 @@ Index: b/sbin/kolab_bootstrap.in
        sleep 1; # actually race should be impossible
        system("killall -9 slapd >/dev/null 2>&1");
     }
-@@ -665,7 +665,7 @@
+@@ -698,7 +698,7 @@
    ##### Slave server setup
  
    print "stop running slapd (if any)\n";
@@ -83,7 +83,7 @@ Index: b/sbin/kolab_bootstrap.in
  
    # Make sure that no rogue demons are running
    tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
-@@ -787,9 +787,9 @@
+@@ -822,9 +822,9 @@
  is copied over to this slave. Please make sure that this slave is entered into the list
  of kolabhosts on the master before proceeding.
  EOS
@@ -95,11 +95,11 @@ Index: b/sbin/kolab_bootstrap.in
                   " | $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pxf -");
    }
  
-@@ -880,6 +880,6 @@
+@@ -916,6 +916,6 @@
  
  #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
  print "kolab is now ready to run!\n";
 -print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
 +print "please restart all the daemons\n";
- print ("Use login=manager and passwd=$bind_pw when you log into\n");
+ print ("Use login=manager and passwd=" . Encode::decode_utf8($bind_pw) . " when you log into\n");
  print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");

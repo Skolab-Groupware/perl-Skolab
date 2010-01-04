@@ -1,3 +1,66 @@
+2009-12-16  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/LDAP.pm (deleteObject): kolab/issue3940 (Deleting
+	users does not work if master Kolab server is not master LDAP
+	(rt5889))
+
+2009-12-14  Gunnar Wrobel <wrobel@pardus.de>
+
+	* bin/kolabpasswd.in: kolab/issue919 (kolab server has problems
+	with some characters in passwords)
+
+	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords)
+
+2009-12-07  Gunnar Wrobel <wrobel@pardus.de>
+
+	* lib/Kolab/LDAP.pm (createObject): kolab/issue1448 (Users might
+	add an account on the nonHome Server and write emails in there.)
+
+	* bin/kolab_smtpdpolicy.in (check_restricted_sender): 
+	kolab/issue1340 (RFC: restrict users to sending mail only to
+	internal recipients)
+
+2009-12-04  Gunnar Wrobel <wrobel@pardus.de>
+
+	* bin/kolab_smtpdpolicy.in (check_restricted_sender):
+	kolab/issue1340 (RFC: restrict users to sending mail only to
+	internal recipients)
+
+	Only the first stub yeat reacts solely to "-" (Denying all
+	recipients).
+
+2009-11-24  Gunnar Wrobel <wrobel@pardus.de>
+
+	* Makefile.PL: kolab/issue3952 (Version in kolabconf is not
+	replaced in the build process)
+
+2009-11-24 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolabconf.in, lib/Kolab/Conf.pm: renamed variable do_reload
+	  to $Kolab::do_reload, to make it a global variable.  This is needed
+	  to solve kolab/issue3951: kolabconf -n (noreload) restarts services
+	  if RUNONCHANGE is used
+
+2009-11-17 Gunnar Wrobel <wrobel@pardus.de>
+
+	* bin/kolabpasswd.in: kolab/issue919 (kolab server has problems
+	with some characters in passwords)
+
+	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords)
+
+2009-07-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_bootstrap.in: Read bind_pw_hash from Kolab master server,
+	fixes kolab/issue3764 (kolab.conf: bind_pw_hash not set on slaves,
+	causes OpenLDAP restarts)
+	* lib/Kolab.pm: bump version number
+
+2009-04-16  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (deleteObject): Workaround for kolab/issue3472.
+
 2009-03-16  Thomas Arendsen Hein  <thomas@intevation.de>
 
 	* lib/Kolab/LDAP.pm: Creating the Calendar folder caused an

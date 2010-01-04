@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                perl-kolab
-version:             2.2.1
+version:             2.2.3
 abstract:            perl-kolab provides a basic set of perl modules required for the
 Kolab Groupware server.
 license:             ~

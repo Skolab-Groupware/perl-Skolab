@@ -108,7 +108,7 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 =cut
 
-##  $Revision: 1.2 $
+##  $Revision: 1.2.2.3 $
 
 use strict;
 use Fcntl;
@@ -281,6 +281,59 @@ sub check_dist_list {
   return 1;
 }
 
+sub check_restricted_sender {
+  my $username = shift;
+  my $recipient = shift;
+  my $tries = 0;
+ AGAIN:
+  my $mesg = $ldap->search( base=> $conf_basedn,
+			    scope=> 'sub',
+			    filter=> "(&(objectClass=kolabinetorgperson)(|(mail=$username)(uid=$username)))",
+			    attrs => [ 'kolabAllowSMTPRecipient' ]);
+  if( !$mesg->code && $mesg->count() > 0 ) {
+    mylog($syslog_priority, "LDAP search returned ".$mesg->count()." objects") if $verbose;
+    my $global_permit = 1;
+    foreach my $entry ( $mesg->entries ) {
+      my $allowed_recipient;
+      my $permit;
+      for $allowed_recipient ($entry->get_value('kolabAllowSMTPRecipient')) {
+          mylog($syslog_priority, lc($username." has allowed recipient ".$allowed_recipient)) if $verbose;
+	  # Return early with REJECT if the sender may not send at all ('-')
+	  return undef if $allowed_recipient eq '-';
+	  # Check if the entry is a negation (leading '-')
+	  if ( $allowed_recipient =~ /^-(.*)/ ) {
+	      $permit = undef;
+	      $allowed_recipient = $1;
+	  } else {
+	      # Once there is a non-negating entry we need REJECT if no rule matched
+	      $global_permit = undef;
+	      $permit = 1;
+	  }
+	  if ( $allowed_recipient =~ /@/ ) {
+	      # If the entry contains '@' the leading segment must match
+	      return $permit if  $recipient =~ /^$allowed_recipient/;
+	  } elsif ( $allowed_recipient =~ /^\.(.*)/ ) {
+	      # If the entry starts with '.' the trailing domain must match
+	      return $permit if $recipient =~ /${1}$/;
+	  } else {
+	      # All other entries must match the last part of the mail address
+	      return $permit if $recipient =~ /\@${allowed_recipient}$/;
+	  }
+      }
+    }
+    # Allow sending if there was no entry or no negated entry rejected
+    return $global_permit;
+  } elsif( $mesg->code && $mesg->code != LDAP_NO_SUCH_OBJECT && $tries++ <= $ldap_max_tries ) {
+    mylog($syslog_priority, "LDAP Connection error during CHECKRESTRICTEDSENDER: ".$mesg->error.", trying to reconnect" );
+    ldap_connect;
+    goto AGAIN;
+  } elsif( $mesg->code ) {
+    mylog( $syslog_priority, "LDAP Error during CHECKRESTRICTEDSENDER: ".$mesg->error ) if $verbose;
+    # Just fall through and accept the message in case there was an LDAP problem.
+  }
+  return 1;
+}
+
 #
 # SMTPD access policy routine. The result is an action just like
 # it would be specified on the right-hand side of a Postfix access
@@ -306,6 +359,9 @@ sub smtpd_access_policy {
   return "REJECT Access denied" if( !$username && !$conf_allowunauth );
 
   eval{ $username = lookup_uid($username) }; return "DEFER_IF_PERMIT $@" if $@;
+
+  # Check for valid access from a restricted sender
+  return "REJECT Recipient denied" unless check_restricted_sender($username, $recipient);
 
   # See if sender is owned by someone
   my @uids;

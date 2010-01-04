@@ -1,11 +1,13 @@
 #!/bin/sh
 
+set -e
+
 upackage=perl-kolab
 dpackage=libkolab-perl
 version=$2
 file=$3
 
 rpm2cpio "$file" | \
-cpio --extract --quiet --to-stdout "${upackage}-*.tar.gz" | \
+cpio --extract --quiet --to-stdout "${upackage}-*.tar.gz" \
 > "${dpackage}_${version}.orig.tar.gz"
 rm "$file"

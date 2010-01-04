@@ -1,3 +1,11 @@
+libkolab-perl (1:2.2.3-20091217-1) unstable; urgency=low
+
+  * New release 2.2.3 (20091217)
+  * Corrected uupdate-wrapper 
+  * added 60-fix-build.diff to fix build
+
+ -- Mathieu Parent <sathieu@debian.org>  Mon, 04 Jan 2010 22:24:26 +0100
+
 libkolab-perl (1:2.2.1-20090331-2) unstable; urgency=low
 
   * Updated Standards-Version to 3.8.3: no changes
