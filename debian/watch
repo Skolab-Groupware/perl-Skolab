@@ -1,6 +1,6 @@
 version=3
 # original URL for stable releases:
-http://files.kolab.org/server/release/kolab-server-(?:[\d.]+)/sources/perl-kolab-([\d.-]+).src.rpm debian debian/uupdate-wrapper
+http://files.kolab.org/server/release/kolab-server-([\d.]+)/sources/perl-kolab-([\d.-]+).src.rpm debian debian/uupdate-wrapper
 # URL for development releases:
 #http://files.kolab.org/server/development-2.2/current/sources/perl-kolab-([\d\w.-]+).src.rpm  debian  debian/uupdate-wrapper
 # URL for beta releases:

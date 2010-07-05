@@ -2,3 +2,4 @@
 30-bootstrap.diff
 40-disable-amavis.diff
 60-fix-build.diff
+70-reload-cyrus-conf.diff

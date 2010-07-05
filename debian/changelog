@@ -1,3 +1,16 @@
+libkolab-perl (1:2.2.4-20100624-1) unstable; urgency=low
+
+  * New release 2.2.4 (20100624)
+  * Add ${misc:Depends} to debian/control
+  * Updated Standards-Version to 3.8.4: no changes
+  * Switch to dpkg-source 3.0 (quilt) format
+  * Updated Standards-Version to 3.9.0: use Breaks instead of Conflicts
+    with kolabconf and kolabd as suggested by lintian
+  * added 70-reload-cyrus-conf.diff: Reload cyrus when cyrus.conf is changed
+    (Related to #579933: kolabd: I can't enable/disable pop3/s and imap/s)
+
+ -- Mathieu Parent <sathieu@debian.org>  Tue, 06 Jul 2010 00:25:16 +0200
+
 libkolab-perl (1:2.2.3-20091217-1) unstable; urgency=low
 
   * New release 2.2.3 (20091217)

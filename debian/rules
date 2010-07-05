@@ -1,15 +1,12 @@
 #!/usr/bin/make -f
 
-include /usr/share/quilt/quilt.make
-
-build: patch
+build: 
 	dh_testdir
 	perl Makefile.PL --config=/etc/kolab --bin=/usr/bin --sbin=/usr/sbin --etc=/etc/kolab
 	$(MAKE)
 	touch build-stamp
 
-clean: clean-patched unpatch
-clean-patched:
+clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp

@@ -22,7 +22,7 @@ package Kolab::Cyrus;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.6 $
+##  $Revision: 1.6.2.1 $
 
 use 5.008;
 use strict;
@@ -40,6 +40,7 @@ our %EXPORT_TAGS = (
         &create
         &createUid
         &createMailbox
+        &createCalendar
         &deleteMailbox
         &setQuota
         &setACL
@@ -106,6 +107,38 @@ sub createMailbox
         }
     } else {
         Kolab::log('Y', "Skipping mailbox creation for $uid (curuid='$cyruid', mailbox='".join(',',@{$mailbox})."'", KOLAB_DEBUG);
+    }
+}
+
+sub createCalendar
+{
+    my $cyrus = shift;
+    my $user = shift;
+    my $domain = shift;
+    my $folder = shift;
+    my $acl = shift;
+
+    my $calendar = 0;
+
+    my @mailboxes = $cyrus->list("user/$user/*\@$domain");
+    my %info;
+    foreach my $mailbox (@mailboxes) {
+	my $u = @{$mailbox}[0];
+	%info = $cyrus->info($u, ('/vendor/kolab/folder-type'));
+        my $key = '/mailbox/{' . $u . '}/vendor/kolab/folder-type';
+        if (exists($info{$key}) && $info{$key} eq 'event.default') {
+	    $calendar = $u;
+	}
+    }
+
+    if ($calendar) {
+        Kolab::log('Y', "Skipping calendar creation for $user\@$domain as $calendar is a default calendar.", KOLAB_DEBUG);
+    } else {
+        Kolab::log('Y', "Creating default calendar for $user\@$domain.", KOLAB_DEBUG);
+	createMailbox($cyrus, $folder, 0);
+	setFolderType($cyrus, $folder, 0, 'event.default');
+	setACL($cyrus, $folder, 0, $acl);
+        Kolab::log('Y', "Successfully created default calendar for $user\@$domain.", KOLAB_DEBUG);
     }
 }
 
