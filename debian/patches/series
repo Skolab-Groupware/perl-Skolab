@@ -3,3 +3,4 @@
 40-disable-amavis.diff
 60-fix-build.diff
 70-reload-cyrus-conf.diff
+90-slapd-runtime-config.diff

@@ -1,3 +1,12 @@
+libkolab-perl (1:2.2.4-20100624-2) unstable; urgency=low
+
+  * Fix "kolabd: kolab_bootstrap no longer works with slapd (version
+    2.4.23)" by converting slapd.conf on the fly (Closes: #596710)
+    - lib: Kolab/Conf.pm
+    - sbin: kolab_bootstrap
+
+ -- Mathieu Parent <sathieu@debian.org>  Tue, 14 Sep 2010 13:21:51 +0200
+
 libkolab-perl (1:2.2.4-20100624-1) unstable; urgency=low
 
   * New release 2.2.4 (20100624)
