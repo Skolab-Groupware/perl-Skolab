@@ -1,3 +1,10 @@
+libkolab-perl (1:2.2.4-20100624-3) unstable; urgency=low
+
+  * Fix "during bootstrap is controled port 2000 instead of 4190 for
+    sieve" (Closes: #599031)
+
+ -- Mathieu Parent <sathieu@debian.org>  Thu, 21 Oct 2010 22:26:54 +0200
+
 libkolab-perl (1:2.2.4-20100624-2) unstable; urgency=low
 
   * Fix "kolabd: kolab_bootstrap no longer works with slapd (version
