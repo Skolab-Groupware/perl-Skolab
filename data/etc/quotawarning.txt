@@ -1,0 +1,15 @@
+[This is an automatically generated message.]
+
+The mailbox for <user> is <percent>% full, please clean it up.
+The size of the mailbox is currently <used> KB out of a total 
+allowed <total> KB.
+
+<admin>
+
+[Dies ist eine automatisch generierte Nachricht]
+
+Das Postfach für <user> ist zu <percent>% gefüllt. Bitte 
+räumen Sie es auf.
+Das Postfach belegt zurzeit <used> KB von erlaubten <total> KB.
+
+<admin>

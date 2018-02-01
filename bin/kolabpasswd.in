@@ -1,0 +1,181 @@
+#!perl
+
+=head1 NAME
+
+kolabpasswd - Kolab password tool.
+
+=head1 SYNOPSIS
+
+B<kolabpasswd>
+
+=head1 DESCRIPTION
+
+The kolabpasswd script is used for changing the manager password on a Kolab Server.
+In multi-location Kolab setups the script must be run on each individual host 
+seperately.
+
+After changing the manager password it is highly recommended to restart 
+the Kolab server.
+
+In the future this utility may be enhanced to allow to change the passwords of 
+normal users and special system accounts.
+
+=head1 COPYRIGHT AND AUTHORS
+
+Copyright (c) 2004  Erfrakon
+
+Copyright (c) 2004  Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
+
+Copyright (c) 2004  Martin Konold     <martin.konold@erfrakon.de>
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+use Term::ReadKey;
+use IO::File;
+use File::Temp;
+use Net::LDAP;
+use Kolab::Util;
+use Kolab;
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+# won't be needed (i think)
+# my $kolab_prefix = (getpwnam('kolab'))[7] || die "Error: could not determine the kolab directory prefix (e.g. /kolab)";
+
+# Shell double-quote a string
+# Borrored from Sysadm::Install
+sub qquote {
+  my($str, $metas) = @_;
+  $str =~ s/([\\"])/\\$1/g;
+  if(defined $metas) {
+    $metas = '!$`' if $metas eq ":shell";
+    $metas =~ s/\]/\\]/g;
+    $str =~ s/([$metas])/\\$1/g;
+  }
+  return "\"$str\"";
+}
+
+# Hash a password
+sub hashPassword {
+  my $pw = shift;
+  my $hashcmd = "$Kolab::config{'sbindir'}/slappasswd -s ".qquote($pw,":shell");
+  (my $hashpw = `$hashcmd`) or die $@;
+  chomp($hashpw);
+  return $hashpw;
+}
+
+# open old kolab master config file
+my $kolabconfname = "@CONFIG_DIR@/kolab.conf";
+
+# read old config data
+my %config = readConfig($kolabconfname);
+my $kolabconf = IO::File->new('@CONFIG_DIR@/kolab.conf','r')
+                || die "kolabpasswd: Fatal Error: could not open kolab config at $kolabconfname";
+
+my $account = 'manager';
+my $account_dn = $config{'bind_dn'};
+if( $#ARGV == 0 ) {
+    $account = $ARGV[0];
+    if( $account ne 'calendar' and $account ne 'nobody' and $account ne 'manager' ) {
+	die("$^X can only change the password for manager, nobody and calendar");
+    }
+    $account_dn =~ s/cn=manager/cn=$account/;
+}
+      
+print "Changing password for $account";
+
+# open ldap connection and verify old password
+my $ldap = Net::LDAP->new( $config{'ldap_uri'})
+         || die "\nkolabpasswd: Fatal Error: could not connect to LDAP Server";
+
+do {
+  print "\nOld Password: ";
+  ReadMode 'noecho';
+  my $old_password = ReadLine 0; chomp $old_password;
+
+  $mesg = $ldap->bind( $account_dn, password => $old_password ) || die "\nkolabpasswd: Failed to bind to LDAP server";
+  if( $mesg->code ) { print "\nError: ".$mesg->error.". Please try again\n"; }
+} while ( $mesg->code );
+   
+# read in new password
+print "\nNew Password for $account: ";
+ReadMode 'noecho';
+my $new_password = ReadLine 0; chomp $new_password;
+
+print "\nRe-enter New Password: ";
+my $new_password2 = ReadLine 0; chomp $new_password2;
+print "\n";
+ReadMode 'normal';
+($new_password eq $new_password2) || die "Sorry, passwords do not match.\n";
+
+my $bind_pw_hash;
+
+# create temporary config file
+my $tmp = new File::Temp( TEMPLATE => 'tempXXXXX', DIR => '@CONFIG_DIR@', UNLINK => 0, SUFFIX => '.conf')
+     || die "Error: could not create temporary file under @CONFIG_DIR@";
+$tmpfilename = $tmp->filename;
+$bind_pw_hash = hashPassword($new_password);
+
+# copy and replace old config to temporary file
+foreach ($kolabconf->getlines()) {
+    if( $account eq 'manager' ) {
+	if (/^(bind_pw\s:\s).*$/) {
+	    print $tmp $1.$new_password."\n";
+	} else {
+	    if (/^(bind_pw_hash\s:\s).*$/) {
+		print $tmp $1.$bind_pw_hash."\n"; 
+	    } else {
+		print $tmp $_;
+	    }
+	}
+    } elsif( $account eq 'calendar' ) {
+	if (/^(calendar_pw\s:\s).*$/) {
+	    print $tmp $1.$new_password."\n";
+	} else {
+	    print $tmp $_;
+	}
+    } elsif( $account eq 'nobody' ) {
+	if (/^(php_pw\s:\s).*$/) {
+	    print $tmp $1.$new_password."\n";
+	} else {
+	    print $tmp $_;  
+	}
+    }
+}
+undef $tmp;
+undef $kolabconf;
+
+# open ldap connection and update manager password
+$ldap = Net::LDAP->new( $config{'ldap_uri'})
+   || die "Error: could not connect LDAP Server";
+$ldap->bind( $config{'bind_dn'}, password => $config{'bind_pw'} )
+   || die "Error: Failed to bind as manager to LDAP Server";
+$ldap->modify($account_dn, replace => {'userPassword' => $bind_pw_hash } )
+   || die "Error: could not update LDAP with new manager password";
+$ldap->unbind;
+undef $ldap;
+
+# move temporary file to kolab master config
+rename($tmpfilename,$kolabconfname) || die "Error: could not install new $kolabconfname";
+system("chown $Kolab::config{'ldapserver_usr'}:$Kolab::config{'ldapserver_grp'} $kolabconfname");
+
+print "Password changed successfully, please be patient...\n";
+
+# trigger kolabd to run update
+system("$Kolab::config{'kolabconf_script'} > /dev/null 2>&1");
+exit 0;

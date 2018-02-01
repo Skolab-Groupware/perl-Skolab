@@ -22,7 +22,7 @@ package Kolab;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.20 $
+##  $Revision: 1.29 $
 
 use 5.008;
 use strict;
@@ -59,7 +59,7 @@ our @EXPORT = qw(
 );
 
 # The Kolab version number for the perl-kolab package
-our $KOLAB_BASE_VERSION = "2.2.0";
+our $KOLAB_BASE_VERSION = "2.2.1";
 
 # Are current releases cvs based or is this a real release?
 my $KOLAB_CVS = 0;
@@ -83,6 +83,7 @@ sub KOLAB_DEBUG()       { 4 }
 sub reloadConfig
 {
     my $kolab_globals = shift;
+    my $globals_only = shift || 0;
 
     my $tempval;
     my $ldap;
@@ -100,6 +101,11 @@ sub reloadConfig
     # First read `kolab.globals'
     %config = readConfig(%config, $kolab_globals);
 
+    # Return if we should only read the base information.
+    if ($globals_only) {
+	return;
+    }
+
     # Determine the root of the kolab installation, and read `kolab.globals'
     # Notice that the location of the files is handled by dist_conf,
     # so we don't use $tempval for anything other than storing it in
@@ -110,8 +116,6 @@ sub reloadConfig
         $config{'log_level'} = KOLAB_WARN;
         &log('C', 'Unable to determine the kolab user main directory', KOLAB_ERROR);	
 	$error = 1;
-    } else {
-       $config{'prefix'} = $tempval;
     }
 
     # Now read `kolab.conf', overwriting values read from `kolab.globals'
@@ -268,8 +272,17 @@ sub reloadConfig
     #   interface, that is).
     #
     #   Currently supported backends:
-    #     `ad' - Active Directory
+    #     slurpd: for OpenLDAP 2.3.x and prior versions
+    #     syncrepl: for OpenLDAP 2.3.x and beyond
+    #     fds: Fedora Directory Server
+    #     ad: Microsoft Active Directory
     $config{'directory_mode'} = 'slurpd' if (!exists $config{'directory_mode'});
+    $config{'directory_replication_mode_is_syncrepl'} = 'TRUE' if ($config{'directory_mode'} eq 'syncrepl');
+    if (($config{'directory_mode'} eq 'syncrepl') && !defined $config{'syncrepl_cookie_file'}) {
+        &log('C', "Configuration variable `syncrepl_cookie_file' is missing ".
+            "in `kolab.globals' or `kolab.globals' while using `syncrepl' directory_mode", KOLAB_ERROR);
+	    $error = 1;
+    }
 
     # `conn_refresh_period' specifies how many minutes to wait before forceably
     # tearing down the change listener connection, re-syncing, and re-connecting.

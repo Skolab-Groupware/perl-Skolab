@@ -1,0 +1,116 @@
+#!perl
+
+=head1 NAME
+
+kolabconf - Kolab configuration tool
+
+=head1 SYNOPSIS
+
+B<kolab_bootstrap> [B<-d>] [B<-n>] [B<-h>]
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<-d>
+
+(debug) to print out the current config.
+
+=item B<-n>
+
+(noreload) to skip reloading services after changing configuration.
+
+=item B<-h>
+
+(help) to get this text.
+
+=back
+
+=head1 COPYRIGHT AND AUTHORS
+
+See AUTHORS file
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+##  $Revision: 1.2 $
+
+use 5.008;
+use strict;
+use warnings;
+
+use Getopt::Std;
+use Sys::Syslog;
+use IO::File;
+use Kolab;
+use Kolab::Util;
+use Kolab::Conf;
+use Kolab::LDAP;
+use vars qw($opt_d $opt_n $opt_h);
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+openlog('kolabconf', 'cons, pid', ($Kolab::config{'syslog_facility'} || 'user'));
+
+getopts('dnh');
+if ($opt_h) {
+    print <<'EOS';
+kolabconf - Version @VERSION@
+
+Usage: kolabconf [-d] [-n] [-h]
+
+    Option d (debug) to print out the current config.
+    Option n (noreload) to skip reloading services after changing configuration.
+    Option h (help) to get this text.
+EOS
+    exit 0;
+}
+
+if ($opt_d) {
+    foreach my $key (sort keys %Kolab::config) {
+	my $value;
+	if( ref($Kolab::config{$key}) eq "ARRAY" ) {
+	    $value = join( ", ", @{$Kolab::config{$key}});
+	} else {
+	    $value = $Kolab::config{$key};
+	}
+        print "$key : " . $value . "\n";
+    }
+    exit 0;
+}
+
+my $do_reload = 1;
+if($opt_n) {
+    $do_reload = 0;
+}
+
+if( !$Kolab::reloadOk ) {
+    my $msg = "Error loading configuration. Maybe the LDAP server is not running. Please check the system log for errors.";
+    print STDERR "$msg\n";
+    Kolab::log('KC', $msg);
+    exit(-1);
+}
+
+Kolab::log('KC', 'Rebuilding templates');
+Kolab::Conf::rebuildTemplates;
+Kolab::log('KC', 'Reloading kolab components');
+
+if( $do_reload ) {
+    Kolab::Conf::reload;
+}
+
+Kolab::log('KC', 'Finished');

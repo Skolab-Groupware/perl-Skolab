@@ -22,7 +22,7 @@ package Kolab::Cyrus;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.5 $
+##  $Revision: 1.6 $
 
 use 5.008;
 use strict;
@@ -163,7 +163,6 @@ sub setACL
     my $cyruid = &createUid($uid, $sf);
 
     Kolab::log('Y', "Setting up ACL of mailbox `$cyruid'");
-    my $prefix = $Kolab::config{'prefix'};
     my %acls = $cyrus->listacl( $cyruid );
     my ($user, $entry, $acl);
     Kolab::log('Y', "Removing users from ACL of $cyruid (users are \"".join(', ', keys %acls)."\")", KOLAB_DEBUG);

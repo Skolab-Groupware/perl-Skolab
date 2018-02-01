@@ -1,0 +1,229 @@
+#!perl
+
+=head1 NAME
+
+kolabquotawarn - Kolab quota warn tool
+
+=head1 SYNOPSIS
+
+B<kolabquotawarn> [B<-d>]
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<-d>
+
+=back
+
+=head1 COPYRIGHT AND AUTHORS
+
+Copyright (c) 2004 Klarälvdalens Datakonsult AB
+
+Writen by Steffen Hansen <steffen@klaralvdalens-datakonsult.se>
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
+
+## Local variables:
+## mode: perl
+## indent-tabs-mode: t
+## tab-width: 4
+## buffer-file-coding-system: utf-8
+## End:
+
+
+use strict;
+use warnings;
+use Getopt::Std;
+use Sys::Syslog qw(:DEFAULT setlogsock);
+use IO::File;
+use DB_File;
+use Mail::Message;
+use Mail::Transport::SMTP;
+use Cyrus::IMAP::Admin;
+use Kolab;
+use Kolab::Util;
+use Kolab::LDAP;
+use File::Basename;
+use vars qw($opt_d);
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+Kolab::LDAP::startup($Kolab::config{'kolab_statedir'});
+
+getopts('d');
+if ($opt_d) {
+    foreach my $key (sort keys %Kolab::config) {
+        print "$key : " . $Kolab::config{$key} . "\n";
+    }
+    #exit 0;
+}
+
+#
+# Syslogging options for verbose mode and for fatal errors.
+# NOTE: comment out the $syslog_socktype line if syslogging does not
+# work on your system.
+#
+my $syslog_socktype = 'unix'; # inet, unix, stream, console
+my $syslog_facility="mail";
+my $syslog_options="pid";
+my $syslog_priority="info";
+
+sub mylog {
+  my $prio = shift;
+  my $fmt = shift;
+
+  my $text = sprintf( $fmt, @_ );
+
+  #print STDERR "$text\n";
+  syslog $prio, $text;
+}
+
+#
+# This process runs as a daemon, so it can't log to a terminal. Use
+# syslog so that people can actually see our messages.
+#
+setlogsock $syslog_socktype;
+openlog basename($0), $syslog_options, $syslog_facility;
+
+#
+# Log an error and abort.
+#
+sub fatal_exit {
+    my $fmt = shift;
+    printf( STDERR "fatal: $fmt\n", @_ );
+    mylog("err", "fatal: $fmt", @_);
+    exit 1;
+}
+
+my $verbose = 0;
+my $warninterval = 60*60*24; # seconds between warnings
+my $warnmessage = '';
+my $quotawarnpct = $Kolab::config{'cyrus-quotawarn'};
+fatal_exit( "Can't read configuration, please make sure that kolabquotawarn runs with sufficient privileges")
+  unless $quotawarnpct
+  && $Kolab::config{'cyrus_admin'}
+  && $Kolab::config{'cyrus_admin_pw'};
+my %quotawarn_db;
+my $warnh = new IO::File "< $Kolab::config{'kolab_quotawarning'}";
+if( defined($warnh) ) {
+  $warnmessage = join( '', $warnh->getlines );
+  $warnmessage =~ s/<admin>/MAILER-DAEMON/g;
+  $warnh->close;
+} else {
+  fatal_exit( "Can't open quotawarning.txt" );
+}
+
+dbmopen( %quotawarn_db, "$Kolab::config{'kolab_statedir'}/quotawarn.db", 0666 )
+  || fatal_exit ('Unable to open quotawarn db');
+
+if( $opt_d ) {
+  my $now = time();
+  print "Time is now $now\n";
+  print "Db:\n";
+  while(my ($key,$val) = each %quotawarn_db) {
+	print $key, ' = ', ($now-$val), "\n";
+  }
+}
+
+sub mailuser {
+  my ( $mailbox, $used, $total, $pct ) = @_;
+  my $msg = $warnmessage;
+
+  my ($user) = ( $mailbox =~ /.*\/(.*)/ );
+
+  $pct = sprintf("%.0f",$pct);
+  print "mailbox=$mailbox, user=$user, used=$used, pct=$pct\n" if $opt_d;
+
+  $msg =~ s/<user>/$user/g;
+  $msg =~ s/<mailbox>/$mailbox/g;
+  $msg =~ s/<percent>/$pct/g;
+  $msg =~ s/<used>/$used/g;
+  $msg =~ s/<total>/$total/g;
+  my $mail = Mail::Message->build(  From => "MAILER-DAEMON",
+				To => $user,
+				Subject => "Quota warning",
+				"Content-Type" => "text/plain; charset=utf-8",
+				data => $msg );
+  $mail->print if $opt_d;
+  my $mailer = Mail::Transport::SMTP->new();
+  if( $mailer->send( $mail ) ) {
+    mylog("info", "info: Sent quota warning message to %s because quota is at %d%%", $user, $pct);
+  } else {
+    mylog("err", "error: Failed sent quota warning message to %s", $user);
+  }
+}
+
+sub kolablistquotas {
+  my ( $cyrus, $pattern, $ref, $warnpct ) = @_;
+  my @mailboxes = $cyrus->list($pattern, $ref);
+  foreach my $mailbox (@mailboxes) {
+	my $name = $mailbox->[0];
+	my $attr = $mailbox->[1];
+	my $sep  = $mailbox->[2];
+	my %quota = $cyrus->quota($name);
+	if( $quota{'STORAGE'} ) {
+	  my $used  = $quota{'STORAGE'}[0];
+	  my $total = $quota{'STORAGE'}[1];
+	  my $pct   = $used * 100 / $total;
+	  if( $pct >= $warnpct ) {
+		print "$name is at $pct\n" if $opt_d;
+		my $ts = $quotawarn_db{$name};
+		print "ts=$ts\n" if $opt_d;
+		if( defined($ts) ) {
+		  if( $ts eq "permanent" ) {
+			next;
+		  } elsif( time() - $ts < $warninterval ) {
+			if( $pct >= 100 ) {
+			  $quotawarn_db{$name} = "permanent";
+			}
+			next;
+		  }
+		}
+		if( $pct >= 100 ) {
+		  $quotawarn_db{$name} = "permanent";
+		} else {
+		  $quotawarn_db{$name} = time();
+		}
+		mailuser( $name, $used, $total, $pct );
+	  } else {
+		if( defined( $quotawarn_db{$name} ) ) {
+		  delete $quotawarn_db{$name};
+		}
+	  }
+	}
+  }
+}
+
+mylog( $syslog_priority, "starting up") if $verbose;
+
+### Connect to Cyrus
+my $cyrus = Cyrus::IMAP::Admin->new($Kolab::config{'connect_addr'});
+$cyrus || fatal_exit( 'Unable to connect to local Cyrus admin interface' );
+$cyrus->authenticate(
+					 'User'          => $Kolab::config{'cyrus_admin'},
+					 'Password'      => $Kolab::config{'cyrus_admin_pw'},
+					 'Mechanism'    => 'LOGIN', )
+  || fatal_exit("Unable to authenticate with Cyrus admin interface");
+
+### Mail offending users
+kolablistquotas( $cyrus, 'user/*', '*', $quotawarnpct );
+#print "\nSHARED FOLDERS:\n---------------\n";
+#kolablistquotas( $cyrus, 'user.*', '*', 80 );
+
+mylog( $syslog_priority, "shutting down") if $verbose;
