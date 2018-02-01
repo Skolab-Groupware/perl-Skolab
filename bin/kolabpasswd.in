@@ -49,6 +49,8 @@ use Term::ReadKey;
 use IO::File;
 use File::Temp;
 use Net::LDAP;
+use Digest::SHA1;
+use MIME::Base64;
 use Kolab::Util;
 use Kolab;
 
@@ -76,6 +78,36 @@ sub hashPassword {
   my $hashcmd = "$Kolab::config{'sbindir'}/slappasswd -s ".qquote($pw,":shell");
   (my $hashpw = `$hashcmd`) or die $@;
   chomp($hashpw);
+  return $hashpw;
+}
+
+# Taken from Crypt::SaltedHash
+sub __generate_hex_salt {
+
+    my @keychars = (
+        "0", "1", "2", "3", "4", "5", "6", "7",
+        "8", "9", "a", "b", "c", "d", "e", "f"
+    );
+    my $length = shift || 8;
+
+    my $salt = '';
+    my $max  = scalar @keychars;
+    for my $i ( 0 .. $length - 1 ) {
+        my $skip = $i == 0 ? 1 : 0;    # don't let the first be 0
+        $salt .= $keychars[ $skip + int( rand( $max - $skip ) ) ];
+    }
+
+    return pack( "H*", $salt);
+}
+
+# Hash a password without using slappasswd
+sub hashPassword2 {
+  my $pw = shift;
+  my $ctx = Digest::SHA1->new;
+  my $salt = __generate_hex_salt();
+  $ctx->add($pw);
+  $ctx->add($salt);
+  my $hashpw = '{SSHA}' . encode_base64($ctx->digest . $salt ,'');
   return $hashpw;
 }
 
@@ -108,6 +140,8 @@ do {
   ReadMode 'noecho';
   my $old_password = ReadLine 0; chomp $old_password;
 
+  $old_password = Encode::encode_utf8($old_password);
+
   $mesg = $ldap->bind( $account_dn, password => $old_password ) || die "\nkolabpasswd: Failed to bind to LDAP server";
   if( $mesg->code ) { print "\nError: ".$mesg->error.". Please try again\n"; }
 } while ( $mesg->code );
@@ -123,13 +157,15 @@ print "\n";
 ReadMode 'normal';
 ($new_password eq $new_password2) || die "Sorry, passwords do not match.\n";
 
+$new_password = Encode::encode_utf8($new_password);
+
 my $bind_pw_hash;
 
 # create temporary config file
 my $tmp = new File::Temp( TEMPLATE => 'tempXXXXX', DIR => '@CONFIG_DIR@', UNLINK => 0, SUFFIX => '.conf')
      || die "Error: could not create temporary file under @CONFIG_DIR@";
 $tmpfilename = $tmp->filename;
-$bind_pw_hash = hashPassword($new_password);
+$bind_pw_hash = hashPassword2($new_password);
 
 # copy and replace old config to temporary file
 foreach ($kolabconf->getlines()) {

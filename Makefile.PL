@@ -4,6 +4,7 @@ use warnings;
 
 use ExtUtils::MakeMaker;
 use Getopt::Long;
+use File::Copy;
 
 my $HELP = 0;
 my $CONFIG = '/kolab/etc/kolab';
@@ -95,12 +96,24 @@ sub MY::install {
 }
 
 sub MY::postamble {
-    
-    my $add = "bin/%: bin/%.in
+    if (-e "../kolab.mk")
+    {
+	copy("../kolab.mk", "./") or die "Could not copy ../kolab.mk";
+    }
+    my $add = "include kolab.mk
+
+PACKAGE = \$(shell [ -r \"perl-kolab.spec\" ] && grep '%define[ ]*V_package' perl-kolab.spec | sed -e 's/.*V_package\\s*\\([a-z\\_-]*\\).*/\\1/')
+VERSION = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::KOLAB_VERSION;')
+RELEASE = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::KOLAB_RELEASE;')
+SOURCE_TAG = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::VERSION;')
+
+bin/%: bin/%.in
 	cat \$< | sed -e 's#\@CONFIG_DIR@#$CONFIG#g' > \$@
 
 sbin/%: sbin/%.in
-	cat \$< | sed -e 's#\@CONFIG_DIR@#$CONFIG#g' > \$@
+	cat \$< | sed -e 's#\@CONFIG_DIR@#$CONFIG#g' > \$@.tmp
+	cat \$@.tmp | sed -e 's#\@VERSION@#\$(VERSION)#g' > \$@
+	rm \$@.tmp
 	\$(FIXIN) \$@
 
 SBIN_TARGETS=sbin/kolabconf sbin/kolab_bootstrap sbin/kolabd sbin/kolabcheckperm
@@ -118,27 +131,9 @@ install_etc:
 	  cp \$\$ETC \$(DESTDIR)/$INSTALLETC;        \\
 	done
 
-ifeq \"x\$(RPM)\" \"x\"
-  RPM = \$(HOME)/bin/openpkg rpm
-endif
-ifeq \"x\$(KOLABRPMSRC)\" \"x\"
-  KOLABRPMSRC = \$(HOME)/RPM/SRC
-endif
-ifeq \"x\$(KOLABRPMPKG)\" \"x\"
-  KOLABRPMPKG = \$(HOME)/RPM/PKG
-endif
-ifeq \"x\$(KOLABRPMTMP)\" \"x\"
-  KOLABRPMTMP = \$(HOME)/RPM/TMP
-endif
-
 ifeq \"x\$(PLATTAG)\" \"x\"
-	PLATTAG = \$(shell \$(RPM) -q --qf=\"%{ARCH}-%{OS}\" openpkg)-\$(HOME:/%=%)
+	PLATTAG = \$(shell \$(RPM) -q --qf=\"%{ARCH}-%{OS}\" openpkg)-\$(KOLABDIR:/%=%)
 endif
-
-PACKAGE = \$(shell [ -r \"perl-kolab.spec\" ] && grep '%define[ ]*V_package' perl-kolab.spec | sed -e 's/.*V_package\\s*\\([a-z\\_-]*\\).*/\\1/')
-VERSION = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::KOLAB_VERSION;')
-RELEASE = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::KOLAB_RELEASE;')
-SOURCE_TAG = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::VERSION;')
 
 clean_tardist:
 	rm -rf *.tar.gz

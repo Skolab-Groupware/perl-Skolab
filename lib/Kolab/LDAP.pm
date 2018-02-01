@@ -22,7 +22,7 @@ package Kolab::LDAP;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.11.2.2 $
+##  $Revision: 1.11.2.5 $
 
 use 5.008;
 use strict;
@@ -537,7 +537,7 @@ sub createObject
             }
             if( $p ne 'sf' && !$islocal ) {
                 # Hide user mailboxes on other servers
-                Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid rswipcda"]);
+                Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid rs"]);
             } elsif( $p ne 'sf' ) {
                 # Deal with group and resource accounts
                 my $edn = Net::LDAP::Util::ldap_explode_dn($object->dn(), casefold=>'lower' );
@@ -633,8 +633,8 @@ sub deleteObject
         my $dn = $object->dn;
 	my $del = $object->get_value($Kolab::config{$p . '_field_deleted'}, asref => 1);
 	my $masterldap;
-	if( lc($Kolab::config{'is_master'}) eq 'true' ) {
-	  # We are the master, just go ahead
+	if( $Kolab::config{'ldap_master_uri'} eq $Kolab::config{'ldap_uri'} ) {
+	  # We are already connected to the LDAP master, just go ahead
 	  $masterldap = $ldap;
 	} else {
 	  $masterldap = createMasterLDAP;

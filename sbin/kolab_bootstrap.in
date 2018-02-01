@@ -63,6 +63,9 @@ use Getopt::Std;
 use Term::ReadKey;
 use Time::Local;
 use Time::localtime;
+use Digest::SHA1;
+use MIME::Base64;
+use Encode;
 
 # Reload only kolab.globals into our configuration.
 Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals", 1);
@@ -120,6 +123,36 @@ sub hashPassword {
   my $hashcmd = "$Kolab::config{'hashmethod'} ".qquote($pw,":shell");
   (my $hashpw = `$hashcmd`) or die $@;
   chomp($hashpw);
+  return $hashpw;
+}
+
+# Taken from Crypt::SaltedHash
+sub __generate_hex_salt {
+
+    my @keychars = (
+        "0", "1", "2", "3", "4", "5", "6", "7",
+        "8", "9", "a", "b", "c", "d", "e", "f"
+    );
+    my $length = shift || 8;
+
+    my $salt = '';
+    my $max  = scalar @keychars;
+    for my $i ( 0 .. $length - 1 ) {
+        my $skip = $i == 0 ? 1 : 0;    # don't let the first be 0
+        $salt .= $keychars[ $skip + int( rand( $max - $skip ) ) ];
+    }
+
+    return pack( "H*", $salt);
+}
+
+# Hash a password without using slappasswd
+sub hashPassword2 {
+  my $pw = shift;
+  my $ctx = Digest::SHA1->new;
+  my $salt = __generate_hex_salt();
+  $ctx->add($pw);
+  $ctx->add($salt);
+  my $hashpw = '{SSHA}' . encode_base64($ctx->digest . $salt ,'');
   return $hashpw;
 }
 
@@ -276,7 +309,7 @@ my $fqdnhostname = $kolab_config{'fqdnhostname'} || die "could not read fqdnhost
 my $is_master = $kolab_config{'is_master'} || "true";
 my $bind_dn = $kolab_config{'bind_dn'} || die "could not read bind_dn from $kolab_config";
 my $bind_pw = $kolab_config{'bind_pw'} || die "could not read bind_pw from $kolab_config";
-my $bind_pw_hash = $kolab_config{'bind_pw_hash'} || hashPassword( $bind_pw );
+my $bind_pw_hash = $kolab_config{'bind_pw_hash'} || hashPassword2( $bind_pw );
 my $ldap_uri = $kolab_config{'ldap_uri'} || die "could not read ldap_uri from $kolab_config";
 my $base_dn = $kolab_config{'base_dn'} || die "could not read base_dn from $kolab_config";
 my $php_dn = $kolab_config{'php_dn'} || die "could not read php_dn from $kolab_config";
@@ -352,9 +385,9 @@ if ( $is_master eq "true" ) {
     if ($bind_pw =~ /\@\@\@/) {
       $bind_pw = `$Kolab::config{'bindir'}/openssl rand -base64 12`;
       chomp $bind_pw;
-      $bind_pw = getUserInput("Please choose a manager password", $bind_pw);
-      print " bind_pw : $bind_pw\n";
-      $bind_pw_hash = hashPassword($bind_pw);
+      $bind_pw = Encode::encode_utf8(getUserInput("Please choose a manager password", $bind_pw));
+      print " bind_pw : " . Encode::decode_utf8($bind_pw) . "\n";
+      $bind_pw_hash = hashPassword2($bind_pw);
     }
 
     # Generate passwords
@@ -391,7 +424,7 @@ if ( $is_master eq "true" ) {
     chmod 0600, $kolab_config;
     kolab_chown "$Kolab::config{'kolab_musr'}","$Kolab::config{'kolab_mgrp'}", $kolab_config;
     print "IMPORTANT NOTE:\n";
-    print "use login=manager and passwd=$bind_pw when you log into the webinterface!\n\n";
+    print "use login=manager and passwd=" . Encode::decode_utf8($bind_pw) . " when you log into the webinterface!\n\n";
   }
 
   # Set up slapd to replicate to slave server's kolabds
@@ -430,7 +463,7 @@ if ( $is_master eq "true" ) {
       $Kolab::config{'directory_replication_mode_is_syncrepl'} = 'true' if ($Kolab::config{'directory_mode'} eq 'syncrepl');
       $Kolab::config{"base_dn"} = $base_dn;
       $Kolab::config{"bind_dn"} = $bind_dn;
-      $Kolab::config{"bind_pw_hash"} = $bind_pw;
+      $Kolab::config{"bind_pw_hash"} = $bind_pw_hash;
       $Kolab::config{"slurpd_addr"} = $slurpd_addr;
       $Kolab::config{"slurpd_port"} = $slurpd_port;
 
@@ -556,7 +589,7 @@ if ( $is_master eq "true" ) {
       # create php read-only user
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=nobody,cn=internal,$base_dn" );
       $ldapobject->replace('cn' => 'nobody', 'sn' => 'n/a n/a', 'uid' => 'nobody',
-                           'userPassword' => hashPassword($php_pw),
+                           'userPassword' => hashPassword2($php_pw),
                            'objectclass' => ['top','inetorgperson','kolabinetorgperson']);
       $ldapobject->dn("cn=nobody,cn=internal,$base_dn");
       $mesg = $ldapobject->update($ldap);
@@ -566,7 +599,7 @@ if ( $is_master eq "true" ) {
       # create calendar user
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=$calendar_id@" . $domain . ",cn=internal,$base_dn" );
       $ldapobject->replace('cn' => $calendar_id . '@' . $domain, 'sn' => 'n/a n/a', 'uid' => $calendar_id . '@' . $domain,
-                           'userPassword' => hashPassword($calendar_pw),
+                           'userPassword' => hashPassword2($calendar_pw),
                            'objectclass' => ['top','inetorgperson','kolabinetorgperson']);
       $ldapobject->dn("cn=$calendar_id@" . $domain . ",cn=internal,$base_dn");
       $mesg = $ldapobject->update($ldap);
@@ -692,8 +725,8 @@ EOS
   print "proceeding with base DN $base_dn\n";
 
   $bind_dn = "cn=manager,cn=internal,$base_dn";
-  $bind_pw = getUserInput("Manager password");
-  $bind_pw_hash = hashPassword($bind_pw);
+  $bind_pw = Encode::encode_utf8(getUserInput("Manager password"));
+  $bind_pw_hash = hashPassword2($bind_pw);
 
   my $confname = "$Kolab::config{'sasl_smtpconffile'}";
   copy("@CONFIG_DIR@/templates/smtpd.conf.template", $confname) || die "could not write to $confname";
@@ -746,13 +779,15 @@ EOS
 
   my $master_host = $ldapuri->host();
 
-  print "Reading nobody and calendar passwords from master, please type in master server's root password when asked\n";
+  print "Reading bind_pw_hash, php_pw and calendar_pw from master, please type in master server's root password when asked\n";
   my $get_master_conf = "ssh -C $master_host 'cat @CONFIG_DIR@/kolab.conf'";
   print "$get_master_conf\n";
   open( CONF, "$get_master_conf|");
   my $conf;
   $conf .= $_ while(<CONF>);
   close(CONF);
+  $conf =~ /bind_pw_hash : (.*)/;
+  $bind_pw_hash = $1;
   $conf =~ /php_pw : (.*)/;
   $php_pw = $1;
   $conf =~ /calendar_pw : (.*)/;
@@ -865,6 +900,7 @@ EOS
   print $fd "base_dn : $base_dn\n";
   print $fd "bind_dn : $bind_dn\n";
   print $fd "bind_pw : $bind_pw\n";
+  print $fd "bind_pw_hash : $bind_pw_hash\n";
   print $fd "ldap_uri : ldap://127.0.0.1\n";
   print $fd "ldap_master_uri : $ldap_uri\n";
   print $fd "php_dn : $php_dn\n";
@@ -881,5 +917,5 @@ EOS
 #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
 print "kolab is now ready to run!\n";
 print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
-print ("Use login=manager and passwd=$bind_pw when you log into\n");
+print ("Use login=manager and passwd=" . Encode::decode_utf8($bind_pw) . " when you log into\n");
 print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");

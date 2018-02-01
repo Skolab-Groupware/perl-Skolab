@@ -47,7 +47,7 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 =cut
 
-##  $Revision: 1.2 $
+##  $Revision: 1.2.2.1 $
 
 use 5.008;
 use strict;
@@ -93,9 +93,9 @@ if ($opt_d) {
     exit 0;
 }
 
-my $do_reload = 1;
+$Kolab::do_reload = 1;
 if($opt_n) {
-    $do_reload = 0;
+    $Kolab::do_reload = 0;
 }
 
 if( !$Kolab::reloadOk ) {
@@ -109,7 +109,7 @@ Kolab::log('KC', 'Rebuilding templates');
 Kolab::Conf::rebuildTemplates;
 Kolab::log('KC', 'Reloading kolab components');
 
-if( $do_reload ) {
+if( $Kolab::do_reload ) {
     Kolab::Conf::reload;
 }
 
