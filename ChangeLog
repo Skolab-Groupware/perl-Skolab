@@ -1,0 +1,113 @@
+2006-12-04  Gunnar Wrobel  <wrobel@pardus.de>
+
+	* Kolab-Conf/Conf.pm.in (build): Only print "No configuration
+	variable corresponding to `$1' exists" in case we are NOT skipping
+	the section.
+	
+2006-03-20 Marcus Hüwe <suse-tux@gmx.de>
+	Patch commited by Richard Bos
+	* Kolab-Conf/Conf.pm.in: introduce a new variable phpinit_dir for the
+          directory that holds the php.ini file to be used.
+
+2006-01-15 Richard Bos <richard@radoeka.nl>
+	* Kolab-Conf/Conf.pm.in: use the new variable sasl_authdconffile
+	  instead of @sasl_confdir@/saslauthd.conf
+
+2006-01-14 Marcus Hüwe <suse-tux@gmx.de>
+	Patch commited by Richard Bos
+	* configure.ac: replaced --enable-dist with --with-dist
+	  Added dist_conf file check.  If dist_conf file specified with
+	  --with-dist is not present fail configure.
+	* perl-kolab.spec.in: replaced --enable-dist with --with-dist
+
+2006-01-14 Richard Bos <richard@radoeka.nl>
+	* Kolab/Kolab.pm.in: check for valid uid/gid values with perl define
+	  instead of the value.  The current check failed for root, as that
+	  returns '0' (zero) that was interpreted as false...
+	* Changed the real login names, kolab, kolab-n and kolab-r to resp.
+	  @kolab_mgrp@, @kolab_usr@ and @kolab_rusr@.  The same thing
+	  was done for the groups
+
+2006-01-07 Richard Bos <richard@radoeka.nl>
+	* Kolab-Conf/Conf.pm.in: do not crash when the file to be checked
+	  does not exists.
+	  Give a hint _which_ config file can not be moved
+
+2006-01-03 Richard Bos <richard@radoeka.nl>
+	* Makefile.am: distribute only the files to be distributed
+	  from the dist_conf directory
+	  Added a distclean-local rule to remove the directory autom4te.cache
+
+2005-12-30 Richard Bos <richard@radoeka.nl>
+	* Kolab/Makefile.am,
+	  Kolab-Conf/Makefile.am,
+	  Kolab-Cyrus/Makefile.am,
+	  Kolab-DirServ/Makefile.am,
+	  Kolab-LDAP/Makefile.am,
+	  Kolab-LDAP-Backend/Makefile.am,
+	  Kolab-LDAP-Backend-ad/Makefile.am,
+	  Kolab-LDAP-Backend-dirservd/Makefile.am,
+	  Kolab-LDAP-Backend-slurpd/Makefile.am,
+	  Kolab-Mailer/Makefile.am,
+	  Kolab-Util/Makefile.am: removed.  Not needed anymore due
+	  to conversion from autoperl to autotools
+
+2005-12-30 Marcus Hüwe <suse-tux@gmx.de>
+	Patch committed by Richard Bos, see issue1047
+	* Kolab/Kolab.pm.in: replaced @bindir@/openpkg with @KOLABRC@
+
+2005-12-29 Martin Konold <martin.konold@erfrakon.de>
+	* configure: removed, not needed anymore due to the conversion to
+	  autotools from autoperl. See issue1038
+
+2005-12-19 Richard Bos <richard@radoeka.nl>
+        * configure.ac: added no-dist-gzip to AM_INIT_AUTOMAKE
+        * Makefile.cvs: reflected change in configure.ac, to create only bzipped
+          tarbals.  Changed 'make dist' into 'make distcheck'
+
+2005-12-17 Richard Bos <richard@radoeka.nl>
+	* dist_conf/gentoo, dist_conf/kolab: removed, they are
+	  not needed anymore as the dist_conf files from kolabd
+	  are used.
+
+2005-12-17 Richard Bos <richard@radoeka.nl>
+	* NEWS: added
+	* Makefile.cvs,
+	  perl-kolab.spec.in: updated so the build completes
+	  with the new autoconfiscated perl-kolab
+
+2005-12-17 Marcus Hüwe <suse-tux@gmx.de>
+	Patch committed by Richard Bos
+	* bootstrap: added
+	* ChangeLog: added
+	* Kolab/Kolab.pm,
+	  Kolab-Conf/Conf.pm,
+	  Kolab-DirServ/DirServ.pm,
+	  Kolab-LDAP/LDAP.pm,
+	  Kolab-LDAP-Backend-slurpd/slurpd.pm,
+	  Kolab-Mailer/Mailer.pm: are working now with the updated
+	  kolabd/kolabd/dist_conf file
+	* Kolab/Makefile.am,
+	  Kolab-Mailer/Makefile.am,
+	  Kolab-Conf/Makefile.am,
+	  Kolab-LDAP/Makefile.am,
+	  Kolab-Util/Makefile.am,
+	  Kolab-Cyrus/Makefile.am,
+	  Kolab-LDAP-Backend/Makefile.am,
+	  Kolab-LDAP-Backend-ad/Makefile.am,
+	  Kolab-LDAP-Backend-slurpd/Makefile.am,
+	  Kolab-DirServ/Makefile.am,
+	  Kolab-LDAP-Backend-dirservd/Makefile.am,
+	  Makefile.am: are removed
+	* Kolab/Makefile.PL,
+	  Kolab-Mailer/Makefile.PL,
+	  Kolab-Conf/Makefile.PL,
+	  Kolab-LDAP/Makefile.PL,
+	  Kolab-Util/Makefile.PL,
+	  Kolab-Cyrus/Makefile.PL,
+	  Kolab-LDAP-Backend/Makefile.PL,
+	  Kolab-LDAP-Backend-ad/Makefile.PL,
+	  Kolab-LDAP-Backend-slurpd/Makefile.PL,
+	  Kolab-DirServ/Makefile.PL,
+	  Kolab-LDAP-Backend-dirservd/Makefile.PL: are removed
+	

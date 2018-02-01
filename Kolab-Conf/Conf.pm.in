@@ -1,0 +1,888 @@
+package Kolab::Conf;
+
+##
+##  Copyright (c) 2004  Klaraelvdalens Datakonsult AB
+##  Copyright (c) 2003  Code Fusion cc
+##
+##    Written by Stuart Bingë <s.binge@codefusion.co.za>
+##    Portions based on work by the following people:
+##
+##      (c) 2003       Tassilo Erlewein <tassilo.erlewein@erfrakon.de>
+##      (c) 2003-2006  Martin Konold    <martin.konold@erfrakon.de>
+##      (c) 2003       Achim Frank      <achim.frank@erfrakon.de>
+##
+##
+##  This  program is free  software; you can redistribute  it and/or
+##  modify it  under the terms of the GNU  General Public License as
+##  published by the  Free Software Foundation; either version 2, or
+##  (at your option) any later version.
+##
+##  This program is  distributed in the hope that it will be useful,
+##  but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+##  General Public License for more details.
+##
+##  You can view the  GNU General Public License, online, at the GNU
+##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+##
+## Version 0.02
+use 5.008;
+use strict;
+use warnings;
+use IO::File;
+use File::Copy;
+use File::Temp;
+use File::stat;
+use Kolab;
+use Kolab::Util;
+use Kolab::LDAP;
+
+require Exporter;
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = (
+    'all' => [ qw(
+        &buildPostfixTransportMap
+        &buildCyrusConfig
+        &buildCyrusGroups
+        &buildLDAPReplicas
+        &rebuildTemplates
+	&checkPermissions
+        %haschanged
+    ) ]
+);
+
+our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
+
+our @EXPORT = qw(
+
+);
+
+our $VERSION = '0.9';
+
+
+my $templatedir = "@sysconfdir@/kolab/templates";
+
+my %special_templates = (
+			 "$templatedir/transport.template"      => 1,
+			 "$templatedir/virtual.template"        => 1,
+			 "$templatedir/imapd.group.template"    => 1,
+			 "$templatedir/cyrus.conf.template"     => 1,
+			 "$templatedir/slapd.access.template"   => 1,
+			 "$templatedir/slapd.replicas.template" => 1);
+
+my %templates = ();
+my %ownership = ();
+my %permissions = ();
+
+# my %templates = (
+# 		 "$templatedir/rc.conf.template" => "@sysconfdir@/rc.conf",
+# 		 "$templatedir/session_vars.php.template" => "@phplibdir2@/admin/include/session_vars.php",
+# 		 "$templatedir/clamd.conf.template" => "@clamav_confdir@/clamd.conf",
+# 		 "$templatedir/freshclam.conf.template" => "@clamav_confdir@/freshclam.conf",
+# 		 "$templatedir/amavisd.conf.template" => "@amavisd_conffile@",
+# 		 "$templatedir/main.cf.template" => "@emailserver_confdir@/main.cf@",
+# 		 "$templatedir/ldapdistlist.cf.template" => "@emailserver_confdir@/ldapdistlist.cf",
+# 		 "$templatedir/ldaptransport.cf.template" => "@emailserver_confdir@/ldaptransport.cf",
+# 		 "$templatedir/ldapvirtual.cf.template" => "@emailserver_confdir@/ldapvirtual.cf",
+# 		 "$templatedir/master.cf.template" => "@emailserver_confdir@/master.cf",
+# 		 "$templatedir/transport.template" => "@emailserver_confdir@/transport",
+# 		 "$templatedir/virtual.template" => "@emailserver_confdir@/virtual",
+# 		 "$templatedir/saslauthd.conf.template" => "@sasl_authdconffile@",
+# 		 "$templatedir/imapd.conf.template" => "@imap_confdir@/imapd.conf",
+# 		 "$templatedir/imapd.group.template" => "@imap_confdir@/imapd.group",
+# 		 "$templatedir/cyrus.conf.template" => "@imap_confdir@/cyrus.conf",
+# 		 "$templatedir/httpd.conf.template" => "@webserver_confdir@/apache.conf",
+# 		 "$templatedir/httpd.local.template" => "@webserver_confdir@/apache.local",
+# 		 "$templatedir/php.ini.template" => "@phpini_dir@/php.ini",
+# 		 "$templatedir/proftpd.conf.template" => "@ftpserver_confdir@/proftpd.conf",
+# 		 "$templatedir/ldap.conf.template" => "@sysconfdir@/openldap/ldap.conf",
+# 		 "$templatedir/slapd.conf.template" => "@sysconfdir@/openldap/slapd.conf",
+# 		 "$templatedir/slapd.access.template" => "@sysconfdir@/openldap/slapd.access",
+# 		 "$templatedir/slapd.replicas.template" => "@sysconfdir@/openldap/slapd.replicas",
+# 		 "$templatedir/DB_CONFIG.slapd.template" => "@ldapserver_dir@/DB_CONFIG",
+# 		 "$templatedir/freebusy.conf.template" => "@resmgr_confdir@/freebusy.conf",
+# 		 "$templatedir/fbview.conf.template" => "@resmgr_confdir@/fbview.conf",
+# 		 "$templatedir/resmgr.conf.template" => "@resmgr_confdir@/resmgr.conf"
+# 		);
+
+# my %permissions = (
+# 		   "@sysconfdir@/rc.conf"                                  => 0644,
+# 		   "@phplibdir2@/admin/include/session_vars.php"      => 0640,
+# 		   "@resmgr_confdir@/freebusy.conf"                     => 0640,
+# 		   "@resmgr_confdir@/fbview.conf"                       => 0640,
+# 		   "@resmgr_confdir@/resmgr.conf"                       => 0640,
+# 		   "@emailserver_confdir@/main.cf"                          => 0644,
+# 		   "@emailserver_confdir@/ldapdistlist.cf"                  => 0640,
+# 		   "@emailserver_confdir@/ldaptransport.cf"                 => 0640,
+# 		   "@emailserver_confdir@/ldapvirtual.cf"                   => 0640,
+# 		   "@emailserver_confdir@/master.cf"                        => 0640,
+# 		   "@clamav_confdir@/clamd.conf"                           => 0640,
+# 		   "@clamav_confdir@/freshclam.conf"                       => 0640,
+# 		   "@sysconfdir@/amavisd/amavisd.conf"                     => 0640,
+# 		   "@sasl_authdconffile@"                         => 0600,
+# 		   "@imap_confdir@/imapd.conf"                             => oct('@imap_confperm@'),
+# 		   "@webserver_confdir@/apache.conf"                       => 0640,
+# 		   "@webserver_confdir@/apache.local"                      => 0640,
+# 		   "@phpini_dir@/php.ini"  		                          => 0640,
+# 		   "@ftpserver_confdir@/proftpd.conf"                      => 0640,
+# 		   "@sysconfdir@/openldap/slapd.conf"                      => 0640,
+# 		   "@sysconfdir@/openldap/slapd.access"                    => 0640,
+# 		   "@sysconfdir@/openldap/slapd.replicas"                  => 0640,
+# 		   "@ldapserver_dir@/DB_CONFIG"                            => 0640,
+# 		   "@sysconfdir@/openldap/ldap.conf"                       => 0644,
+# 		   "@emailserver_confdir@/transport"                        => 0640,
+# 		   "@emailserver_confdir@/virtual"                          => 0640,
+# 		   "@imap_confdir@/cyrus.conf"                             => oct('@imap_confperm@'),
+# 		   "@imap_confdir@/imapd.group"                            => oct('@imap_confperm@'));
+
+# my %ownership = (
+# 		 "@sysconfdir@/rc.conf"                                  => "kolab:kolab",
+# 		 "@phplibdir2@/admin/include/session_vars.php"      => "kolab:kolab-n",
+# 		 "@resmgr_confdir@/freebusy.conf"                     => "kolab:kolab-n",
+# 		 "@resmgr_confdir@/fbview.conf"                       => "kolab:kolab-n",
+# 		 "@resmgr_confdir@/resmgr.conf"                       => "kolab:kolab-n",
+# 		 "@emailserver_confdir@/main.cf"                          => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@emailserver_confdir@/ldapdistlist.cf"                  => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@emailserver_confdir@/ldaptransport.cf"                 => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@emailserver_confdir@/ldapvirtual.cf"                   => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@emailserver_confdir@/master.cf"                        => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@clamav_confdir@/clamd.conf"                           => "kolab:kolab-r",
+# 		 "@clamav_confdir@/freshclam.conf"                       => "kolab:kolab-r",
+# 		 "@amavisd_conffile@"                                    => "kolab:kolab-r",
+# 		 "@sasl_authdconffile@"                                  => "kolab:kolab",
+# 		 "@imap_confdir@/imapd.conf"                             => "@imap_usr@:@imap_grp@",
+# 		 "@webserver_confdir@/apache.conf"                       => "kolab:kolab-n",
+# 		 "@webserver_confdir@/apache.local"                      => "kolab:kolab-n",
+# 		 "@phpini_dir/php.ini"                        			   => "kolab:kolab-n",
+# 		 "@ftpserver_confdir@/proftpd.conf"                      => "kolab:kolab-n",
+# 		 "@sysconfdir@/openldap/ldap.conf"                       => "@ldapserver_usr@:@ldapserver_grp@",
+# 		 "@sysconfdir@/openldap/slapd.conf"                      => "@ldapserver_usr@:@ldapserver_grp@",
+# 		 "@sysconfdir@/openldap/slapd.access"                    => "@ldapserver_usr@:@ldapserver_grp@",
+# 		 "@sysconfdir@/openldap/slapd.replicas"                  => "@ldapserver_usr@:@ldapserver_grp@",
+# 		 "@ldapserver_dir@/DB_CONFIG"                            => "@ldapserver_usr@:@ldapserver_grp@",
+# 		 "@emailserver_confdir@/transport"                        => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@emailserver_confdir@/virtual"                          => "@emailserver_usr@:@emailserver_grp@",
+# 		 "@imap_confdir@/cyrus.conf"                             => "@imap_usr@:@imap_grp@",
+# 		 "@imap_confdir@/imapd.group"                            => "@imap_usr@:@imap_grp@");
+
+
+
+sub fixup {
+   my $file = shift;
+   my $ownership = shift;
+   my $perm = shift;
+
+   (my $owner, my $group) = split(/:/, $ownership, 2);
+   my $uid = (getpwnam($owner))[2];
+   my $gid = (getgrnam($group))[2];
+   Kolab::log('T', sprintf("Changing permissions of %s to 0%o", $file, $perm ), KOLAB_DEBUG );
+   if( chmod($perm, $file) != 1 ) {
+     Kolab::log('T', "Unable to change permissions of `$file' to ".sprintf("0%o",$perm), KOLAB_ERROR);
+     exit(1);
+   }
+   Kolab::log('T', "Changing owner of $file to $owner:$group ($uid:$gid)", KOLAB_DEBUG );
+   if( chown($uid,$gid,$file) != 1 ) {
+     Kolab::log('T', "Unable to change ownership of `$file' to $uid:$gid", KOLAB_ERROR);
+     exit(1);
+   }
+}
+
+sub build {
+    my $tmpl = shift;
+    my $cfg = shift;
+    my $owner = shift;
+    my $perm = shift;
+    my $oldcfg = $cfg . '.old';
+    
+    my $oldmask = umask 077;
+    copy($cfg, $oldcfg);
+    #chown($Kolab::config{'kolab_uid'}, $Kolab::config{'kolab_gid'}, $oldcfg);
+    # To avoid warnings, the backup files must be owned by root
+    chown(0, 0, $oldcfg);
+    umask $oldmask;
+    #chmod(0600, $oldcfg) if ($oldcfg =~ /openldap/);
+
+    Kolab::log('T', "Creating new configuration file `$cfg' from template `$tmpl'", KOLAB_DEBUG );
+    #print STDERR "Creating new configuration file `$cfg' from template `$tmpl'\n";
+
+    my $template;
+    if (!($template = IO::File->new($tmpl, 'r'))) {
+        Kolab::log('T', "Unable to open template file `$tmpl'", KOLAB_ERROR);
+	# Error, fail gracefully
+	return;
+    }
+    my $config;
+    if (!($config = new File::Temp( TEMPLATE => 'tmpXXXXX',
+				    DIR => "@sysconfdir@/kolab/",
+				    SUFFIX => '.kolabtmp',
+				    UNLINK => 0 ))) {
+        Kolab::log('T', "Unable to open configuration file `$cfg'", KOLAB_ERROR);
+        exit(1);
+    }
+
+    #Kolab::log('T', "Using temporary file '".$config->filename."'", KOLAB_DEBUG );
+
+    my $skip = 0;
+    my $keep = 0;
+    while (<$template>) {
+    	#Eat the meta data sections
+	if (/^KOLAB_META_START$/) {
+		my $found_end;
+		while (!$found_end) {	
+			$_ = <$template>;
+			$found_end = /^KOLAB_META_END$/;
+		}
+		$_ = <$template>;
+	}
+        if (/\@{3}if (\S+?)\@{3}/) {
+            if ($Kolab::config{$1} && lc($Kolab::config{$1}) ne "false" ) {
+                # Keep text
+		$keep = 1;
+            } else {
+                # Skip text
+                $skip++;
+		$keep = 0;
+            }
+            s/\@{3}if (\S+?)\@{3}\n?//;
+	} elsif (/\@{3}else\@{3}/) {
+	    if( $keep == 0 ) {
+		# Now keep
+		$keep = 1;
+		$skip--;
+	    } else {
+		# Now skip
+		$keep = 0;
+                $skip++;
+	    }
+            s/\@{3}else\@{3}\n?//;
+        } elsif (/\@{3}endif\@{3}/) {
+            ($skip > 0) && $skip--;
+            s/\@{3}endif\@{3}\n?//;
+        } else {
+            while (/\@{3}([^\s\@]+?)(\|(.+?)\((.*)\))?\@{3}/) {
+	      my $attr = $1;
+	      my $fct  = $3;
+	      my $args = $4;
+	      #print STDERR "attr=\"$attr\", fct=\"$fct\", args=\"$args\"\n";
+	      if ($Kolab::config{$attr}) {
+		my $val = "";
+		if( !$fct ) {
+		  if (ref $Kolab::config{$attr} eq "ARRAY") {
+		    $val = $Kolab::config{$attr}->[0];
+		  } else {
+		    $val = $Kolab::config{$attr};
+		  }
+		} else {
+		  # Modifier functions
+		SWITCH: {
+		    # Join function 
+		    $fct eq 'join' && do {
+                      if (ref $Kolab::config{$attr} eq "ARRAY") {
+                          my @vals = @{$Kolab::config{$attr}} ;
+			  # We want to make sure subdomain.domain.tld comes before domain.tld
+                          my @length_sorted_vals = sort {length $a cmp length $b} @vals;
+                          $val = join ($args, @length_sorted_vals) ;
+                      } else {
+                          $val = $Kolab::config{$attr};
+                      }
+		      last SWITCH;
+		    };
+		    # Quote function
+		    $fct eq 'quote' && do {
+		      # slapd.conf compatible quoting
+		      $val = $Kolab::config{$attr};
+		      $val =~ s/"/\"/g;
+		      $val = '"'.$val.'"';
+		      last SWITCH;
+		    }
+		  }
+		}
+		s/\@{3}([^\s\@]+?)(\|.+?)?\@{3}/$val/;
+		last if ( $val eq "\@\@\@$attr\@\@\@" ); # prevent endless loop
+	      } else {
+		# Only warn the user in case we are not skipping the section
+		($skip == 0) && Kolab::log('T', "No configuration variable corresponding to `$1' exists", KOLAB_WARN);
+		s/\@{3}([^\s\@]+?)\@{3}//;
+	      }
+	    }
+	    ($skip == 0) && print $config $_;
+	  }
+      }
+	
+    $template->close;
+    $config->close;
+
+    move($config->filename, $cfg) || Kolab::log('T', "Error moving configfile to $cfg, error: $!", KOLAB_ERROR );
+    fixup( $cfg, $owner, $perm );
+    #chown($Kolab::config{'kolab_uid'}, $Kolab::config{'kolab_gid'}, $cfg);
+    #chmod(0600, $cfg) if ($cfg =~ /openldap/);
+
+    if (-f $oldcfg && !defined $special_templates{$tmpl} ) {
+        my $rc = `diff -q $cfg $oldcfg`;
+        chomp($rc);
+        if ($rc) {
+            if ($cfg =~ /postfix/) {
+                $Kolab::haschanged{'postfix'} = 1;
+            } elsif ($cfg =~ /saslauthd/) {
+                $Kolab::haschanged{'saslauthd'} = 1;
+            } elsif ($cfg =~ /apache/) {
+                $Kolab::haschanged{'apache'} = 1;
+            } elsif ($cfg =~ /proftpd/) {
+                $Kolab::haschanged{'proftpd'} = 1;
+            } elsif ($cfg =~ /openldap/) {
+                $Kolab::haschanged{'slapd'} = 1;
+            } elsif ($cfg =~ /imapd/) {
+                $Kolab::haschanged{'imapd'} = 1;
+	    } elsif ($cfg =~ /amavisd/) {
+                $Kolab::haschanged{'amavisd'} = 1;
+	    } elsif ($cfg =~ /clamav/) {
+                $Kolab::haschanged{'clamav'} = 1;
+	    }
+
+            Kolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG );
+        }
+    }
+
+    Kolab::log('T', "Finished creating configuration file `$cfg'", KOLAB_DEBUG );
+}
+
+sub buildPostfixTransportMap
+{
+    buildPostfixMap( 'transport' );
+}
+
+sub buildPostfixVirtualMap
+{
+    buildPostfixMap( 'virtual' );
+}
+
+sub buildPostfixMap
+{
+    my $map = shift;
+    Kolab::log('T', "Building Postfix $map map", KOLAB_DEBUG);
+
+    my $keytemplate = "$templatedir/$map.template";
+    my $cfg = $templates{$keytemplate};
+    my $oldcfg = $cfg . '.old';
+
+    #my $oldmask = umask 077;
+    #copy($cfg, $oldcfg);
+    #chown($Kolab::config{'kolab_uid'}, $Kolab::config{'kolab_gid'}, $oldcfg);
+    #umask $oldmask;
+    #delete $templates{$keytemplate};
+
+    my $transport;
+    if (!($transport = IO::File->new($cfg, 'a'))) {
+        Kolab::log('T', "Unable to create Postfix $map map", KOLAB_ERROR);
+        exit(1);
+    }
+
+    my $ldap = Kolab::LDAP::create(
+        $Kolab::config{'ldap_ip'},
+        $Kolab::config{'ldap_port'},
+        $Kolab::config{'bind_dn'},
+        $Kolab::config{'bind_pw'}
+    );
+
+    my $mesg = $ldap->search(
+        base    => 'k=kolab,'.$Kolab::config{'base_dn'},
+        scope   => 'base',
+        filter  => '(objectclass=*)'
+    );
+    if ($mesg->code) {
+        Kolab::log('T', "Unable to locate Postfix $map map entries in LDAP", KOLAB_ERROR);
+        exit(1);
+    }
+
+    my $ldapobject;
+    if ($mesg->code <= 0) {
+        foreach $ldapobject ($mesg->entries) {
+            my $routes = $ldapobject->get_value("postfix-$map", asref => 1);
+            foreach (@$routes) {
+                $_ = trim($_);
+                Kolab::log('T', "Adding entry `$_' to $map");
+                print $transport $_ . "\n";
+            }
+        }
+    } else {
+        Kolab::log('T', "No Postfix $map map entries found");
+    }
+
+    Kolab::LDAP::destroy($ldap);
+    $transport->close;
+
+    # FIXME: bad way of doing things...
+    #system("chown root:root @emailserver_confdir@/*");
+    fixup( $cfg, $ownership{$cfg}, $permissions{$cfg});
+    system("@sbindir@/postmap -o @emailserver_confdir@/$map");
+
+    if (-f $oldcfg) {
+        my $rc = `diff -q $cfg $oldcfg`;
+        chomp($rc);
+        if ($rc) {
+           Kolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG);
+           $Kolab::haschanged{'postfix'} = 1;
+        }
+    } else {
+        $Kolab::haschanged{'postfix'} = 1;
+    }
+
+    Kolab::log('T', 'Finished building Postfix $map map', KOLAB_DEBUG);
+}
+
+sub buildCyrusConfig
+{
+    Kolab::log('T', 'Building Cyrus config', KOLAB_DEBUG);
+
+    my $keytemplate = "$templatedir/cyrus.conf.template";
+    my $cfg = $templates{$keytemplate};
+    my $imapdtemplate = "$templatedir/imapd.conf.template";
+    my $imapdcfg = $templates{$imapdtemplate};
+    my $oldcfg = $cfg . '.old';
+    #delete $templates{$keytemplate};
+
+    #my $oldmask = umask 077;
+    #copy($cfg, $oldcfg);
+    #chown($Kolab::config{'kolab_uid'}, $Kolab::config{'kolab_gid'}, $oldcfg);
+    #umask $oldmask;
+
+    my $cyrusconf;
+    my $cyrustemplate;
+    if (!($cyrustemplate = IO::File->new($keytemplate, 'r'))) {
+      Kolab::log('T', "Unable to open configuration file `$cfg'", KOLAB_ERROR);
+      exit(1);
+    }
+
+    if (!($cyrusconf = IO::File->new($cfg, 'w'))) {
+        Kolab::log('T', "Unable to open configuration file `$cfg'", KOLAB_ERROR);
+        exit(1);
+    }
+
+    while (<$cyrustemplate>) {
+        if (/^KOLAB_META_START$/) {
+	    my $found_end;
+	    while (!$found_end) {
+	        $_ = <$cyrustemplate>;
+		$found_end = /^KOLAB_META_END$/;
+	    }
+	    $_ = <$cyrustemplate>;
+	}
+        if (/\@{3}cyrus-imap\@{3}/ && ($Kolab::config{"cyrus-imap"} =~ /true/i)) {
+            $_ = "imap cmd=\"imapd -C $imapdcfg\" listen=\"143\" prefork=0\n";
+        }
+        elsif (/\@{3}cyrus-imap\@{3}/ && ($Kolab::config{"cyrus-imap"} =~ /false/i)) {
+	    # Even if imapd is disabled, enable it for localhost -- resource handlers depend on it
+            $_ = "imap cmd=\"imapd -C $imapdcfg\" listen=\"127.0.0.1:143\" prefork=0\n";
+        }
+        elsif (/\@{3}cyrus-pop3\@{3}/ && ($Kolab::config{"cyrus-pop3"} =~ /true/i)) {
+            $_ = "pop3 cmd=\"pop3d -C $imapdcfg\" listen=\"110\" prefork=0\n";
+        }
+        elsif (/\@{3}cyrus-imaps\@{3}/ && ($Kolab::config{"cyrus-imaps"} =~ /true/i)) {
+            $_ = "imaps cmd=\"imapd -s -C $imapdcfg\" listen=\"993\" prefork=0\n";
+        }
+        elsif (/\@{3}cyrus-pop3s\@{3}/ && ($Kolab::config{"cyrus-pop3s"} =~ /true/i)) {
+            $_ = "pop3s cmd=\"pop3d -s -C $imapdcfg\" listen=\"995\" prefork=0\n";
+        }
+        elsif (/\@{3}cyrus-sieve\@{3}/ && ($Kolab::config{"cyrus-sieve"} =~ /true/i)) {
+            $_ = "sieve cmd=\"timsieved -C $imapdcfg\" listen=\"2000\" prefork=0\n";
+        }
+        $_ =~ s/\@{3}.*\@{3}//;
+        print $cyrusconf $_;
+    }
+
+    $cyrustemplate->close;
+    $cyrusconf->close;
+
+    fixup( $cfg, $ownership{$cfg}, $permissions{$cfg});
+
+    if (-f $oldcfg) {
+        my $rc = `diff -q $cfg $oldcfg`;
+        chomp($rc);
+        if ($rc) {
+           Kolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG);
+           $Kolab::haschanged{'imapd'} = 1;
+        }
+    } else {
+        $Kolab::haschanged{'imapd'} = 1;
+    }
+
+    Kolab::log('T', 'Finished building Cyrus config', KOLAB_DEBUG);
+}
+
+sub buildCyrusGroups
+{
+    Kolab::log('T', 'Building Cyrus groups', KOLAB_DEBUG);
+
+    my $keytemplate = "$templatedir/imapd.group.template";
+    my $cfg = $templates{$keytemplate};
+    my $oldcfg = $cfg . '.old';
+    #delete $templates{$keytemplate};
+
+    #my $oldmask = umask 077;
+    #copy($cfg, $oldcfg);
+    #chown($Kolab::config{'kolab_uid'}, $Kolab::config{'kolab_gid'}, $oldcfg);
+    #umask $oldmask;
+
+    my $groupconf;
+    if (!($groupconf = IO::File->new($cfg, 'a'))) {
+        Kolab::log('T', "Unable to open configuration file `$cfg'", KOLAB_ERROR);
+        exit(1);
+    }
+
+    my $ldap = Kolab::LDAP::create(
+        $Kolab::config{'ldap_ip'},
+        $Kolab::config{'ldap_port'},
+        $Kolab::config{'bind_dn'},
+        $Kolab::config{'bind_pw'}
+    );
+
+    my $mesg = $ldap->search(
+        base    => $Kolab::config{'base_dn'},
+        scope   => 'sub',
+        filter  => '(&(mail=*)(objectclass=kolabgroupofnames))'
+    );
+    if ($mesg->code) {
+        Kolab::log('T', 'Unable to locate Cyrus groups in LDAP', KOLAB_ERROR);
+        exit(1);
+    }
+
+    my $ldapobject;
+    my $count = 60000;
+    if ($mesg->code <= 0) {
+        foreach $ldapobject ($mesg->entries) {
+            #my $group = $ldapobject->get_value('cn') . '@'.join('.',reverse(@dn)) . ":*:$count:";
+	    my $group = lc($ldapobject->get_value('mail')).":*:$count:";
+            my $userlist = $ldapobject->get_value('member', asref => 1);
+            foreach (@$userlist) {
+	      my $uid = $_;
+	      my $umesg = $ldap->search( base => $uid,
+					 scope => 'base', 
+					 filter => '(objectClass=*)' );
+	      if ( $umesg && $umesg->code() <= 0 && $umesg->count() == 1 ) {
+		my $mail;
+		($mail = $umesg->entry(0)->get_value('mail')) or
+		($mail = $umesg->entry(0)->get_value('uid'));
+		$group .= lc($mail).',';		
+	      }
+	    }
+            $group =~ s/,$//;
+            print $groupconf $group . "\n";
+            Kolab::log('T', "Adding cyrus group `$group'");
+            $count++;
+        }
+    } else {
+        Kolab::log('T', 'No Cyrus groups found');
+    }
+
+    $groupconf->close;
+    Kolab::LDAP::destroy($ldap);
+
+    fixup( $cfg, $ownership{$cfg}, $permissions{$cfg});
+
+    Kolab::log('T', 'Finished building Cyrus groups', KOLAB_DEBUG );
+}
+
+sub buildLDAPAccess
+{
+    Kolab::log('T', 'Building LDAP access file', KOLAB_DEBUG);
+    my $keytemplate = "$templatedir/slapd.access.template";
+    my $cfg = $templates{$keytemplate};
+    my $oldcfg = $cfg . '.old';
+
+    my $access;
+    if (!($access = IO::File->new($cfg, 'a'))) {
+        Kolab::log('T', "Unable to open configuration file `$cfg'", KOLAB_ERROR);
+        exit(1);
+    }
+
+    my $global_acl = <<'EOS';
+# Domain specific access
+access to filter=(&(objectClass=kolabInetOrgPerson)(mail=*@@@@domain@@@)(|(!(alias=*))(alias=*@@@@domain@@@)))
+        by group/kolabGroupOfNames="cn=@@@domain@@@,cn=domains,cn=internal,@@@base_dn@@@" write
+        by * break
+
+access to filter=(&(objectClass=kolabGroupOfNames)(mail=*@@@@domain@@@))
+        by group/kolabGroupOfNames="cn=@@@domain@@@,cn=domains,cn=internal,@@@base_dn@@@" write
+        by * break
+
+access to filter=(&(objectClass=kolabSharedFolder)(cn=*@@@@domain@@@))
+        by group/kolabGroupOfNames="cn=@@@domain@@@,cn=domains,cn=internal,@@@base_dn@@@" write
+        by * break
+
+EOS
+
+    my $dom_acl1 = << 'EOS';
+# Access to domain groups
+access to dn.children="cn=domains,cn=internal,@@@base_dn@@@"
+        by group/kolabGroupOfNames="cn=admin,cn=internal,@@@base_dn@@@" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,@@@base_dn@@@" write
+        by dn="cn=nobody,cn=internal,@@@base_dn@@@" read
+EOS
+    my $dom_acl2 = << 'EOS';
+        by group/kolabGroupOfNames="cn=@@@domain@@@,cn=domains,cn=internal,@@@base_dn@@@" read
+EOS
+    my $dom_acl3 = << 'EOS';
+        by * search stop
+
+EOS
+
+    my $str;
+    my $domain;
+    my @domains;
+    if( ref($Kolab::config{'postfix-mydestination'}) eq 'ARRAY' ) {
+      @domains = @{$Kolab::config{'postfix-mydestination'}};
+    } else {
+      @domains =( $Kolab::config{'postfix-mydestination'} );
+    }
+
+    ($str = $dom_acl1) =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;
+    print $access $str;
+
+    foreach $domain (@domains) {
+	($str = $dom_acl2) =~ s/\@{3}domain\@{3}/$domain/g;
+	$str =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;	
+	print $access $str;
+    }
+
+    ($str = $dom_acl3) =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;
+    print $access $str;
+
+    foreach $domain (@domains) {
+	($str = $global_acl) =~ s/\@{3}domain\@{3}/$domain/g;
+	$str =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;	
+	print $access $str;
+	Kolab::log('T', "Adding acl for domain '$str'");
+    }
+
+    $access->close;
+
+    if (-f $oldcfg) {
+        my $rc = `diff -q $cfg $oldcfg`;
+        chomp($rc);
+        if ($rc) {
+           Kolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG);
+           $Kolab::haschanged{'slapd'} = 1;
+        }
+    } else {
+        $Kolab::haschanged{'slapd'} = 1;
+    }
+
+    fixup( $cfg, $ownership{$cfg}, $permissions{$cfg});
+
+    Kolab::log('T', 'Finished building LDAP access file', KOLAB_DEBUG );
+}
+
+sub buildLDAPReplicas
+{
+    Kolab::log('T', 'Building LDAP replicas', KOLAB_DEBUG);
+
+    my $keytemplate = "$templatedir/slapd.replicas.template";
+    my $cfg = $templates{$keytemplate};
+    my $oldcfg = $cfg . '.old';
+
+    my $repl;
+    if (!($repl = IO::File->new($cfg, 'a'))) {
+        Kolab::log('T', "Unable to open configuration file `$cfg'", KOLAB_ERROR);
+        exit(1);
+    }
+
+    if( $Kolab::config{'is_master'} eq "true" ) {
+      # Master setup
+      my @kh;
+      if( ref $Kolab::config{'kolabhost'} eq 'ARRAY' ) {
+	@kh = @{$Kolab::config{'kolabhost'}};
+      } else {
+	@kh = ( $Kolab::config{'kolabhost'} );
+      }
+      for my $h ( @kh ) {
+	next if lc($h) eq lc($Kolab::config{'fqdnhostname'});
+	print $repl "replica uri=ldaps://$h\n"
+	  ."  binddn=\"".$Kolab::config{'bind_dn'}."\"\n"
+	    ."  bindmethod=simple credentials=".$Kolab::config{'bind_pw'}."\n\n";
+      }
+    } else {
+      # Slave setup
+      # Output an update dn statement instead
+      print $repl "updatedn ".$Kolab::config{'bind_dn'}."\n";
+      print $repl "updateref ".$Kolab::config{'ldap_master_uri'}."\n";
+    }
+
+    $repl->close;
+
+    fixup( $cfg, $ownership{$cfg}, $permissions{$cfg});
+
+    if (-f $oldcfg) {
+        my $rc = `diff -q $cfg $oldcfg`;
+        chomp($rc);
+        if ($rc) {
+           Kolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG);
+           $Kolab::haschanged{'slapd'} = 1;
+        }
+    } else {
+        $Kolab::haschanged{'slapd'} = 1;
+    }
+
+    Kolab::log('T', 'Finished building LDAP replicas', KOLAB_DEBUG);
+}
+
+sub loadMetaTemplates
+{	
+	my $templatedir = shift;
+	my ($tref, $pref, $oref) = @_;
+
+	Kolab::log('T', 'Collecting template files', KOLAB_DEBUG );
+	opendir(DIR, $templatedir) or Kolab::log('T', 'Given templatedir $templatedir does not exist!', KOLAB_ERROR );
+	my @metatemplates = grep { /\.template$/ } readdir (DIR);
+	closedir(DIR);
+
+	foreach my $template (@metatemplates) {
+		#Open each file and check for the META
+		if (open (TEMPLATE, "$templatedir/$template" )) {
+			my $line = <TEMPLATE>;
+			if ($line =~ /^KOLAB_META_START$/) {
+				Kolab::log('T', 'Processing META template :'.$template, KOLAB_DEBUG );
+				my ($found_end, $target, $permissions, $ownership);
+				while (<TEMPLATE>) {
+				$line = $_;
+				if (!$found_end) {
+					$found_end = $line =~ /^KOLAB_META_END$/;
+					if (!$found_end && $line) {
+						my ($key,$value) = split(/=/,$line);
+						chomp($value);
+						Kolab::log('T', 'META Key: '.$key.' Value: '.$value, KOLAB_DEBUG );
+						if ($key =~ /^TARGET$/) {
+							$target = $value;
+							Kolab::log('T', 'META Target '.$target, KOLAB_DEBUG );
+						}
+						if ($key =~ /^PERMISSIONS$/) {
+							$permissions = $value;
+							Kolab::log('T', 'META Permissions '.$permissions, KOLAB_DEBUG );
+						}
+						if ($key =~ /^OWNERSHIP$/) {
+							$ownership = $value;
+							Kolab::log('T', 'META Ownership '.$ownership, KOLAB_DEBUG );
+						}
+					}
+				}
+				}
+				if ($found_end && $target && $permissions && $ownership) {
+				   Kolab::log('T', 'All mandatory fields populated in '.$template, KOLAB_DEBUG );
+				   $$tref{$templatedir . "/" . $template} = $target;
+				   $$oref{$target} = $ownership;
+				   $permissions = oct($permissions);
+				   $$pref{$target} = $permissions;
+				}
+				
+			}
+		} else {
+		  Kolab::log('T', 'Could not open template file: '. $template, KOLAB_WARN);
+		}
+	}
+
+}
+
+sub rebuildTemplates
+{
+    my $key;
+    my $value;
+    my $section="";
+
+
+    Kolab::log('T', 'Regenerating configuration files', KOLAB_DEBUG );
+
+    Kolab::log('T', 'Loading meta-template data', KOLAB_DEBUG );
+    loadMetaTemplates( $templatedir, \%templates, \%permissions, \%ownership );
+
+    foreach $key (keys %templates) {
+      my $tpl = $templates{$key};
+      #print STDOUT "Rebuilding $key => $templates{$key}\n";
+      build($key, $tpl, $ownership{$tpl}, $permissions{$tpl} );
+    }
+
+    buildPostfixTransportMap;
+    buildPostfixVirtualMap;
+    buildLDAPAccess;
+    buildLDAPReplicas;
+    buildCyrusConfig;
+    buildCyrusGroups;
+
+    Kolab::log('T', 'Finished regenerating configuration files', KOLAB_DEBUG );
+}
+
+sub checkPermissions {
+    my $key;
+    my $value;
+
+    Kolab::log('T', 'Checking generated config file permissions and ownership', KOLAB_DEBUG );
+
+    loadMetaTemplates( $templatedir, \%templates, \%permissions, \%ownership );
+
+    my $ok = 1;
+
+    foreach $key (keys %templates) {
+      my $tpl = $templates{$key};
+
+      if (-r $tpl) {
+        my $st = stat($tpl);
+        my $owner = getpwuid($st->uid).':'.getgrgid($st->gid);
+        if( ( ($st->mode & 07777) != $permissions{$tpl}) ||
+  	  ($owner ne $ownership{$tpl}) ) {
+  	  my $str = 'File '.$tpl.' has the wrong persmissions/owner. Found '
+  		     .sprintf("%lo", $st->mode&07777).' '.$owner.', expected '
+  		     .sprintf("%lo",$permissions{$tpl}).' '.$ownership{$tpl};
+  	  print( "$str\n" );
+  	  Kolab::log('T', $str, KOLAB_ERROR );
+  	  $ok = 0;
+        }
+      } else {
+        my $str = "File $tpl does not exist";
+        print "$str\n";
+        Kolab::log('T', "$str", KOLAB_ERROR );
+      }
+  }
+  return $ok;
+}
+
+1;
+__END__
+# Below is stub documentation for your module. You'd better edit it!
+
+=head1 NAME
+
+Kolab::Conf - Perl extension for Kolab template generation
+
+=head1 ABSTRACT
+
+  Kolab::Conf handles the generation of template files, used by
+  kolabconf.
+
+=head1 AUTHOR
+
+Stuart Bingë <lt>s.binge@codefusion.co.zaE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2003  Code Fusion cc
+
+Portions based on work by the following people:
+
+  (c) 2003  Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
+  (c) 2003  Martin Konold     <martin.konold@erfrakon.de>
+  (c) 2003  Achim Frank       <achim.frank@erfrakon.de>
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
+
+=cut
