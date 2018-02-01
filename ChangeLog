@@ -1,3 +1,28 @@
+2008-07-09  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm (createObject): kolab/issue2517 (group accounts
+	lead to more rights than necessary for the "calendar" user):
+	Create Calendar folder on resource/group account creation and
+	set ACL/annotation accordingly.
+
+2008-07-03  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (mapAcls):
+
+	kolab/issue2760 (Deleting shared folders does not work)
+
+2008-07-01  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP/Backend/slurpd.pm (run):
+
+	kolab/issue2827 (Deleting users does not work reliably)
+
+2008-03-28  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/LDAP/Backend/fds.pm: New File.
+
+	* MANIFEST: Added Backend/fds.pm
+
 2008-03-13  Gunnar Wrobel  <p@rdus.de>
 
 	* lib/Kolab/LDAP/Backend/slurpd.pm (run):

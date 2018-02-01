@@ -22,7 +22,7 @@ package Kolab::LDAP;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.3 $
+##  $Revision: 1.6 $
 
 use 5.008;
 use strict;
@@ -38,7 +38,6 @@ use Kolab::Util;
 use Kolab::Cyrus;
 use Digest::SHA1 qw(sha1);
 use MIME::Base64 qw(encode_base64);
-use vars qw(%uid_db %gyard_db %newuid_db %gyard_ts_db %quota_db);
 
 require Exporter;
 
@@ -71,48 +70,235 @@ our $VERSION = '0.9';
 our $user_timestamp = "";
 our $sf_timestamp = "";
 our $group_timestamp = "";
+our $db_statedir = '';
+our %newuid_db;
 
 sub startup
 {
-    my $statedir = shift;
+    my $statedir = shift || '';
 
     Kolab::log('L', 'Starting up');
 
-    Kolab::log('L', 'Opening mailbox uid cache DB');
-
-    if (!dbmopen(%uid_db, "$statedir/mailbox-uidcache.db", 0666)) {
-        Kolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
-        exit(1);
+    if (!$db_statedir && $statedir) {
+	$db_statedir = $statedir;
     }
 
-    Kolab::log('L', 'Opening graveyard uid/timestamp cache DB');
-
-    if (!dbmopen(%gyard_db, "$statedir/graveyard-uidcache.db", 0666)) {
-        Kolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
-        exit(1);
-    }
-
-    if (!dbmopen(%gyard_ts_db, "$statedir/graveyard-tscache.db", 0666)) {
-        Kolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
-        exit(1);
-    }
-
-    Kolab::log('L', 'Opening mailbox quota cache DB');
-
-    if (!dbmopen(%quota_db, "$statedir/mailbox-quotacache.db", 0666)) {
-        Kolab::log('L', 'Unable to open mailbox quota cache DB', KOLAB_ERROR);
-        exit(1);
-    }
 }
 
 sub shutdown
 {
     Kolab::log('L', 'Shutting down');
-
-    dbmclose(%uid_db);
-    dbmclose(%gyard_db);
-    dbmclose(%quota_db);
 }
+
+sub uidcacheOpen
+{
+    Kolab::log('L', 'Opening mailbox uid cache DB');
+
+    my %uid_db;
+    if (!dbmopen(%uid_db, "$db_statedir/mailbox-uidcache.db", 0666)) {
+        Kolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
+        exit(1);
+    }
+
+    return \%uid_db;
+}
+
+sub uidcacheClose (\%)
+{
+    my ($uid_db) = @_;
+    dbmclose(%{$uid_db});
+    untie %{$uid_db};
+}
+
+sub uidcacheStore
+{
+    my $guid = shift;
+    my $uid = shift;
+
+    my $uid_db = uidcacheOpen();
+
+    ${$uid_db}{$guid} = $uid;
+
+    uidcacheClose(%$uid_db);
+}
+
+sub uidcacheFetch
+{
+    my $guid = shift;
+
+    my $uid_db = uidcacheOpen();
+
+    my $uid = ${$uid_db}{$guid} || '';
+
+    uidcacheClose(%$uid_db);
+
+    return $uid;
+}
+
+sub uidcacheDelete
+{
+    my $guid = shift;
+
+    my $uid_db = uidcacheOpen();
+
+    delete ${$uid_db}{$guid};
+
+    uidcacheClose(%$uid_db);
+}
+
+sub graveyardOpen
+{
+    Kolab::log('L', 'Opening graveyard uid/timestamp cache DB');
+
+    my %gyard_db;
+    if (!dbmopen(%gyard_db, "$db_statedir/graveyard-uidcache.db", 0666)) {
+        Kolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
+        exit(1);
+    }
+
+    my %gyard_ts_db;
+    if (!dbmopen(%gyard_ts_db, "$db_statedir/graveyard-tscache.db", 0666)) {
+        Kolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
+        exit(1);
+    }
+    return \(%gyard_db, %gyard_ts_db);
+}
+
+sub graveyardClose (\%\%)
+{
+    my ($gyard_db, $gyard_ts_db) = @_;
+
+    dbmclose(%$gyard_db);
+    dbmclose(%$gyard_ts_db);
+
+    untie %$gyard_db;
+    untie %$gyard_ts_db;
+}
+
+sub graveyardRessurect
+{
+    my $guid = shift;
+    my $uid = shift;
+
+    my $gyard_db;
+    my $gyard_ts_db;
+    ($gyard_db, $gyard_ts_db) = graveyardOpen();
+
+    my $oldgyarduid = $$gyard_db{$guid} || '';
+    if ($oldgyarduid) {
+	# The object needs to be resurrected!
+	if ($oldgyarduid ne $uid) {
+	    Kolab::log('L', "Resurrected object `$uid' already exists as `$oldgyarduid'; refusing to create", KOLAB_WARN);
+	} else {
+	    Kolab::log('L', "Object `$uid' has been resurrected", KOLAB_DEBUG);
+	}
+	# Remove the object from the graveyard
+	delete $$gyard_db{$guid};
+	delete $$gyard_ts_db{$guid};
+    }
+
+    graveyardClose(%$gyard_db, %$gyard_ts_db);
+
+    return $oldgyarduid;
+}
+
+sub graveyardStore
+{
+    my $guid = shift;
+    my $uid = shift;
+
+    my $gyard_db;
+    my $gyard_ts_db;
+    ($gyard_db, $gyard_ts_db) = graveyardOpen();
+
+    $$gyard_db{$guid} = $uid;
+    $$gyard_ts_db{$guid} = time;
+
+    graveyardClose(%$gyard_db, %$gyard_ts_db);
+}
+
+sub graveyardCleanup
+{
+    my $guid = shift;
+    my $uid = shift;
+
+    my $gyard_db;
+    my $gyard_ts_db;
+    ($gyard_db, $gyard_ts_db) = graveyardOpen();
+
+    my $now = time;
+    my $period = $Kolab::config{'gyard_deletion_period'} * 60;
+    Kolab::log('L', 'Gravekeeping (period = ' . $Kolab::config{'gyard_deletion_period'} . ' minutes)');
+    foreach $guid (keys %$gyard_ts_db) {
+        if ($now - $$gyard_ts_db{$guid} > $period) {
+            Kolab::log('L', "Clearing graveyard database entry `" . $$gyard_db{$guid} . "'");
+            #Kolab::Cyrus::deleteMailbox($cyrus, $$gyard_db{$guid}, 0);
+            delete $$gyard_ts_db{$guid};
+            delete $$gyard_db{$guid};
+        }
+    }
+
+    graveyardClose(%$gyard_db, %$gyard_ts_db);
+}
+
+sub quotaOpen
+{
+    Kolab::log('L', 'Opening mailbox quota cache DB');
+
+    my %quota_db;
+    if (!dbmopen(%quota_db, "$db_statedir/mailbox-quotacache.db", 0666)) {
+        Kolab::log('L', 'Unable to open mailbox quota cache DB', KOLAB_ERROR);
+        exit(1);
+    }
+
+    return \%quota_db;
+}
+
+sub quotaClose (\%)
+{
+    my ($quota_db) = @_;
+
+    dbmclose(%$quota_db);
+    untie $quota_db;
+}
+
+sub quotaStore
+{
+    my $guid = shift;
+    my $quota = shift;
+
+    my $quota_db = quotaOpen();
+
+    $$quota_db{$guid} = $quota;
+
+    quotaClose(%$quota_db);
+}
+
+sub quotaFetch
+{
+    my $guid = shift;
+
+    my $quota_db = quotaOpen();
+
+    my $quota = $$quota_db{$guid} || 0;
+
+    quotaClose(%$quota_db);
+
+    return $quota;
+}
+
+sub quotaDelete
+{
+    my $guid = shift;
+
+    my $quota_db = quotaOpen();
+
+    delete $$quota_db{$guid};
+
+    quotaClose(%$quota_db);
+}
+
+
 
 sub create
 {
@@ -240,7 +426,7 @@ sub mapAcls {
     Kolab::log('L', "Kolab::LDAP::mapAcls() acl=$_", KOLAB_DEBUG);
   } @$acls;
   if( $sf ) {
-    # Do we need to push admin rights for manager?
+    push(@$acls, "manager lrsiwcdap");
   }
   Kolab::log('L', "Kolab::LDAP::mapAcls() acls=".join(", ", @$acls), KOLAB_DEBUG);
   return $acls;
@@ -303,7 +489,7 @@ sub createObject
 
     my $guid = $object->get_value($Kolab::config{$p . '_field_guid'});
     Kolab::log('L', "GUID attribute `" . $Kolab::config{$p . '_field_guid'} . "' is `$guid'", KOLAB_DEBUG);
-    my $olduid = $uid_db{$guid} || '';
+    my $olduid = uidcacheFetch($guid);
     if ($olduid) {
         # We have records of the object
         $newuid_db{$guid} = $olduid if ($sync);
@@ -316,23 +502,13 @@ sub createObject
         # Nothing changed; nothing to do
     } else {
         # No official records - check the graveyard
-        my $oldgyarduid = $gyard_db{$guid} || '';
+        my $oldgyarduid = graveyardRessurect($guid, $uid);
         if ($oldgyarduid) {
-            # The object needs to be resurrected!
-            if ($oldgyarduid ne $uid) {
-                Kolab::log('L', "Resurrected object `$uid' already exists as `$oldgyarduid'; refusing to create", KOLAB_WARN);
-            } else {
-                Kolab::log('L', "Object `$uid' has been resurrected", KOLAB_DEBUG);
-            }
-
-            # Remove the object from the graveyard
-            if ($sync) { $newuid_db{$guid} = $oldgyarduid; } else { $uid_db{$guid} = $oldgyarduid; }
-            delete $gyard_db{$guid};
-            delete $gyard_ts_db{$guid};
+            if ($sync) { $newuid_db{$guid} = $oldgyarduid; } else { uidcacheStore($guid, $oldgyarduid); }
         } else {
             Kolab::log('L', "Creating user `$uid' corresponding to GUID `$guid'", KOLAB_DEBUG);
             # We have a object that we have no previous record of, so create everything
-            if ($sync) { $newuid_db{$guid} = $uid; } else { $uid_db{$guid} = $uid; }
+            if ($sync) { $newuid_db{$guid} = $uid; } else { uidcacheStore($guid, $uid); }
             Kolab::Cyrus::createMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0));
 	      if( $p eq 'sf' ){
     		my $foldertype = lc($object->get_value('kolabfoldertype'));
@@ -349,19 +525,23 @@ sub createObject
 	      my $edn = Net::LDAP::Util::ldap_explode_dn($object->dn(), casefold=>'lower' );
 	      my $gcn = $edn->[1]->{'cn'};
 	      if( $gcn && ($gcn eq 'groups' || $gcn eq 'resources') ) {
-		# We need to give the calendar user access to 
-		# the groups/resources folder.
-		# TODO: Don't hardcode username
-		Kolab::log('L', "Detected group or resource account, adding ACL for calendar", KOLAB_ERROR );
+		# We need to give the calendar user access to the
+		# group's/resource's Calendar folder.
+		# TODO: Don't hardcode user and folder name
+		Kolab::log('L', "Detected group or resource account, creating calendar folder", KOLAB_ERROR );
 		my $domain;
-		if ($uid =~ /.*\@(.*)/) {
-		    $domain = $1;
+		my $user;
+		if ($uid =~ /(.*)\@(.*)/) {
+		    $user = $1;
+		    $domain = $2;
 		} else {
+		    $user = $uid;
 		    $domain = $Kolab::config{'postfix-mydomain'};
 		}
-		Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid all", 
-						     'calendar@' . $domain
-						     .' all']);		
+		my $folder = $user . '/Calendar@' . $domain;
+		Kolab::Cyrus::createMailbox($cyrus, $folder, 0);
+		Kolab::Cyrus::setFolderType($cyrus, $folder, 0, 'event.default');
+		Kolab::Cyrus::setACL($cyrus, $folder, 0, ["$uid all", 'calendar@' . $domain .' all']);
 	      }
 	    }
         }
@@ -374,13 +554,13 @@ sub createObject
 
     my $quota = $object->get_value($Kolab::config{$p . '_field_quota'});
     defined($quota) or ($quota = 0);
-    my $oldquota = $quota_db{$guid} || 0;
+    my $oldquota = quotaFetch($guid);
     if( $quota != $oldquota ) {
-      Kolab::Cyrus::setQuota($cyrus, $uid, $quota*1024, ($p eq 'sf' ? 1 : 0));
-      if( $quota == 0 ) {
-	delete $quota_db{$guid};
+	Kolab::Cyrus::setQuota($cyrus, $uid, $quota*1024, ($p eq 'sf' ? 1 : 0));
+	if( $quota == 0 ) {
+	    quotaDelete{$guid};
 	} else {
-	  $quota_db{$guid} = $quota;
+	    quotaStore($guid, $quota);
 	}
     }
     Kolab::log('L', "createObject() done", KOLAB_DEBUG );
@@ -506,15 +686,15 @@ sub deleteObject
     }
 
     my $guid = $object->get_value($Kolab::config{$p . '_field_guid'});
-    my $uid = $uid_db{$guid} || 0;
+    my $uid = uidcacheFetch($guid);
     if (!$uid) {
         Kolab::log('L', 'Deleted object not found in mboxcache, returning', KOLAB_DEBUG);
         return;
     }
 
     Kolab::Cyrus::deleteMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0));
-    delete $uid_db{$guid};
-    delete $quota_db{$guid};
+    uidcacheDelete($guid);
+    quotaDelete($guid);
     return 1;
 }
 
@@ -551,30 +731,24 @@ sub sync
         delete $objects{$newuid_db{$guid}} if (exists $objects{$newuid_db{$guid}});
     }
 
+    my $uid_db = uidcacheOpen();
     # Any mailboxes left should be sent to the graveyard; these are mailboxes
     # without a corresponding LDAP object, yet we were never informed of their
     # deletion, i.e. either we missed the deletion notification or there was
     # an error when iterating through the objects (Lost connection, invalid DNs)
-    foreach $guid (keys %uid_db) {
-        if (defined $uid_db{$guid} && exists $objects{$uid_db{$guid}}) {
-            $gyard_db{$guid} = $uid_db{$guid};
-            $gyard_ts_db{$guid} = time;
+    foreach $guid (keys %$uid_db) {
+        if (defined $$uid_db{$guid} && exists $objects{$$uid_db{$guid}}) {
+	    graveyardStore($guid, $$uid_db{$guid});
         }
     }
+    uidcacheClose(%$uid_db);
 
-    my $now = time;
-    my $period = $Kolab::config{'gyard_deletion_period'} * 60;
-    Kolab::log('L', 'Gravekeeping (period = ' . $Kolab::config{'gyard_deletion_period'} . ' minutes)');
-    foreach $guid (keys %gyard_ts_db) {
-        if ($now - $gyard_ts_db{$guid} > $period) {
-            Kolab::log('L', "Clearing graveyard database entry `" . $gyard_db{$guid} . "'");
-            #Kolab::Cyrus::deleteMailbox($cyrus, $gyard_db{$guid}, 0);
-            delete $gyard_ts_db{$guid};
-            delete $gyard_db{$guid};
-        }
+    graveyardCleanup();
+
+    my $newuid;
+    foreach $newuid (keys %newuid_db) {
+	uidcacheStore($newuid, $newuid_db{$newuid});
     }
-
-    %uid_db = %newuid_db;
 
     syncDomains();
 
