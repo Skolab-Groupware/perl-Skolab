@@ -1,29 +1,35 @@
-Source: libkolab-perl
+Source: libskolab-perl
 Section: perl
-Priority: extra
-Maintainer: Debian Kolab Maintainers <pkg-kolab-devel@lists.alioth.debian.org>
-Uploaders: Noèl Köthe <noel@debian.org>, Steffen Joeris <white@debian.org>, Mathieu Parent <sathieu@debian.org>
-Build-Depends: debhelper (>= 7), quilt (>= 0.40)
-Build-Depends-Indep: libnet-ldap-perl
-Standards-Version: 3.9.0
-Homepage: http://www.kolab.org/
-Vcs-Browser: http://svn.debian.org/wsvn/pkg-kolab/libkolab-perl/trunk/
-Vcs-Svn: svn://svn.debian.org/pkg-kolab/libkolab-perl/trunk/
+Priority: optional
+Maintainer: Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+Build-Depends: cdbs,
+               debhelper (>= 9),
+               quilt (>= 0.40),
+Build-Depends-Indep: libnet-ldap-perl,
+                     liburi-perl,
+Standards-Version: 4.1.3
+Homepage: https://github.com/Skolab-Groupware/perl-Skolab/
+Vcs-Browser: https://github.com/Skolab-Groupware/perl-Skolab/
+Vcs-Svn: https://github.com/Skolab-Groupware/perl-Skolab/
 
 Package: libkolab-perl
 Architecture: all
-Provides: kolabconf
-Breaks: kolabconf (<<2.2.1), kolabd (<<2.2.1-20081212-1)
-Replaces: kolabconf (<<2.2.1), kolabd (<<2.2.1-20081212-1)
-Depends: ${misc:Depends}, ${perl:Depends}, libconvert-asn1-perl, libmail-imapclient-perl, libmime-tools-perl, libnet-ldap-perl (>= 1:0.39-1), liburi-perl, kolab-libcyrus-imap-perl
-Description: Perl modules for Kolab
- Kolab is a secure, scalable, and reliable groupware server.  It consists
- of a number of well-known and proven components for the standard tasks
- such as e-mail, directory service, and web service.  Kolab adds
- intelligent interaction between the components, a web administration
- interface, management of free/busy lists, etc.  Various clients can
- access Kolab, among them Kontact (KDE), Outlook (Windows), and Horde
- (web).
+Depends: kolab-libcyrus-imap-perl,
+         libconvert-asn1-perl,
+         libmail-imapclient-perl,
+         libmime-tools-perl,
+         libnet-ldap-perl (>= 1:0.39-1),
+         liburi-perl,
+         ${misc:Depends},
+         ${perl:Depends}
+Description: Perl modules for the Skolab Groupware Server
+ Skolab is the continuation of the Kolab 2 groupware. It is a secure,
+ scalable, and reliable groupware server. It consists of a number of
+ well-known and proven components for the standard tasks such as e-mail,
+ directory service, and web service. Skolab adds intelligent interaction
+ between the components, a web administration interface, management of
+ free/busy lists, etc. Various clients can access Skolab, among them
+ Kontact (KDE), Thunderbird (Mozilla) and Horde (web).
  .
- This package contains Perl modules that support the internal Kolab
+ This package contains Perl modules that support the internal Skolab
  server functionality.  It is not intended for other purposes.

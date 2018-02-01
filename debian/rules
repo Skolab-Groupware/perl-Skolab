@@ -1,46 +1,32 @@
 #!/usr/bin/make -f
 
-build: 
-	dh_testdir
-	perl Makefile.PL --config=/etc/kolab --bin=/usr/bin --sbin=/usr/sbin --etc=/etc/kolab
-	$(MAKE)
-	touch build-stamp
+NULL=
 
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp
-	[ ! -f Makefile ] || $(MAKE) distclean
-	dh_clean
+include /usr/share/cdbs/1/class/perl-makemaker.mk
+include /usr/share/cdbs/1/rules/debhelper.mk
 
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/libkolab-perl
-	# Man pages
-	mkdir -p $(CURDIR)/debian/libkolab-perl/usr/share/man/man1
-	#make install creates empty manpages, delete them
-	find $(CURDIR)/debian/libkolab-perl/usr/share/man/man1/ -size 0 -exec rm '{}' \;
-	#remove empty directories
-	find $(CURDIR)/debian/libkolab-perl -type d -empty -delete
+DEB_MAKEMAKER_NORMAL_ARGS = --config=/etc/kolab		\
+                            --bin=/usr/bin			\
+                            --sbin=/usr/sbin			\
+                            --etc=/etc/kolab			\
+                            $(NULL)
 
-binary-indep: build install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs -i ChangeLog
-	dh_installdocs -i
-	dh_installman -i
-	dh_link -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_perl -i
-	dh_installdeb -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
+clean::
+	rm -f Makefile.old
+	rm -f bin/kolab_smtpdpolicy
+	rm -f bin/kolabdcachetool
+	rm -f bin/kolabpasswd
+	rm -f bin/kolabquotareport
+	rm -f bin/kolabquotawarn
+	rm -f sbin/kolab_bootstrap
+	rm -f sbin/kolabcheckperm
+	rm -f sbin/kolabconf
+	rm -f sbin/kolabd
+	rm -f MYMETA.json
+	rm -f MYMETA.yml
+	rm -f Makefile
+	rm -Rf blib/
+	rm -f pm_to_blib
 
-binary: binary-indep binary-arch
-
-.PHONY: build clean binary-indep binary-arch binary install
+get-orig-source:
+	uscan --noconf --force-download --rename --download-current-version --destdir=..

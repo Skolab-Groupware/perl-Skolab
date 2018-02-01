@@ -1,4 +1,4 @@
-libkolab-perl (1:2.2.4-20100624-3) unstable; urgency=low
+libskolab-perl (1:2.2.4-20100624-3) unstable; urgency=low
 
   * Fix "during bootstrap is controled port 2000 instead of 4190 for
     sieve" (Closes: #599031)
