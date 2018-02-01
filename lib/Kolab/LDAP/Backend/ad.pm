@@ -1,9 +1,13 @@
 package Kolab::LDAP::Backend::ad;
 
+##  COPYRIGHT
+##  ---------
 ##
-##  Copyright (c) 2003  Code Fusion cc
+##  See AUTHORS file
 ##
-##    Writen by Stuart Bing� <s.binge@codefusion.co.za>
+##
+##  LICENSE
+##  -------
 ##
 ##  This  program is free  software; you can redistribute  it and/or
 ##  modify it  under the terms of the GNU  General Public License as
@@ -18,6 +22,7 @@ package Kolab::LDAP::Backend::ad;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
+##  $Revision: 1.1 $
 
 use 5.008;
 use strict;
@@ -223,13 +228,11 @@ Kolab::LDAP::Backend::ad - Perl extension for an Active Directory backend
   Kolab::LDAP::Backend::ad handles an Active Directory backend to the
   kolab daemon.
 
-=head1 AUTHOR
+=head1 COPYRIGHT AND AUTHORS
 
-Stuart Bing� E<lt>s.binge@codefusion.co.zaE<gt>
+Stuart Bingë and others (see AUTHORS file)
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2003  Code Fusion cc
+=head1 LICENSE
 
 This  program is free  software; you can redistribute  it and/or
 modify it  under the terms of the GNU  General Public License as

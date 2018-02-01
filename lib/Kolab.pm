@@ -1,9 +1,13 @@
 package Kolab;
 
+##  COPYRIGHT
+##  ---------
 ##
-##  Copyright (c) 2003  Code Fusion cc
+##  See AUTHORS file
 ##
-##    Writen by Stuart BingÃ« <s.binge@codefusion.co.za>
+##
+##  LICENSE
+##  -------
 ##
 ##  This  program is free  software; you can redistribute  it and/or
 ##  modify it  under the terms of the GNU  General Public License as
@@ -18,6 +22,7 @@ package Kolab;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
+##  $Revision: 1.16 $
 
 use 5.008;
 use strict;
@@ -27,7 +32,7 @@ use URI;
 use Net::LDAP;
 use Kolab::Util;
 #use Kolab::LDAP;
-use vars qw(%config %haschanged $reloadOk);
+use vars qw(%config $reloadOk);
 
 require Exporter;
 
@@ -53,7 +58,21 @@ our @EXPORT = qw(
     &KOLAB_DEBUG
 );
 
-our $VERSION = '0.9';
+# The Kolab version number for the perl-kolab package
+our $KOLAB_BASE_VERSION = "2.2.rc2";
+
+# Are current releases cvs based or is this a real release?
+my $KOLAB_CVS = 0;
+
+our $KOLAB_RELEASE = sprintf "%0004d%02d%02d", ((gmtime)[5] + 1900), ((gmtime)[4] + 1), (gmtime)[3];
+
+if ($KOLAB_CVS) {
+    our $KOLAB_VERSION = $KOLAB_BASE_VERSION . "+cvs";
+    our $VERSION = $KOLAB_VERSION . $KOLAB_RELEASE;
+} else {
+    our $KOLAB_VERSION = $KOLAB_BASE_VERSION;
+    our $VERSION = $KOLAB_VERSION;
+}
 
 sub KOLAB_SILENT()      { 0 }
 sub KOLAB_ERROR()       { 1 }
@@ -63,6 +82,8 @@ sub KOLAB_DEBUG()       { 4 }
 
 sub reloadConfig
 {
+    my $kolab_globals = shift;
+
     my $tempval;
     my $ldap;
 
@@ -76,23 +97,25 @@ sub reloadConfig
     #     3 - Info, Warnings & Errors       (DEFAULT)
     #     4 - Debug (i.e. everything)
 
+    # First read `kolab.globals'
+    %config = readConfig(%config, $kolab_globals);
+
     # Determine the root of the kolab installation, and read `kolab.globals'
     # Notice that the location of the files is handled by dist_conf,
     # so we don't use $tempval for anything other than storing it in
     # $config{'prefix'}. Once prefix is not in use anywhere, we can remove
     # this code. /steffen
-    $tempval = (getpwnam('@kolab_musr@'))[7];
+    $tempval = (getpwnam($config{'kolab_musr'}))[7];
     if (! defined $tempval) {
         $config{'log_level'} = KOLAB_WARN;
         &log('C', 'Unable to determine the kolab user main directory', KOLAB_ERROR);	
 	$error = 1;
     } else {
-        %config = readConfig(%config, "@sysconfdir@/kolab/kolab.globals");
-        $config{'prefix'} = $tempval;
+       $config{'prefix'} = $tempval;
     }
 
     # Now read `kolab.conf', overwriting values read from `kolab.globals'
-    %config = readConfig(\%config, "@sysconfdir@/kolab/kolab.conf");
+    %config = readConfig(\%config, $config{'kolab_locals'});
 
     $config{'debug'} = 0 if (!exists $config{'debug'});
     $config{'log_level'} = KOLAB_WARN if (!exists $config{'log_level'});
@@ -100,39 +123,39 @@ sub reloadConfig
     &log('C', 'Reloading configuration');
 
     # Get the UID/GID of the 'kolab' users
-    $config{'kolab_uid'} = (getpwnam('@kolab_musr@'))[2];
+    $config{'kolab_uid'} = (getpwnam($config{'kolab_musr'}))[2];
     if (!defined $config{'kolab_uid'}) {
-        &log('C', "Unable to determine the uid of user '@kolab_musr@'", KOLAB_ERROR);
+        &log('C', "Unable to determine the uid of user '$config{'kolab_musr'}'", KOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_gid'} = (getgrnam('@kolab_mgrp@'))[2];
+    $config{'kolab_gid'} = (getgrnam($config{'kolab_mgrp'}))[2];
     if (!defined $config{'kolab_gid'}) {
-        &log('C', "Unable to determine the gid of user '@kolab_mgrp@'", KOLAB_ERROR);
+        &log('C', "Unable to determine the gid of user '$config{'kolab_mgrp'}'", KOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_n_uid'} = (getpwnam('@kolab_usr@'))[2];
+    $config{'kolab_n_uid'} = (getpwnam($config{'kolab_usr'}))[2];
     if (!defined $config{'kolab_n_uid'}) {
-        &log('C', "Unable to determine the uid of user '@kolab_usr@'", KOLAB_ERROR);
+        &log('C', "Unable to determine the uid of user '$config{'kolab_usr'}", KOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_n_gid'} = (getgrnam('@kolab_grp@'))[2];
+    $config{'kolab_n_gid'} = (getgrnam($config{'kolab_grp'}))[2];
     if (!defined $config{'kolab_n_gid'}) {
-        &log('C', "Unable to determine the gid of user @kolab_grp@'", KOLAB_ERROR);
+        &log('C', "Unable to determine the gid of user $config{'kolab_grp'}", KOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_r_uid'} = (getpwnam('@kolab_rusr@'))[2];
+    $config{'kolab_r_uid'} = (getpwnam($config{'kolab_rusr'}))[2];
     if (!defined $config{'kolab_r_uid'}) {
-        &log('C', "Unable to determine the uid of user '@kolab_rusr@'", KOLAB_ERROR);
+        &log('C', "Unable to determine the uid of user '$config{'kolab_rusr'}'", KOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_r_gid'} = (getgrnam('@kolab_rgrp@'))[2];
+    $config{'kolab_r_gid'} = (getgrnam($config{'kolab_rgrp'}))[2];
     if (!defined $config{'kolab_r_gid'}) {
-        &log('C', "Unable to determine the gid of user '@kolab_rgrp@'", KOLAB_ERROR);
+        &log('C', "Unable to determine the gid of user '$config{'kolab_rgrp'}'", KOLAB_ERROR);
 	$error = 1;
     }
 
@@ -144,7 +167,7 @@ sub reloadConfig
 
     # Make a hash of the bind password available too
     if( !exists $config{'bind_pw_hash'} ) {
-      my $hashcmd = "@sbindir@/slappasswd -s '".$config{'bind_pw'}."'";
+      my $hashcmd = $config{'hashmethod'} . " '".$config{'bind_pw'}."'";
       $config{'bind_pw_hash'} = `$hashcmd`;
       chomp($config{'bind_pw_hash'});
     }
@@ -218,18 +241,18 @@ sub reloadConfig
     # We now need to go through the list of all possible configuration variables
     # and set the default values of those that were not overridden.
 
-    # ProFTPd password
-    if (exists $config{'proftpd-userPassword'}) {
-        my $salt = substr($config{'proftpd-userPassword'}, 0, 2);
-        $config{'proftpd-userPassword'} = crypt($config{'proftpd-userPassword'}, $salt);
-    } else {
-        $config{'proftpd-userPassword'} = '';
-    }
-
     $config{'fqdn'} = trim(`hostname`);
 
+    # connect to services at local address if binding to any interface,
+    # otherwise use the address specified for the public interface.
+    if ($config{'bind_any'} =~ /true/i) {
+        $config{'connect_addr'} = $config{'local_addr'};
+    } else {
+        $config{'connect_addr'} = $config{'bind_addr'};
+    }
+
     # Cyrus admin account
-    $tempval = $config{'cyrus-admins'} || 'manager';
+    $tempval = $config{'cyrus-admin'} || 'manager';
     (my $cmanager, my $dummy) = split(/ /, $tempval, 2);
     $config{'cyrus_admin'} = $cmanager if (!exists $config{'cyrus_admin'});
     $config{'cyrus_admin_pw'} = $config{'bind_pw'} if (!exists $config{'cyrus_admin_pw'});
@@ -382,8 +405,6 @@ sub reloadConfig
     # Defaults to seven days.
 #    $config{'gyard_deletion_period'} = 7 * 24 * 60 if (!exists $config{'gyard_deletion_period'});
 
-    $config{'dirserv_home_server'} = $config{'fqdn'} if (!exists $config{'dirserv_home_server'});
-
     # That's it! We now have our config hash.
     #Kolab::LDAP::destroy($ldap);
     if (defined($ldap) && $ldap->isa('Net::LDAP')) {
@@ -395,89 +416,27 @@ sub reloadConfig
     $reloadOk = !$error;
 }
 
-sub reload
-{
-    if ($haschanged{'slapd'}) {
-        &log('K', 'Restarting OpenLDAP...');
-        system("@KOLABRC@ rc openldap restart &");
-    }
-
-    if ($haschanged{'saslauthd'}) {
-        &log('K', 'Restarting SASLAuthd...');
-        system("@KOLABRC@ rc sasl stop; sleep 1; @sbindir@/saslauthd -a ldap -n 5");
-    }
-
-    if ($haschanged{'apache'}) {
-        &log('K', 'Reloading Apache...');
-        system("@sbindir@/apachectl graceful");
-    }
-
-    if ($haschanged{'postfix'}) {
-        &log('K', 'Reloading Postfix...');
-        system("@sbindir@/postfix reload");
-    }
-
-    if ($haschanged{'imapd'}) {
-        &log('K', 'Restarting imapd...');
-	# Would it be enough with a reload here? /steffen
-        system("@KOLABRC@ rc imapd restart");
-    }
-
-    if ($haschanged{'amavisd'}) {
-        &log('K', 'Restarting amavisd...');
-        system("@KOLABRC@ rc amavisd restart");
-    }
-
-    if ($haschanged{'clamav'}) {
-        &log('K', 'Restarting clamav...');
-        system("@KOLABRC@ rc clamav restart");
-    }
-
-    if ($config{'proftpd-ftp'} =~ /true/i) {
-        Kolab::log('K', 'Starting ProFTPd if not running');
-        system("@KOLABRC@ rc proftpd start");
-        if ($haschanged{'proftpd'}) {
-            &log('K', 'Reloading ProFTPd...');
-            kill('SIGHUP', `cat @ftpserver_pidfile@`);
-        }
-    } else {
-        &log('K', 'Stopping ProFTPd, if running...');
-        system("@KOLABRC@ rc proftpd stop");
-    }
-
-    %Kolab::Conf::haschanged = ();
-
-    &log('K', 'Reload finished');
-}
-
 sub log
 {
     my $prefix = shift;
     my $text = shift;
     my $priority = shift || KOLAB_INFO;
 
-    my $level = $config{'log_level'};
-    if ($level >= $priority) {
-        if ($priority == KOLAB_ERROR) {
-            $text = $prefix . ' Error: ' . $text;
-        } elsif ($priority == KOLAB_WARN) {
-            $text = $prefix . ' Warning: ' . $text;
-        } elsif ($priority == KOLAB_DEBUG) {
-            $text = $prefix . ' Debug: ' . $text;
-        } else {
-            $text = $prefix . ': ' . $text;
-        }
-        syslog('info', "$text");
+    if ($priority == KOLAB_ERROR) {
+        $text = $prefix . ' Error: ' . $text;
+    } elsif ($priority == KOLAB_WARN) {
+        $text = $prefix . ' Warning: ' . $text;
+    } elsif ($priority == KOLAB_DEBUG) {
+        $text = $prefix . ' Debug: ' . $text;
+    } else {
+        $text = $prefix . ': ' . $text;
     }
-    print STDERR "$text\n" if ($config{'debug'});
+    syslog('info', "$text") if $config{'log_level'} >= $priority;
+    print STDERR "$text\n" if $config{'debug'};
 }
-
-reloadConfig();
 
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
 Kolab - Perl extension for general Kolab settings.
@@ -487,13 +446,11 @@ Kolab - Perl extension for general Kolab settings.
   Kolab contains code used for loading the configuration values from
   kolab.conf and LDAP, as well as functions for logging.
 
-=head1 AUTHOR
+=head1 COPYRIGHT AND AUTHORS
 
-Stuart Bingë¬ E<lt>s.binge@codefusion.co.zaE<gt>
+Stuart Bingë and others (see AUTHORS file)
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2003  Code Fusion cc
+=head1 LICENSE
 
 This  program is free  software; you can redistribute  it and/or
 modify it  under the terms of the GNU  General Public License as

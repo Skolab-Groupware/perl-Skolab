@@ -1,15 +1,13 @@
 package Kolab::LDAP::Backend::slurpd;
 
+##  COPYRIGHT
+##  ---------
 ##
-##  Copyright (c) 2003  Code Fusion cc
+##  See AUTHORS file
 ##
-##    Writen by Stuart Bing?<s.binge@codefusion.co.za>
-##    Portions based on work by the following people:
 ##
-##      (c) 2003  Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
-##      (c) 2003  Martin Konold     <martin.konold@erfrakon.de>
-##      (c) 2003  Achim Frank       <achim.frank@erfrakon.de>
-##
+##  LICENSE
+##  -------
 ##
 ##  This  program is free  software; you can redistribute  it and/or
 ##  modify it  under the terms of the GNU  General Public License as
@@ -24,6 +22,7 @@ package Kolab::LDAP::Backend::slurpd;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
+##  $Revision: 1.3 $
 
 use 5.008;
 use strict;
@@ -279,11 +278,20 @@ sub run
 		if( !($select->can_read(1)) ) {
 		  $changes = 0;
 		  Kolab::log('SD', 'Change detected w/ no pending LDAP messages; reloading services if needed');
-		  Kolab::LDAP::sync;		
-		  Kolab::log('SD', 'Running kolabconf');
-		  system("@sbindir@/kolabconf") == 0
-		    or Kolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
-		  Kolab::log('SD', 'Kolabconf complete');
+                  my $kidpid = fork();
+		  unless (defined $kidpid) {
+		      die("can't fork: $!");
+		  }
+		  if ($kidpid == 0 ) {
+		      # child
+		      Kolab::LDAP::sync;
+		      exit(0);
+		  }
+		  waitpid($kidpid, 0);
+		  Kolab::log('SD', "Running $Kolab::config{'kolabconf_script'}");
+		  system($Kolab::config{'kolabconf_script'}) == 0
+		    or Kolab::log('SD', "Failed to run $Kolab::config{'kolabconf_script'}: $?", KOLAB_ERROR);
+		  Kolab::log('SD', "$Kolab::config{'kolabconf_script'} complete");
 		}
             }
 
@@ -360,19 +368,11 @@ Kolab::LDAP::Backend::slurpd - Perl extension for a slurpd backend
   Kolab::LDAP::Backend::slurpd handles a slurpd backend to the
   kolab daemon.
 
-=head1 AUTHOR
+=head1 COPYRIGHT AND AUTHORS
 
-Stuart Bing묠E<lt>s.binge@codefusion.co.zaE<gt>
+Stuart Bingë and others (see AUTHORS file)
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2003  Code Fusion cc
-
-Portions based on work by the following people:
-
-  (c) 2003  Tassilo Erlewein  <tassilo.erlewein@erfrakon.de>
-  (c) 2003  Martin Konold     <martin.konold@erfrakon.de>
-  (c) 2003  Achim Frank       <achim.frank@erfrakon.de>
+=head1 LICENSE
 
 This  program is free  software; you can redistribute  it and/or
 modify it  under the terms of the GNU  General Public License as
