@@ -1,3 +1,10 @@
+libskolab-perl (1:2.2.4-20100624-4) unstable; urgency=medium
+
+  * debian/: Modernize packaging. Already rename src:pkg to
+    libskolab-perl.
+
+ -- Mike Gabriel <mike.gabriel@das-netzwerkteam.de>  Thu, 01 Feb 2018 20:08:41 +0100
+
 libskolab-perl (1:2.2.4-20100624-3) unstable; urgency=low
 
   * Fix "during bootstrap is controled port 2000 instead of 4190 for
