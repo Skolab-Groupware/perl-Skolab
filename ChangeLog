@@ -1,3 +1,8 @@
+2010-06-04  Gunnar Wrobel <wrobel@pardus.de>
+
+	* lib/Kolab/Cyrus.pm: kolab/issue4237 (additional event.default
+	folder created by kolabd (rt#6038))
+
 2009-12-16  Sascha Wilde  <wilde@intevation.de>
 
 	* lib/Kolab/LDAP.pm (deleteObject): kolab/issue3940 (Deleting

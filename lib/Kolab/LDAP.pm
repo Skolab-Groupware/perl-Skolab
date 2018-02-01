@@ -22,7 +22,7 @@ package Kolab::LDAP;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.11.2.5 $
+##  $Revision: 1.11.2.6 $
 
 use 5.008;
 use strict;
@@ -557,9 +557,7 @@ sub createObject
                         $domain = $Kolab::config{'postfix-mydomain'};
                     }
                     my $folder = $user . '/Calendar@' . $domain;
-                    Kolab::Cyrus::createMailbox($cyrus, $folder, 0);
-                    Kolab::Cyrus::setFolderType($cyrus, $folder, 0, 'event.default');
-                    Kolab::Cyrus::setACL($cyrus, $folder, 0, ["$uid all", 'calendar@' . $domain .' all']);
+                    Kolab::Cyrus::createCalendar($cyrus, $user, $domain, $folder, ["$uid all", 'calendar@' . $domain .' all']);
                 }
             }
         }
