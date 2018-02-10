@@ -7,6 +7,7 @@ bin/kolabquotareport.in
 bin/kolabquotawarn.in
 bin/kolab_smtpdpolicy.in
 sbin/kolab_bootstrap.in
+sbin/kolab_imappartitions.in
 sbin/kolabcheckperm.in
 sbin/kolabconf.in
 sbin/kolabd.in
@@ -22,7 +23,5 @@ lib/Kolab/LDAP/Backend/syncrepl.pm
 lib/Kolab/LDAP/Backend/fds.pm
 lib/Kolab/Util.pm
 Makefile.PL
-kolab.mk
 MANIFEST
 README
-META.yml                                 Module meta-data (added by MakeMaker)

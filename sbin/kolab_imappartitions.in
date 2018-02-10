@@ -1,0 +1,58 @@
+#!perl
+
+=head1 NAME
+
+kolab_imappartitions - List all imap partition
+
+=head1 SYNOPSIS
+
+B<kolab_imappartitions>
+
+=head1 COPYRIGHT AND AUTHORS
+
+Copyright (c) 2009 Intevation GmbH
+
+Written by Thomas Arendsen Hein <thomas@intevation.de>
+
+=head1 LICENSE
+
+This  program is free  software; you can redistribute  it and/or
+modify it  under the terms of the GNU  General Public License as
+published by the  Free Software Foundation; either version 2, or
+(at your option) any later version.
+
+This program is  distributed in the hope that it will be useful,
+but WITHOUT  ANY WARRANTY; without even the  implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You can view the  GNU General Public License, online, at the GNU
+Project's homepage; see
+<http://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.
+
+=cut
+
+use strict;
+use Kolab;
+use IO::File;
+
+Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+
+my $imap_conf = "$Kolab::config{'imap_confdir'}/imapd.conf";
+
+my $file;
+if (!($file = IO::File->new($imap_conf, 'r'))) {
+    Kolab::log('T', "Unable to open IMAP configuration file `$imap_conf': $!", KOLAB_ERROR);
+    # Error, use default partition
+    print "\n";
+    exit(1);
+}
+
+while (<$file>) {
+    if (/^\s*partition-(\w+):/) {
+        print "$1\n";
+    }
+}
+$file->close;
+
+exit(0);

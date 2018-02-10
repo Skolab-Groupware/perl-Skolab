@@ -1,0 +1,82 @@
+Development notes
+=================
+
+The perl-kolab package is a standard perl package and a Kolab Server
+core component. It is meant to be handled with the Makefile.PL
+script. You will receive a standard "Makefile" by running "perl
+Makefile.PL".
+
+The Kolab Server packages were usually not released as source
+packages. This should be changed with this new package layout. The
+"dist" target will produce a perl-kolab-*.tar.gz package that can be
+distributed as source package. The same run will produce a
+perl-kolab-*.src.rpm package that is suited for installation on an
+OpenPKG system.
+
+
+Version numbering
+=================
+
+The package version will be set in
+
+  lib/Kolab.pm
+
+e.g.
+
+  our $KOLAB_BASE_VERSION = "2.2.beta1";
+  my $KOLAB_CVS = 1;
+
+Release versions
+----------------
+
+Released packages should have the same core version as the server
+release. As a part of Kolab Server 2.2.0 the version number should be
+2.2.0. Pre-release candidates receive the suffix "betaX" or "rcX"
+(e.g. 2.2.beta1).
+
+Before tagging the next release the version number needs to be increased
+to the new Kolab Server version (e.g. 2.2.0) and the CVS switch needs to
+be set to 0:
+
+  our $KOLAB_BASE_VERSION = "2.2.0";
+  my $KOLAB_CVS = 0;
+
+After updating $KOLAB_BASE_VERSION and $KOLAB_CVS you can commit these
+changes and tag the release.
+
+Now you can create source tarballs and RPMs which will look like:
+
+  perl-kolab-2.2.0.tar.gz
+  perl-kolab-2.2.0-20070819.src.rpm
+
+Don't forget to change $KOLAB_CVS back to 1 again and commit, so later
+CVS snapshots will be named correctly.
+
+Snapshots
+---------
+
+Make sure lib/Kolab.pm contains the following line:
+
+  my $KOLAB_CVS = 1;
+
+The release number will then receive the suffix "+cvs" and the current
+date will be appended.
+
+Source tarballs and RPMs will then look like this:
+
+  perl-kolab-2.2.0+cvs20070810.tar.gz
+  perl-kolab-2.2.0+cvs-20070810.src.rpm
+
+
+Change log
+==========
+
+The change log for the package is provided in "ChangeLog". Please keep
+this file up-to-date if you change the source code of this package.
+
+
+Contributors
+============
+
+The developers of this package are listed in "AUTHORS". Please keep
+this file up-to-date if you change the source code of this package.

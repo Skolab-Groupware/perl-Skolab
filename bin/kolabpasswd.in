@@ -12,7 +12,7 @@ B<kolabpasswd>
 
 The kolabpasswd script is used for changing the manager password on a Kolab Server.
 In multi-location Kolab setups the script must be run on each individual host 
-seperately.
+separately.
 
 After changing the manager password it is highly recommended to restart 
 the Kolab server.
@@ -44,6 +44,12 @@ You can view the  GNU General Public License, online, at the GNU
 Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 =cut
+
+use Encode;
+use I18N::Langinfo qw(langinfo YESSTR CODESET);
+my $local_codeset = langinfo(CODESET());
+
+binmode(STDIN, ":encoding($local_codeset)");
 
 use Term::ReadKey;
 use IO::File;
@@ -118,6 +124,7 @@ my $kolabconfname = "@CONFIG_DIR@/kolab.conf";
 my %config = readConfig($kolabconfname);
 my $kolabconf = IO::File->new('@CONFIG_DIR@/kolab.conf','r')
                 || die "kolabpasswd: Fatal Error: could not open kolab config at $kolabconfname";
+binmode($kolabconf, ":encoding(UTF-8)");
 
 my $account = 'manager';
 my $account_dn = $config{'bind_dn'};
@@ -140,8 +147,6 @@ do {
   ReadMode 'noecho';
   my $old_password = ReadLine 0; chomp $old_password;
 
-  $old_password = Encode::encode_utf8($old_password);
-
   $mesg = $ldap->bind( $account_dn, password => $old_password ) || die "\nkolabpasswd: Failed to bind to LDAP server";
   if( $mesg->code ) { print "\nError: ".$mesg->error.". Please try again\n"; }
 } while ( $mesg->code );
@@ -157,15 +162,14 @@ print "\n";
 ReadMode 'normal';
 ($new_password eq $new_password2) || die "Sorry, passwords do not match.\n";
 
-$new_password = Encode::encode_utf8($new_password);
-
 my $bind_pw_hash;
 
 # create temporary config file
 my $tmp = new File::Temp( TEMPLATE => 'tempXXXXX', DIR => '@CONFIG_DIR@', UNLINK => 0, SUFFIX => '.conf')
      || die "Error: could not create temporary file under @CONFIG_DIR@";
+binmode($tmp, ":encoding(UTF-8)");
 $tmpfilename = $tmp->filename;
-$bind_pw_hash = hashPassword2($new_password);
+$bind_pw_hash = hashPassword($new_password);
 
 # copy and replace old config to temporary file
 foreach ($kolabconf->getlines()) {

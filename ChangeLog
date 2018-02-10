@@ -1,7 +1,73 @@
-2010-06-04  Gunnar Wrobel <wrobel@pardus.de>
+2010-07-17  Gunnar Wrobel  <p@rdus.de>
 
-	* lib/Kolab/Cyrus.pm: kolab/issue4237 (additional event.default
-	folder created by kolabd (rt#6038))
+	* lib/Kolab/LDAP.pm:
+
+	kolab/issue977 (Kolab suppresses ldap error messages)
+	kolab/issue978 (incorrect $ldap->abandon; call)
+
+2010-06-28  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm:
+
+	Removed hack for kolab/issue3472 (web client user prefs not
+	deleted when user gets deleted)
+
+2010-06-27  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (deleteObject):
+
+	Support a hooks directory that allows to extend the deletion of
+	users.
+
+	kolab/issue3472 (web client user prefs not deleted when user gets
+	deleted)
+
+2010-04-27  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_bootstrap.in: Check for availability of submission port,
+	see kolab/issue4311 (Activate port 587 for email submission)
+
+2010-03-30  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (createObject): kolab/issue4275 (LDAP.pm quota error)
+
+2010-03-23  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/Cyrus.pm (createCalendar): kolab/issue4237 (additional
+	event.default folder created by kolabd (rt#6038))
+
+2010-03-11  Gunnar Wrobel  <p@rdus.de>
+
+	* bin/kolabpasswd.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords (rt#5558))
+
+2010-03-05  Gunnar Wrobel  <p@rdus.de>
+
+	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords (rt#5558))
+
+2009-02-11  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm:
+	  solve kolab/issue4024 (Lots of tmp files in kolab's configuration
+	  directory), introduced 2009-12-13. 
+
+2010-01-01 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: solve kolab/issue4009: kolab_bootstrap contains
+	  dangerous code, could remove wrong files
+
+2009-12-30 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: assign the variable Kolab::config{"is_master"}
+	  to prevent warnings during the execution of kolabconf.
+	  Verify if files that are to be moved or chown'ed exist.  If not
+	  skip the operation.  
+
+2009-12-28 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: removed the suffix ".in" in the call to
+	  Kolab::Conf::rebuildTemplates
 
 2009-12-16  Sascha Wilde  <wilde@intevation.de>
 
@@ -16,6 +82,31 @@
 
 	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
 	problems with some characters in passwords)
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm, sbin/kolab_bootstrap.in:
+	  Added arguments to rebuildTemplates(): dorunonchange and templates.
+	  Use those in kolab_bootstrap (in replacement of bootstrapConfig()).
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm: Touch configuration only when there is a change.
+	  This avoid postfix complaining about "database X.db is older than 
+	  source file X".
+	  Additionnay, renamed %templatehaschanged to %confighaschanged.
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm, sbin/kolabconf.in: $Kolab::do_reload is now an
+	  argument to Kolab::Conf::rebuildTemplates().
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm, sbin/kolabconf.in: new @@@print@@@ macro
+	  available for: getLDAPReplicas(), getLDAPAccess(),
+	  getCyrusGroups(), getPostfixMap(map). This removed the use of
+	  %special_templates, %haschanged, Kolab::Conf::reload()
 
 2009-12-07  Gunnar Wrobel <wrobel@pardus.de>
 
@@ -32,7 +123,7 @@
 	kolab/issue1340 (RFC: restrict users to sending mail only to
 	internal recipients)
 
-	Only the first stub yeat reacts solely to "-" (Denying all
+	Only the first stub that reacts solely to "-" (Denying all
 	recipients).
 
 2009-11-24  Gunnar Wrobel <wrobel@pardus.de>
@@ -62,14 +153,45 @@
 	causes OpenLDAP restarts)
 	* lib/Kolab.pm: bump version number
 
+2009-05-07 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: Change $Kolab::config{'LDAPD'} to just
+	  openldap, see kolab/issue3604
+
+2009-05-07  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Removed special handling of imapd (except for
+	imapd.group.template)
+
+2009-05-05  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Execute duplicate RUNONCHANGE commands only once.
+	Part of kolab/issue1679 ([kolabconf] Update template META mechanism to
+	support service restarts)
+
 2009-04-16  Gunnar Wrobel  <p@rdus.de>
 
 	* lib/Kolab/LDAP.pm (deleteObject): Workaround for kolab/issue3472.
+
+2009-03-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Removed special handling of saslauthd.
+	* lib/Kolab/Conf.pm: Removed special handling of apache, amavisd and
+	clamav and remove duplicate "change detected" debug message.
+	* lib/Kolab/Conf.pm: Expand $map in debug message.
+	* lib/Kolab/Conf.pm: Removed postfix reload and postmap calls.
 
 2009-03-16  Thomas Arendsen Hein  <thomas@intevation.de>
 
 	* lib/Kolab/LDAP.pm: Creating the Calendar folder caused an
 	KOLAB_ERROR to be logged, changed to KOLAB_DEBUG.
+
+2009-03-16  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_imappartitions.in, MANIFEST, Makefile.PL, sbin/.cvsignore:
+	Added script to list imap partitions.
+	* lib/Kolab/Cyrus.pm, lib/Kolab/LDAP.pm: Select random imap partition
+	from output of kolab_imappartitions script if available.
 
 2009-03-04  Thomas Arendsen Hein  <thomas@intevation.de>
 

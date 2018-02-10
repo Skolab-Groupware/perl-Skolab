@@ -22,7 +22,7 @@ package Kolab::Util;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.1 $
+##  $Revision$
 
 use 5.008;
 use strict;
