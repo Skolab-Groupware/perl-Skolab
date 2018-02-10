@@ -6,7 +6,7 @@ kolabconf - Kolab configuration tool
 
 =head1 SYNOPSIS
 
-B<kolab_bootstrap> [B<-d>] [B<-n>] [B<-h>]
+B<kolabconf> [B<-d>] [B<-n>] [B<-h>]
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -47,7 +47,7 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 =cut
 
-##  $Revision: 1.2.2.1 $
+##  $Revision$
 
 use 5.008;
 use strict;
@@ -93,9 +93,9 @@ if ($opt_d) {
     exit 0;
 }
 
-$Kolab::do_reload = 1;
+my $do_reload = 1;
 if($opt_n) {
-    $Kolab::do_reload = 0;
+    $do_reload = 0;
 }
 
 if( !$Kolab::reloadOk ) {
@@ -106,11 +106,6 @@ if( !$Kolab::reloadOk ) {
 }
 
 Kolab::log('KC', 'Rebuilding templates');
-Kolab::Conf::rebuildTemplates;
-Kolab::log('KC', 'Reloading kolab components');
-
-if( $Kolab::do_reload ) {
-    Kolab::Conf::reload;
-}
-
+Kolab::Conf::rebuildTemplates(doreload => $do_reload);
 Kolab::log('KC', 'Finished');
+

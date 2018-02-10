@@ -50,36 +50,6 @@ EOH
 exit 0;
 }
 
-# Add the dist_openpkg target to the dist target
-sub MY::dist {
-    package MY;   # To help SUPER work right
-    my $self = shift;
-    my @m;
-    
-    push(@m, $self->SUPER::dist(@_));
-    
-    my $dist = join "", @m;
-
-    $dist =~ s/(tardist.*)/clean_tardist $1 dist_openpkg/;
-     
-    return $dist;
-}
-
-# Remove additional files
-sub MY::veryclean {
-    package MY;   # To help SUPER work right
-    my $self = shift;
-    my @m;
-    
-    push(@m, $self->SUPER::clean(@_));
-    
-    my $clean = join "", @m;
-
-    $clean =~ s/(clean.*)/$1 clean_openpkg clean_scripts/;
-     
-    return $clean;
-}
-
 # Install sbin files
 sub MY::install {
     package MY;   # To help SUPER work right
@@ -96,17 +66,7 @@ sub MY::install {
 }
 
 sub MY::postamble {
-    if (-e "../kolab.mk")
-    {
-	copy("../kolab.mk", "./") or die "Could not copy ../kolab.mk";
-    }
-    my $add = "include kolab.mk
-
-PACKAGE = \$(shell [ -r \"perl-kolab.spec\" ] && grep '%define[ ]*V_package' perl-kolab.spec | sed -e 's/.*V_package\\s*\\([a-z\\_-]*\\).*/\\1/')
-VERSION = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::KOLAB_VERSION;')
-RELEASE = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::KOLAB_RELEASE;')
-SOURCE_TAG = \$(shell perl -I lib -e 'use Kolab;print \$\$Kolab::VERSION;')
-
+    my $add = "
 bin/%: bin/%.in
 	cat \$< | sed -e 's#\@CONFIG_DIR@#$CONFIG#g' > \$@
 
@@ -116,7 +76,7 @@ sbin/%: sbin/%.in
 	rm \$@.tmp
 	\$(FIXIN) \$@
 
-SBIN_TARGETS=sbin/kolabconf sbin/kolab_bootstrap sbin/kolabd sbin/kolabcheckperm
+SBIN_TARGETS=sbin/kolabconf sbin/kolab_bootstrap sbin/kolab_imappartitions sbin/kolabd sbin/kolabcheckperm
 
 install_sbin: \$(SBIN_TARGETS)
 	mkdir -p \$(DESTDIR)/$INSTALLSBIN
@@ -131,35 +91,23 @@ install_etc:
 	  cp \$\$ETC \$(DESTDIR)/$INSTALLETC;        \\
 	done
 
-ifeq \"x\$(PLATTAG)\" \"x\"
-	PLATTAG = \$(shell \$(RPM) -q --qf=\"%{ARCH}-%{OS}\" openpkg)-\$(KOLABDIR:/%=%)
-endif
+# Upload location for the fileserver. Configure the kolab filesserver
+# in your ssh config at ~/.ssh/config. E.g.:
+#
+# Host=kolabfiles
+# User=wrobel
+# Hostname=files.kolab.org
+#
+FILESERVER = kolabfiles
 
-clean_tardist:
-	rm -rf *.tar.gz
+# Short name for uploading the snapshot.
+.PHONY:snapshot
+snapshot: .sent-\$(DISTVNAME).tar\$(SUFFIX)
 
-clean_all: clean_tardist veryclean
-	rm -rf \$(KOLABRPMTMP)/\$(PACKAGE)
-	rm -rf *.src.rpm
-	rm -rf *~
-
-dist_openpkg: perl-kolab.spec \$(PACKAGE)-\$(VERSION)-\$(RELEASE).src.rpm
-	cp \$(PACKAGE)-\$(VERSION)-\$(RELEASE).src.rpm ../stage/
-
-\$(KOLABRPMPKG)/\$(PACKAGE)-\$(VERSION)-\$(RELEASE).\$(PLATTAG).rpm \$(PACKAGE)-\$(VERSION)-\$(RELEASE).src.rpm: \$(PACKAGE).spec
-	test -d \$(KOLABRPMSRC)/\$(PACKAGE) || mkdir \$(KOLABRPMSRC)/\$(PACKAGE)
-	cp \$(PACKAGE).spec \$(PACKAGE).spec.tmp
-	sed -i -e 's/\@VERSION\@/\$(VERSION)/' \$(PACKAGE).spec.tmp
-	sed -i -e 's/\@RELEASE\@/\$(RELEASE)/' \$(PACKAGE).spec.tmp
-	sed -i -e 's/\@SOURCE_TAG\@/\$(SOURCE_TAG)/' \$(PACKAGE).spec.tmp
-	mv \$(PACKAGE).spec.tmp \$(KOLABRPMSRC)/\$(PACKAGE)/\$(PACKAGE).spec
-	mv \$(PACKAGE)-\$(SOURCE_TAG).tar.gz \$(KOLABRPMSRC)/\$(PACKAGE)
-	cd \$(KOLABRPMSRC)/\$(PACKAGE) && \$(RPM) -ba \$(PACKAGE).spec
-	cp -p \$(KOLABRPMPKG)/\$(PACKAGE)-\$(VERSION)-\$(RELEASE).src.rpm .
-
-.PHONY: install-kolab
-install-kolab: \$(KOLABRPMPKG)/\$(PACKAGE)-\$(VERSION)-\$(RELEASE).\$(PLATTAG).rpm
-	\$(RPM) -Uhv --force \$(KOLABRPMPKG)/\$(PACKAGE)-\$(VERSION)-\$(RELEASE).\$(PLATTAG).rpm
+# Indicator to avoid uploading the same package twice.
+.sent-\$(DISTVNAME).tar\$(SUFFIX): \$(DISTVNAME).tar\$(SUFFIX)
+	echo \"put \$(DISTVNAME).tar\$(SUFFIX)\" | sftp \$(FILESERVER)
+	touch .sent-\$(DISTVNAME).tar\$(SUFFIX)
 ";
 
     return $add;
@@ -186,15 +134,16 @@ WriteMakefile(
                            'bin/kolabpasswd',
                            'bin/kolabquotawarn'],
     MAN1PODS          => {
-                           'bin/kolab_smtpdpolicy' => 'blib/man1/kolab_smtpdpolicy.1p',
-                           'bin/kolabquotareport'  => 'blib/man1/kolabquotareport.1p',
-                           'bin/kolabdcachetool'   => 'blib/man1/kolabdcachetool.1p',
-                           'bin/kolabpasswd'       => 'blib/man1/kolabpasswd.1p',
-                           'bin/kolabquotawarn'    => 'blib/man1/kolabquotawarn.1p',
-                           'sbin/kolab_bootstrap'  => 'blib/man1/kolab_bootstrap.1p',
-                           'sbin/kolabcheckperm'   => 'blib/man1/kolabcheckperm.1p',
-                           'sbin/kolabconf'        => 'blib/man1/kolabconf.1p',
-                           'sbin/kolabd'           => 'blib/man1/kolabd.1p',
+                           'bin/kolab_smtpdpolicy'     => 'blib/man1/kolab_smtpdpolicy.1p',
+                           'bin/kolabquotareport'      => 'blib/man1/kolabquotareport.1p',
+                           'bin/kolabdcachetool'       => 'blib/man1/kolabdcachetool.1p',
+                           'bin/kolabpasswd'           => 'blib/man1/kolabpasswd.1p',
+                           'bin/kolabquotawarn'        => 'blib/man1/kolabquotawarn.1p',
+                           'sbin/kolab_bootstrap'      => 'blib/man1/kolab_bootstrap.1p',
+                           'sbin/kolab_imappartitions' => 'blib/man1/kolab_imappartitions.1p',
+                           'sbin/kolabcheckperm'       => 'blib/man1/kolabcheckperm.1p',
+                           'sbin/kolabconf'            => 'blib/man1/kolabconf.1p',
+                           'sbin/kolabd'               => 'blib/man1/kolabd.1p',
                          },
     $installscript    => $INSTALLSCRIPT,
     ABSTRACT          => 

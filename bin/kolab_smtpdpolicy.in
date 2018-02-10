@@ -108,7 +108,7 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 =cut
 
-##  $Revision: 1.2.2.3 $
+##  $Revision$
 
 use strict;
 use Fcntl;

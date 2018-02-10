@@ -22,7 +22,7 @@ package Kolab::Cyrus;
 ##  You can view the  GNU General Public License, online, at the GNU
 ##  Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 ##
-##  $Revision: 1.6.2.1 $
+##  $Revision$
 
 use 5.008;
 use strict;
@@ -97,12 +97,13 @@ sub createMailbox
     my $cyrus = shift;
     my $uid = shift;
     my $sf = shift || 0;
-    my $cyruid = &createUid($uid, $sf);
+    my $partition = shift || '';
 
+    my $cyruid = &createUid($uid, $sf);
     my $mailbox = ($cyrus->list($cyruid))[0];
     if ($uid && ($uid ne $Kolab::config{'cyrus_admin'}) && ($uid ne "freebusy") && ($uid ne "nobody") && !defined($mailbox)) {
-        Kolab::log('Y', "Creating mailbox `$cyruid'");
-        if (!$cyrus->create($cyruid)) {
+        Kolab::log('Y', "Creating mailbox `$cyruid' on ".($partition?"partition `$partition'":"default partition"));
+        if (!$cyrus->create($cyruid, $partition)) {
             Kolab::log('Y', "Unable to create mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
         }
     } else {
@@ -125,8 +126,8 @@ sub createCalendar
     foreach my $mailbox (@mailboxes) {
 	my $u = @{$mailbox}[0];
 	%info = $cyrus->info($u, ('/vendor/kolab/folder-type'));
-        my $key = '/mailbox/{' . $u . '}/vendor/kolab/folder-type';
-        if (exists($info{$key}) && $info{$key} eq 'event.default') {
+	my $key = '/mailbox/{' . $u . '}/vendor/kolab/folder-type';
+	if (exists($info{$key}) && $info{$key} eq 'event.default') {
 	    $calendar = $u;
 	}
     }
