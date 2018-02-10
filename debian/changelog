@@ -1,3 +1,9 @@
+libskolab-perl (1:2.3.0~git20101212-1) UNRELEASED; urgency=medium
+
+  * New release 2.3~git20101212.
+
+ -- Mike Gabriel <mike.gabriel@das-netzwerkteam.de>  Sat, 10 Feb 2018 23:00:55 +0100
+
 libskolab-perl (1:2.2.4-20100624-4) unstable; urgency=medium
 
   * debian/: Modernize packaging. Already rename src:pkg to
