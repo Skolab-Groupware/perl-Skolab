@@ -37,7 +37,7 @@ use DB_File;
 use Kolab;
 use Kolab::Util;
 use Kolab::Cyrus;
-use Digest::SHA1 qw(sha1);
+use Digest::SHA qw(sha1);
 use MIME::Base64 qw(encode_base64);
 
 require Exporter;
