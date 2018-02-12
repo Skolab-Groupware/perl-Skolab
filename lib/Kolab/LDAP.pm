@@ -671,7 +671,7 @@ sub deleteObject
 		Kolab::log('L', "Removing Kolab objectClasses from DN `$dn'");
 		my $schema = $masterldap->schema( $dn );
                 # PENDING(steffen): Dont hardcode objectClasses
-		foreach my $c qw(kolabInetOrgPerson kolabGroupOfNames) {
+		foreach my $c ( qw(kolabInetOrgPerson kolabGroupOfNames) ) {
 		    my @may = map $_->{name}, $schema->may($c);
 		    my @must = map $_->{name}, $schema->must($c);
 		    foreach my $attr (@must,@may,split(' ',$Kolab::config{'kolab_remove_attributes'})) {
