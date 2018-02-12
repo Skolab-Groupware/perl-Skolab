@@ -1,4 +1,4 @@
-package Kolab::Conf;
+package Skolab::Conf;
 
 ##  COPYRIGHT
 ##  ---------
@@ -33,8 +33,8 @@ use File::Copy;
 use File::Temp;
 use File::stat;
 use Kolab;
-use Kolab::Util;
-use Kolab::LDAP;
+use Skolab::Util;
+use Skolab::LDAP;
 
 require Exporter;
 
@@ -67,14 +67,14 @@ sub fixup {
     (my $owner, my $group) = split(/:/, $ownership, 2);
     my $uid = (getpwnam($owner))[2];
     my $gid = (getgrnam($group))[2];
-    Kolab::log('T', sprintf("Changing permissions of %s to 0%o", $file, $perm ), KOLAB_DEBUG );
+    Skolab::log('T', sprintf("Changing permissions of %s to 0%o", $file, $perm ), KOLAB_DEBUG );
     if( chmod($perm, $file) != 1 ) {
-        Kolab::log('T', "Unable to change permissions of `$file' to ".sprintf("0%o",$perm) . ": $!", KOLAB_ERROR);
+        Skolab::log('T', "Unable to change permissions of `$file' to ".sprintf("0%o",$perm) . ": $!", KOLAB_ERROR);
         exit(1);
     }
-    Kolab::log('T', "Changing owner of $file to $owner:$group ($uid:$gid)", KOLAB_DEBUG );
+    Skolab::log('T', "Changing owner of $file to $owner:$group ($uid:$gid)", KOLAB_DEBUG );
     if( chown($uid,$gid,$file) != 1 ) {
-        Kolab::log('T', "Unable to change ownership of `$file' to $uid:$gid: $!", KOLAB_ERROR);
+        Skolab::log('T', "Unable to change ownership of `$file' to $uid:$gid: $!", KOLAB_ERROR);
         exit(1);
     }
 }
@@ -89,8 +89,8 @@ sub printWarning {
     $cc = "#" if (!defined $cc);
 
     # Different warnings during bootstrapping and regular configuration
-    if ((defined $Kolab::config{"bootstrap_config"}) &&
-        ($Kolab::config{"bootstrap_config"} eq "true")) {
+    if ((defined $Skolab::config{"bootstrap_config"}) &&
+        ($Skolab::config{"bootstrap_config"} eq "true")) {
 
         print $stream "$cc=================================================================\n";
         print $stream "$cc This is a preliminary version of this configuration file and\n";
@@ -107,7 +107,7 @@ sub printWarning {
         print $stream "$cc\n";
         print $stream "$cc  $templateFile\n";
         print $stream "$cc\n";
-        print $stream "$cc Changes can be activated by running ".$Kolab::config{'kolabconf_script'}."\n";
+        print $stream "$cc Changes can be activated by running ".$Skolab::config{'kolabconf_script'}."\n";
         print $stream "$cc=================================================================\n";
 
     }
@@ -120,22 +120,22 @@ sub build {
     my $perm = shift;
     my $cchr = shift;  # comment character
 
-    my $templatedir = $Kolab::config{"templatedir"};
+    my $templatedir = $Skolab::config{"templatedir"};
 
-    Kolab::log('T', "Creating new configuration file `$cfg' from template `$tmpl'", KOLAB_DEBUG );
+    Skolab::log('T', "Creating new configuration file `$cfg' from template `$tmpl'", KOLAB_DEBUG );
 
     my $template;
     if (!($template = IO::File->new($tmpl, 'r'))) {
-        Kolab::log('T', "Unable to open template file `$tmpl': $!", KOLAB_ERROR);
+        Skolab::log('T', "Unable to open template file `$tmpl': $!", KOLAB_ERROR);
         # Error, fail gracefully
         return;
     }
     my $config;
     if (!($config = new File::Temp( TEMPLATE => 'tmpXXXXX',
-                                    DIR => $Kolab::config{"kolabdir"},
+                                    DIR => $Skolab::config{"kolabdir"},
                                     SUFFIX => '.kolabtmp',
                                     UNLINK => 0 ))) {
-        Kolab::log('T', "Unable to open configuration file `$cfg': $!", KOLAB_ERROR);
+        Skolab::log('T', "Unable to open configuration file `$cfg': $!", KOLAB_ERROR);
         exit(1);
     }
 
@@ -165,9 +165,9 @@ sub build {
             }
         } elsif (/\@{3}if\s+(\S+?)\@{3}/) {
             # @@@if some_variable@@@
-            # The some_variable is a key in the $Kolab::config hash and has
+            # The some_variable is a key in the $Skolab::config hash and has
             # its value set to either 'false' or 'true'
-            if ($Kolab::config{$1} && lc($Kolab::config{$1}) ne "false" ) {
+            if ($Skolab::config{$1} && lc($Skolab::config{$1}) ne "false" ) {
                 # Keep text
                 $keep = 1;
             } else {
@@ -205,7 +205,7 @@ sub build {
             elsif ($1 eq 'getLDAPAccess') {$val = getLDAPAccess();}
             elsif ($1 eq 'getCyrusGroups') {$val = getCyrusGroups();}
             elsif ($1 eq 'getPostfixMap') {$val = getPostfixMap($2);}
-            else {Kolab::log('T', "Unknown printable value `$1'", KOLAB_WARN);}
+            else {Skolab::log('T', "Unknown printable value `$1'", KOLAB_WARN);}
             s/\@{3}print\s+(\S+?)\@{3}//;
             ($skip == 0) && print $config $val;
         } else {
@@ -216,33 +216,33 @@ sub build {
                 my $fct  = $3;
                 my $args = $4;
                 #print STDERR "attr=\"$attr\", fct=\"$fct\", args=\"$args\"\n";
-                if ($Kolab::config{$attr}) {
+                if ($Skolab::config{$attr}) {
                     my $val = "";
                     if( !$fct ) {
-                        if (ref $Kolab::config{$attr} eq "ARRAY") {
-                            $val = $Kolab::config{$attr}->[0];
+                        if (ref $Skolab::config{$attr} eq "ARRAY") {
+                            $val = $Skolab::config{$attr}->[0];
                         } else {
-                            $val = $Kolab::config{$attr};
+                            $val = $Skolab::config{$attr};
                         }
                     } else {
                         # Modifier functions
                         SWITCH: {
                             # Join function 
                             $fct eq 'join' && do {
-                                if (ref $Kolab::config{$attr} eq "ARRAY") {
-                                my @vals = @{$Kolab::config{$attr}} ;
+                                if (ref $Skolab::config{$attr} eq "ARRAY") {
+                                my @vals = @{$Skolab::config{$attr}} ;
                                 # We want to make sure subdomain.domain.tld comes before domain.tld
                                 my @length_sorted_vals = sort {length $b cmp length $a} @vals;
                                 $val = join ($args, @length_sorted_vals) ;
                                 } else {
-                                $val = $Kolab::config{$attr};
+                                $val = $Skolab::config{$attr};
                                 }
                                 last SWITCH;
                             };
                             # Quote function
                             $fct eq 'quote' && do {
                                 # slapd.conf compatible quoting
-                                $val = $Kolab::config{$attr};
+                                $val = $Skolab::config{$attr};
                                 $val =~ s/"/\"/g;
                                 $val = '"'.$val.'"';
                                 last SWITCH;
@@ -253,7 +253,7 @@ sub build {
                     last if ( $val eq "\@\@\@$attr\@\@\@" ); # prevent endless loop
                 } else {
                     # Only warn the user in case we are not skipping the section
-                    ($skip == 0) && Kolab::log('T', "No configuration variable corresponding to `$1' exists", KOLAB_WARN);
+                    ($skip == 0) && Skolab::log('T', "No configuration variable corresponding to `$1' exists", KOLAB_WARN);
                     s/\@{3}([^\s\@]+?)\@{3}//;
                 }
             }
@@ -270,51 +270,51 @@ sub build {
         my $rc = `diff -q $cfg $cfgtemp`;
         chomp($rc);
         if ($rc) {
-            Kolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG );
+            Skolab::log('T', "`$cfg' change detected: $rc", KOLAB_DEBUG );
             $confighaschanged{$tmpl} = 1;
             #making backup
             my $cfgbackup = $cfg . '.old';
             my $oldmask = umask 077;
-            move($cfg, $cfgbackup) || Kolab::log('T', "Error backuping configfile to $cfgbackup, error: $!", KOLAB_ERROR );
+            move($cfg, $cfgbackup) || Skolab::log('T', "Error backuping configfile to $cfgbackup, error: $!", KOLAB_ERROR );
             # To avoid warnings, the backup files must be owned by root
             chown(0, 0, $cfgbackup);
             umask $oldmask;
         }
     } else {
-        Kolab::log('T', "`$cfg' creation detected", KOLAB_DEBUG );
+        Skolab::log('T', "`$cfg' creation detected", KOLAB_DEBUG );
         $confighaschanged{$tmpl} = 1;
     }
 
     if($confighaschanged{$tmpl}) {
-        move($config->filename, $cfg) || Kolab::log('T', "Error moving configfile to $cfg, error: $!", KOLAB_ERROR );
+        move($config->filename, $cfg) || Skolab::log('T', "Error moving configfile to $cfg, error: $!", KOLAB_ERROR );
         fixup( $cfg, $owner, $perm );
     } else {
         unlink($config->filename);
     }
 
-    Kolab::log('T', "Finished creating configuration file `$cfg'", KOLAB_DEBUG );
+    Skolab::log('T', "Finished creating configuration file `$cfg'", KOLAB_DEBUG );
 }
 
 sub getPostfixMap
 {
     my $map = shift;
     my $ret = '';
-    Kolab::log('T', "Building Postfix $map map", KOLAB_DEBUG);
+    Skolab::log('T', "Building Postfix $map map", KOLAB_DEBUG);
 
-    my $ldap = Kolab::LDAP::create(
-        $Kolab::config{'ldap_ip'},
-        $Kolab::config{'ldap_port'},
-        $Kolab::config{'bind_dn'},
-        $Kolab::config{'bind_pw'}
+    my $ldap = Skolab::LDAP::create(
+        $Skolab::config{'ldap_ip'},
+        $Skolab::config{'ldap_port'},
+        $Skolab::config{'bind_dn'},
+        $Skolab::config{'bind_pw'}
     );
 
     my $mesg = $ldap->search(
-        base    => 'k=kolab,'.$Kolab::config{'base_dn'},
+        base    => 'k=kolab,'.$Skolab::config{'base_dn'},
         scope   => 'base',
         filter  => '(objectclass=*)'
     );
     if ($mesg->code) {
-        Kolab::log('T', "Unable to locate Postfix $map map entries in LDAP", KOLAB_ERROR);
+        Skolab::log('T', "Unable to locate Postfix $map map entries in LDAP", KOLAB_ERROR);
         exit(1);
     }
 
@@ -324,38 +324,38 @@ sub getPostfixMap
             my $routes = $ldapobject->get_value("postfix-$map", asref => 1);
             foreach (@$routes) {
                 $_ = trim($_);
-                Kolab::log('T', "Adding entry `$_' to $map");
+                Skolab::log('T', "Adding entry `$_' to $map");
                 $ret .= $_ . "\n";
             }
         }
     } else {
-        Kolab::log('T', "No Postfix $map map entries found");
+        Skolab::log('T', "No Postfix $map map entries found");
     }
 
-    Kolab::LDAP::destroy($ldap);
-    Kolab::log('T', "Finished building Postfix $map map", KOLAB_DEBUG);
+    Skolab::LDAP::destroy($ldap);
+    Skolab::log('T', "Finished building Postfix $map map", KOLAB_DEBUG);
     return $ret;
 }
 
 sub getCyrusGroups
 {
     my $ret ='';
-    Kolab::log('T', 'Building Cyrus groups', KOLAB_DEBUG);
+    Skolab::log('T', 'Building Cyrus groups', KOLAB_DEBUG);
 
-    my $ldap = Kolab::LDAP::create(
-        $Kolab::config{'ldap_ip'},
-        $Kolab::config{'ldap_port'},
-        $Kolab::config{'bind_dn'},
-        $Kolab::config{'bind_pw'}
+    my $ldap = Skolab::LDAP::create(
+        $Skolab::config{'ldap_ip'},
+        $Skolab::config{'ldap_port'},
+        $Skolab::config{'bind_dn'},
+        $Skolab::config{'bind_pw'}
     );
 
     my $mesg = $ldap->search(
-        base    => $Kolab::config{'base_dn'},
+        base    => $Skolab::config{'base_dn'},
         scope   => 'sub',
         filter  => '(&(mail=*)(objectclass=kolabgroupofnames))'
     );
     if ($mesg->code) {
-        Kolab::log('T', 'Unable to locate Cyrus groups in LDAP', KOLAB_ERROR);
+        Skolab::log('T', 'Unable to locate Cyrus groups in LDAP', KOLAB_ERROR);
         exit(1);
     }
 
@@ -380,23 +380,23 @@ sub getCyrusGroups
             }
             $group =~ s/,$//;
             $ret .= $group . "\n";
-            Kolab::log('T', "Adding cyrus group `$group'");
+            Skolab::log('T', "Adding cyrus group `$group'");
             $count++;
         }
     } else {
-        Kolab::log('T', 'No Cyrus groups found');
+        Skolab::log('T', 'No Cyrus groups found');
     }
 
-    Kolab::LDAP::destroy($ldap);
+    Skolab::LDAP::destroy($ldap);
 
-    Kolab::log('T', 'Finished building Cyrus groups', KOLAB_DEBUG );
+    Skolab::log('T', 'Finished building Cyrus groups', KOLAB_DEBUG );
     return $ret;
 }
 
 sub getLDAPAccess
 {
     my $ret = '';
-    Kolab::log('T', 'Building LDAP access file', KOLAB_DEBUG);
+    Skolab::log('T', 'Building LDAP access file', KOLAB_DEBUG);
 
 
 my $global_acl = <<'EOS';
@@ -434,29 +434,29 @@ EOS
     my $str;
     my $domain;
     my @domains;
-    if( ref($Kolab::config{'postfix-mydestination'}) eq 'ARRAY' ) {
-        @domains = @{$Kolab::config{'postfix-mydestination'}};
+    if( ref($Skolab::config{'postfix-mydestination'}) eq 'ARRAY' ) {
+        @domains = @{$Skolab::config{'postfix-mydestination'}};
     } else {
-        @domains =( $Kolab::config{'postfix-mydestination'} );
+        @domains =( $Skolab::config{'postfix-mydestination'} );
     }
 
-    ($str = $dom_acl1) =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;
+    ($str = $dom_acl1) =~ s/\@{3}base_dn\@{3}/$Skolab::config{'base_dn'}/g;
     $ret .= $str;
 
     foreach $domain (@domains) {
         ($str = $dom_acl2) =~ s/\@{3}domain\@{3}/$domain/g;
-        $str =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;
+        $str =~ s/\@{3}base_dn\@{3}/$Skolab::config{'base_dn'}/g;
         $ret .= $str;
     }
 
-    ($str = $dom_acl3) =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;
+    ($str = $dom_acl3) =~ s/\@{3}base_dn\@{3}/$Skolab::config{'base_dn'}/g;
     $ret .= $str;
 
     foreach $domain (@domains) {
         ($str = $global_acl) =~ s/\@{3}domain\@{3}/$domain/g;
-        $str =~ s/\@{3}base_dn\@{3}/$Kolab::config{'base_dn'}/g;
+        $str =~ s/\@{3}base_dn\@{3}/$Skolab::config{'base_dn'}/g;
         $ret .= $str;
-        Kolab::log('T', "Adding acl for domain '$str'");
+        Skolab::log('T', "Adding acl for domain '$str'");
     }
     return $ret;
 }
@@ -464,50 +464,50 @@ EOS
 sub getLDAPReplicas
 {
     my $ret = '';
-    Kolab::log('T', 'Building LDAP replicas', KOLAB_DEBUG);
+    Skolab::log('T', 'Building LDAP replicas', KOLAB_DEBUG);
 
     # directory_mode syncrepl is supported from openldap-2.3.x and beyond
-    if ($Kolab::config{'directory_mode'} eq "syncrepl") {
+    if ($Skolab::config{'directory_mode'} eq "syncrepl") {
 
-      if ( $Kolab::config{'is_master'} eq "false" ) {
+      if ( $Skolab::config{'is_master'} eq "false" ) {
         # Output a syncrepl statement for database synchronisation
         $ret .=   "syncrepl rid=0 \n"
-                 ."         provider=".$Kolab::config{"ldap_master_uri"}."\n"
+                 ."         provider=".$Skolab::config{"ldap_master_uri"}."\n"
                  ."         type=refreshAndPersist\n"
                  ."         retry=\"60 10 300 +\"\n"
-                 ."         searchbase=\"".$Kolab::config{'base_dn'}."\"\n"
+                 ."         searchbase=\"".$Skolab::config{'base_dn'}."\"\n"
                  ."         scope=sub\n"
                  ."         schemachecking=on\n"
-                 ."         binddn=\"".$Kolab::config{"bind_dn"}."\"\n"
-                 ."         credentials=\"".$Kolab::config{"bind_pw"}."\"\n"
+                 ."         binddn=\"".$Skolab::config{"bind_dn"}."\"\n"
+                 ."         credentials=\"".$Skolab::config{"bind_pw"}."\"\n"
                  ."         bindmethod=simple\n";
       }
 
     } else {
 
-        if( $Kolab::config{'is_master'} eq "true" ) {
+        if( $Skolab::config{'is_master'} eq "true" ) {
             # Master setup
             my @kh;
-            if( ref $Kolab::config{'kolabhost'} eq 'ARRAY' ) {
-                @kh = @{$Kolab::config{'kolabhost'}};
+            if( ref $Skolab::config{'kolabhost'} eq 'ARRAY' ) {
+                @kh = @{$Skolab::config{'kolabhost'}};
             } else {
-                @kh = ( $Kolab::config{'kolabhost'} );
+                @kh = ( $Skolab::config{'kolabhost'} );
             }
             for my $h ( @kh ) {
-                next if lc($h) eq lc($Kolab::config{'fqdnhostname'});
+                next if lc($h) eq lc($Skolab::config{'fqdnhostname'});
                 $ret .= "replica uri=ldaps://$h\n"
-                ."  binddn=\"".$Kolab::config{'bind_dn'}."\"\n"
-                ."  bindmethod=simple credentials=".$Kolab::config{'bind_pw'}."\n\n";
+                ."  binddn=\"".$Skolab::config{'bind_dn'}."\"\n"
+                ."  bindmethod=simple credentials=".$Skolab::config{'bind_pw'}."\n\n";
             }
         } else {
             # Slave setup
             # Output an update dn statement instead
-            $ret .= "updatedn ".$Kolab::config{'bind_dn'}."\n";
-            $ret .= "updateref ".$Kolab::config{'ldap_master_uri'}."\n";
+            $ret .= "updatedn ".$Skolab::config{'bind_dn'}."\n";
+            $ret .= "updateref ".$Skolab::config{'ldap_master_uri'}."\n";
         }
     }
 
-    Kolab::log('T', 'Finished building LDAP replicas', KOLAB_DEBUG);
+    Skolab::log('T', 'Finished building LDAP replicas', KOLAB_DEBUG);
     return $ret;
 }
 
@@ -517,11 +517,11 @@ sub replaceMetaVar
 
     while ($var =~ /\@{3}([^\s\@]+?)\@{3}/) {
         my $attr = $1;
-        if ($Kolab::config{$attr}) {
-            my $val = $Kolab::config{$attr};
+        if ($Skolab::config{$attr}) {
+            my $val = $Skolab::config{$attr};
             $var =~ s/\@{3}([^\s\@]+?)\@{3}/$val/;
         } else {
-            Kolab::log('T', "No configuration variable corresponding to `$1' exists", KOLAB_WARN);
+            Skolab::log('T', "No configuration variable corresponding to `$1' exists", KOLAB_WARN);
         }
     }
     return $var;
@@ -533,8 +533,8 @@ sub loadMetaTemplates
     my $templatedir = shift;
     my ($tref, $pref, $oref, $cmdref, $ccharref) = @_;
 
-    Kolab::log('T', 'Collecting template files', KOLAB_DEBUG );
-    opendir(DIR, $templatedir) or Kolab::log('T', 'Given templatedir $templatedir does not exist!', KOLAB_ERROR );
+    Skolab::log('T', 'Collecting template files', KOLAB_DEBUG );
+    opendir(DIR, $templatedir) or Skolab::log('T', 'Given templatedir $templatedir does not exist!', KOLAB_ERROR );
     my @metatemplates = grep { /\.template$/ } readdir (DIR);
     closedir(DIR);
 
@@ -545,7 +545,7 @@ sub loadMetaTemplates
         if (open (TEMPLATE, "$templatedir/$template" )) {
             my $line = <TEMPLATE>;
             if ($line =~ /^KOLAB_META_START$/) {
-                Kolab::log('T', 'Processing META template :'.$template, KOLAB_DEBUG );
+                Skolab::log('T', 'Processing META template :'.$template, KOLAB_DEBUG );
                 my ($found_end, $target, $permissions, $ownership);
                 while (<TEMPLATE>) {
                     $line = $_;
@@ -555,30 +555,30 @@ sub loadMetaTemplates
                         if (!$found_end && $line) {
                             my ($key,$value) = split(/=/,$line);
                             chomp($value);
-                            Kolab::log('T', 'META Key: '.$key.' Value: '.$value, KOLAB_DEBUG );
+                            Skolab::log('T', 'META Key: '.$key.' Value: '.$value, KOLAB_DEBUG );
                             if ($key =~ /^TARGET$/) {
                                 $target = replaceMetaVar($value);
-                                Kolab::log('T', 'META Target '.$target, KOLAB_DEBUG );
+                                Skolab::log('T', 'META Target '.$target, KOLAB_DEBUG );
                             } elsif ($key =~ /^PERMISSIONS$/) {
                                 $permissions = replaceMetaVar($value);
-                                Kolab::log('T', 'META Permissions '.$permissions, KOLAB_DEBUG );
+                                Skolab::log('T', 'META Permissions '.$permissions, KOLAB_DEBUG );
                             } elsif ($key =~ /^OWNERSHIP$/) {
                                 $ownership = replaceMetaVar($value);
-                                Kolab::log('T', 'META Ownership '.$ownership, KOLAB_DEBUG );
+                                Skolab::log('T', 'META Ownership '.$ownership, KOLAB_DEBUG );
                             } elsif ($key =~ /^RUNONCHANGE$/) {
                                 $runonchange = replaceMetaVar($value);
-                                Kolab::log('T', 'META Cmd to execute '.$runonchange, KOLAB_DEBUG );
+                                Skolab::log('T', 'META Cmd to execute '.$runonchange, KOLAB_DEBUG );
                             } elsif ($key =~ /^COMMENT_CHAR$/) {
                                 $commentchar = replaceMetaVar($value);
-                                Kolab::log('T', 'META CommentChar to use: '.$commentchar, KOLAB_DEBUG );
+                                Skolab::log('T', 'META CommentChar to use: '.$commentchar, KOLAB_DEBUG );
                             } else {
-                                Kolab::log('T', 'incorrect META key "'.$key.'" in: '.$template, KOLAB_WARN );
+                                Skolab::log('T', 'incorrect META key "'.$key.'" in: '.$template, KOLAB_WARN );
                             }
                         }
                     }
                 }
                 if ($found_end && $target && $permissions && $ownership) {
-                    Kolab::log('T', 'All mandatory fields populated in '.$template, KOLAB_DEBUG );
+                    Skolab::log('T', 'All mandatory fields populated in '.$template, KOLAB_DEBUG );
                     $$tref{$templatedir . "/" . $template} = $target;
                     $$oref{$target} = $ownership;
                     $permissions = oct($permissions);
@@ -589,7 +589,7 @@ sub loadMetaTemplates
                 }
             }
         } else {
-            Kolab::log('T', 'Could not open template file: '. $template, KOLAB_WARN);
+            Skolab::log('T', 'Could not open template file: '. $template, KOLAB_WARN);
         }
     }
 
@@ -607,11 +607,11 @@ sub rebuildTemplates
     my $section="";
     my %runonchange;
 
-    my $templatedir = $Kolab::config{"templatedir"};
+    my $templatedir = $Skolab::config{"templatedir"};
 
-    Kolab::log('T', 'Regenerating configuration files', KOLAB_DEBUG );
+    Skolab::log('T', 'Regenerating configuration files', KOLAB_DEBUG );
 
-    Kolab::log('T', 'Loading meta-template data', KOLAB_DEBUG );
+    Skolab::log('T', 'Loading meta-template data', KOLAB_DEBUG );
     loadMetaTemplates( $templatedir, \%templates, \%permissions, \%ownership, \%runonchange, \%commentchar );
 
     # defaults to all templates
@@ -623,17 +623,17 @@ sub rebuildTemplates
         build($tpl, $cfg, $ownership{$cfg}, $permissions{$cfg}, $commentchar{$cfg});
      }
 
-    Kolab::log('T', 'Finished regenerating configuration files', KOLAB_DEBUG );
+    Skolab::log('T', 'Finished regenerating configuration files', KOLAB_DEBUG );
 
     if(!$args{dorunonchange}) {
-        Kolab::log('T', 'RUNONCHANGE will not be executed, as requested.', KOLAB_DEBUG );
+        Skolab::log('T', 'RUNONCHANGE will not be executed, as requested.', KOLAB_DEBUG );
         return;
     }
 
     my %cmds = ();
     foreach $key (keys %runonchange) {
         if (defined $confighaschanged{$key}) {
-            Kolab::log('T', 'Queueing RUNONCHANGE for '.$key, KOLAB_DEBUG );
+            Skolab::log('T', 'Queueing RUNONCHANGE for '.$key, KOLAB_DEBUG );
             $cmds{$runonchange{$key}} = 1;
         }
     }
@@ -646,10 +646,10 @@ sub rebuildTemplates
         # The commands with ' rc ' may only be executed when reloading is not
         # prohibited by the user with the "-n" option.
         if ($args{doreload} || $cmd !~ / rc \S+ re(start|load)/) {
-            Kolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+            Skolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
             system($cmd);
         } else {
-            Kolab::log('T', 'Reload not allowed, not executing command: '.$cmd, KOLAB_DEBUG );
+            Skolab::log('T', 'Reload not allowed, not executing command: '.$cmd, KOLAB_DEBUG );
         }
     }
 }
@@ -658,9 +658,9 @@ sub checkPermissions {
     my $key;
     my $value;
 
-    my $templatedir = $Kolab::config{"templatedir"};
+    my $templatedir = $Skolab::config{"templatedir"};
 
-    Kolab::log('T', 'Checking generated config file permissions and ownership', KOLAB_DEBUG );
+    Skolab::log('T', 'Checking generated config file permissions and ownership', KOLAB_DEBUG );
 
     loadMetaTemplates( $templatedir, \%templates, \%permissions, \%ownership );
 
@@ -678,13 +678,13 @@ sub checkPermissions {
                     .sprintf("%lo", $st->mode&07777).' '.$owner.', expected '
                     .sprintf("%lo",$permissions{$tpl}).' '.$ownership{$tpl};
                 print( "$str\n" );
-                Kolab::log('T', $str, KOLAB_ERROR );
+                Skolab::log('T', $str, KOLAB_ERROR );
                 $ok = 0;
             }
         } else {
             my $str = "File $tpl does not exist";
             print "$str\n";
-            Kolab::log('T', "$str", KOLAB_ERROR );
+            Skolab::log('T', "$str", KOLAB_ERROR );
         }
     }
     return $ok;
@@ -694,11 +694,11 @@ sub checkPermissions {
 __END__
 =head1 NAME
 
-Kolab::Conf - Perl extension for Kolab template generation
+Skolab::Conf - Perl extension for Kolab template generation
 
 =head1 ABSTRACT
 
-  Kolab::Conf handles the generation of template files, used by
+  Skolab::Conf handles the generation of template files, used by
   kolabconf.
 
 =head1 COPYRIGHT AND AUTHORS

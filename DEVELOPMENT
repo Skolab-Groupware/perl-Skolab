@@ -1,82 +1,73 @@
-Development notes
-=================
+# Development notes
 
-The perl-kolab package is a standard perl package and a Kolab Server
+The perl-Skolab package is a standard perl package and a Skolab Server
 core component. It is meant to be handled with the Makefile.PL
 script. You will receive a standard "Makefile" by running "perl
 Makefile.PL".
 
-The Kolab Server packages were usually not released as source
+The Skolab Server packages were usually not released as source
 packages. This should be changed with this new package layout. The
-"dist" target will produce a perl-kolab-*.tar.gz package that can be
-distributed as source package. The same run will produce a
-perl-kolab-*.src.rpm package that is suited for installation on an
-OpenPKG system.
+"dist" target will produce a perl-Skolab-*.tar.gz package that can be
+distributed as source package.
 
 
-Version numbering
-=================
+## Version numbering
 
 The package version will be set in
 
-  lib/Kolab.pm
+  lib/Skolab.pm
 
 e.g.
 
-  our $KOLAB_BASE_VERSION = "2.2.beta1";
-  my $KOLAB_CVS = 1;
+  our $SSKOLAB_BASE_VERSION = "2.4.0";
+  my  $SKOLAB_GIT = 1;
 
-Release versions
-----------------
+### Release versions
 
 Released packages should have the same core version as the server
-release. As a part of Kolab Server 2.2.0 the version number should be
-2.2.0. Pre-release candidates receive the suffix "betaX" or "rcX"
-(e.g. 2.2.beta1).
+release. As a part of Skolab Server 2.4.0 the version number should be
+2.4.0. Pre-release candidates receive the suffix "~betaX" or "~rcX"
+(e.g. 2.4.0~beta1).
 
 Before tagging the next release the version number needs to be increased
-to the new Kolab Server version (e.g. 2.2.0) and the CVS switch needs to
+to the new Skolab Server version (e.g. 2.4.0) and the Git switch needs to
 be set to 0:
 
-  our $KOLAB_BASE_VERSION = "2.2.0";
-  my $KOLAB_CVS = 0;
+  our $SSKOLAB_BASE_VERSION = "2.4.0";
+  my  $SKOLAB_GIT = 0;
 
-After updating $KOLAB_BASE_VERSION and $KOLAB_CVS you can commit these
+After updating $SSKOLAB_BASE_VERSION and $SKOLAB_GIT you can commit these
 changes and tag the release.
 
-Now you can create source tarballs and RPMs which will look like:
+Now you can create the source tarball which will look like:
 
-  perl-kolab-2.2.0.tar.gz
-  perl-kolab-2.2.0-20070819.src.rpm
+  perl-Skolab-2.4.0.tar.gz
 
-Don't forget to change $KOLAB_CVS back to 1 again and commit, so later
-CVS snapshots will be named correctly.
+Don't forget to change $SKOLAB_GIT back to 1 again and commit, so later
+Git snapshots will be named correctly.
 
-Snapshots
----------
+### Snapshots
 
-Make sure lib/Kolab.pm contains the following line:
+Make sure lib/Skolab.pm contains the following line:
 
-  my $KOLAB_CVS = 1;
+  my $SKOLAB_GIT = 1;
 
-The release number will then receive the suffix "+cvs" and the current
+The release number will then receive the suffix "+git" and the current
 date will be appended.
 
-Source tarballs and RPMs will then look like this:
+Source tarballs will then look like this:
 
-  perl-kolab-2.2.0+cvs20070810.tar.gz
-  perl-kolab-2.2.0+cvs-20070810.src.rpm
-
-
-Change log
-==========
-
-The change log for the package is provided in "ChangeLog". Please keep
-this file up-to-date if you change the source code of this package.
+  perl-Skolab-2.4.0+git20180810.tar.gz
 
 
-Contributors
-============
+## Change log
+
+The change log for the package is provided in "ChangeLog". This file
+gets auto-create from Git history. Please use appropriate Git commit
+messages in order to produce a nicely readable ChangeLog file.
+
+
+## Contributors
 
 The developers of this package are listed in "AUTHORS". Please keep
 this file up-to-date if you change the source code of this package.

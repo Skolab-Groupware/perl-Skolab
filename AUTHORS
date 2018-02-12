@@ -1,38 +1,34 @@
-Originally written by Stuart Bingë <s.binge@codefusion.co.za>
+# Authors of the Skolab Groupware
 
-  Copyright (c) 2003 - 2004  Stuart Bingë
-  Copyright (c) 2003 - 2004  Code Fusion cc
+## Skolab
+
+In 2017, the old Kolab v2 Groupware got forked under a slightly different
+name: The Skolab Groupware.
+
+The code is currently maintained by Mike Gabriel <mike.gabriel@das-netzwerkteam.de>.
+
+## Kolab v2 (legacy)
 
 Portions based on work by the following people:
 
-  (c) 2003         Tassilo Erlewein     <tassilo.erlewein@erfrakon.de>
-  (c) 2003         Achim Frank          <achim.frank@erfrakon.de>
-  (c) 2004         Stephan Buys         <s.buys@codefusion.co.za>
-  (c) 2005 - 2008  Richard Bos          <richard@radoeka.nl>
-  (c) 2005 - 2008  Marcus Hüwe          <suse-tux@gmx.de>
-  (c) 2004 - 2006  Steffen Hansen       <steffen@klaralvdalens-datakonsult.se>
-  (c) 2007 - 2008  Thomas Arendsen Hein <thomas@intevation.de>
-  (c) 2006 - 2008  Gunnar Wrobel        <wrobel@pardus.de>
-  (c) 2003 - 2007  Martin Konold        <martin.konold@erfrakon.de>
-
+  * (c) 2003         Tassilo Erlewein     <tassilo.erlewein@erfrakon.de>
+  * (c) 2003         Achim Frank          <achim.frank@erfrakon.de>
+  * (c) 2004         Stephan Buys         <s.buys@codefusion.co.za>
+  * (c) 2005 - 2008  Richard Bos          <richard@radoeka.nl>
+  * (c) 2005 - 2008  Marcus Hüwe          <suse-tux@gmx.de>
+  * (c) 2004 - 2006  Steffen Hansen       <steffen@klaralvdalens-datakonsult.se>
+  * (c) 2007 - 2008  Thomas Arendsen Hein <thomas@intevation.de>
+  * (c) 2006 - 2008  Gunnar Wrobel        <wrobel@pardus.de>
+  * (c) 2003 - 2007  Martin Konold        <martin.konold@erfrakon.de>
 
 Portions based on work by the following companies:
 
-  (c) 2004 - 2006  Klaraelvdalens Datakonsult AB
-  (c) 2007 - 2008  Intevation GmbH
-  (c) 2006 - 2008  p@rdus
-  (c) 2003 - 2007  erfrakon Partnerschaftsgesellschaft
+  * (c) 2004 - 2006  Klaraelvdalens Datakonsult AB
+  * (c) 2007 - 2008  Intevation GmbH
+  * (c) 2006 - 2008  p@rdus
+  * (c) 2003 - 2007  erfrakon Partnerschaftsgesellschaft
 
+Originally written by Stuart Bing <s.binge@codefusion.co.za>
 
-Contributions by the following people:
-
-
-
-(Established based on the following guidlines:
-
- People with CVS access and more than two commits are being listed in
- the first list, their corresponding company in the second list. The
- order of appearences is sorted by date of last contribution, longest
- period of contributions and finally based on alphabetical order. The
- listed contributors comitted less than three patches or do not have
- CVS access.)
+  * Copyright (c) 2003 - 2004  Stuart Bingë
+  * Copyright (c) 2003 - 2004  Code Fusion cc

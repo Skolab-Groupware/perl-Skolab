@@ -1,4 +1,4 @@
-package Kolab::LDAP;
+package Skolab::LDAP;
 
 ##  COPYRIGHT
 ##  ---------
@@ -35,8 +35,8 @@ use Net::LDAPS;
 use Net::LDAP::Util;
 use DB_File;
 use Kolab;
-use Kolab::Util;
-use Kolab::Cyrus;
+use Skolab::Util;
+use Skolab::Cyrus;
 use Digest::SHA qw(sha1);
 use MIME::Base64 qw(encode_base64);
 
@@ -78,7 +78,7 @@ sub startup
 {
     my $statedir = shift || '';
 
-    Kolab::log('L', 'Starting up');
+    Skolab::log('L', 'Starting up');
 
     if (!$db_statedir && $statedir) {
 	$db_statedir = $statedir;
@@ -88,16 +88,16 @@ sub startup
 
 sub shutdown
 {
-    Kolab::log('L', 'Shutting down');
+    Skolab::log('L', 'Shutting down');
 }
 
 sub uidcacheOpen
 {
-    Kolab::log('L', 'Opening mailbox uid cache DB');
+    Skolab::log('L', 'Opening mailbox uid cache DB');
 
     my %uid_db;
-    if (!dbmopen(%uid_db, $Kolab::config{'kolab_mailboxuiddb'}, 0666)) {
-        Kolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
+    if (!dbmopen(%uid_db, $Skolab::config{'kolab_mailboxuiddb'}, 0666)) {
+        Skolab::log('L', 'Unable to open mailbox uid cache DB', KOLAB_ERROR);
         exit(1);
     }
 
@@ -149,17 +149,17 @@ sub uidcacheDelete
 
 sub graveyardOpen
 {
-    Kolab::log('L', 'Opening graveyard uid/timestamp cache DB');
+    Skolab::log('L', 'Opening graveyard uid/timestamp cache DB');
 
     my %gyard_db;
-    if (!dbmopen(%gyard_db, $Kolab::config{'graveyard_uidcache'}, 0666)) {
-        Kolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
+    if (!dbmopen(%gyard_db, $Skolab::config{'graveyard_uidcache'}, 0666)) {
+        Skolab::log('L', 'Unable to open graveyard uid cache DB', KOLAB_ERROR);
         exit(1);
     }
 
     my %gyard_ts_db;
-    if (!dbmopen(%gyard_ts_db, $Kolab::config{'graveyard_tscache'}, 0666)) {
-        Kolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
+    if (!dbmopen(%gyard_ts_db, $Skolab::config{'graveyard_tscache'}, 0666)) {
+        Skolab::log('L', 'Unable to open graveyard timestamp cache DB', KOLAB_ERROR);
         exit(1);
     }
     return \(%gyard_db, %gyard_ts_db);
@@ -189,9 +189,9 @@ sub graveyardRessurect
     if ($oldgyarduid) {
 	# The object needs to be resurrected!
 	if ($oldgyarduid ne $uid) {
-	    Kolab::log('L', "Resurrected object `$uid' already exists as `$oldgyarduid'; refusing to create", KOLAB_WARN);
+	    Skolab::log('L', "Resurrected object `$uid' already exists as `$oldgyarduid'; refusing to create", KOLAB_WARN);
 	} else {
-	    Kolab::log('L', "Object `$uid' has been resurrected", KOLAB_DEBUG);
+	    Skolab::log('L', "Object `$uid' has been resurrected", KOLAB_DEBUG);
 	}
 	# Remove the object from the graveyard
 	delete $$gyard_db{$guid};
@@ -228,12 +228,12 @@ sub graveyardCleanup
     ($gyard_db, $gyard_ts_db) = graveyardOpen();
 
     my $now = time;
-    my $period = $Kolab::config{'gyard_deletion_period'} * 60;
-    Kolab::log('L', 'Gravekeeping (period = ' . $Kolab::config{'gyard_deletion_period'} . ' minutes)');
+    my $period = $Skolab::config{'gyard_deletion_period'} * 60;
+    Skolab::log('L', 'Gravekeeping (period = ' . $Skolab::config{'gyard_deletion_period'} . ' minutes)');
     foreach $guid (keys %$gyard_ts_db) {
         if ($now - $$gyard_ts_db{$guid} > $period) {
-            Kolab::log('L', "Clearing graveyard database entry `" . $$gyard_db{$guid} . "'");
-            #Kolab::Cyrus::deleteMailbox($cyrus, $$gyard_db{$guid}, 0);
+            Skolab::log('L', "Clearing graveyard database entry `" . $$gyard_db{$guid} . "'");
+            #Skolab::Cyrus::deleteMailbox($cyrus, $$gyard_db{$guid}, 0);
             delete $$gyard_ts_db{$guid};
             delete $$gyard_db{$guid};
         }
@@ -244,11 +244,11 @@ sub graveyardCleanup
 
 sub quotaOpen
 {
-    Kolab::log('L', 'Opening mailbox quota cache DB');
+    Skolab::log('L', 'Opening mailbox quota cache DB');
 
     my %quota_db;
     if (!dbmopen(%quota_db, "$db_statedir/mailbox-quotacache.db", 0666)) {
-        Kolab::log('L', 'Unable to open mailbox quota cache DB', KOLAB_ERROR);
+        Skolab::log('L', 'Unable to open mailbox quota cache DB', KOLAB_ERROR);
         exit(1);
     }
 
@@ -309,7 +309,7 @@ sub create
     my $pw = shift;
     my $as = shift || 0;
 
-    Kolab::log('L', "Connecting to LDAP server `$ip:$pt'");
+    Skolab::log('L', "Connecting to LDAP server `$ip:$pt'");
 
     my $ldap;
     if( $pt == 636 ) {
@@ -334,17 +334,17 @@ sub create
       );
     }
     if (!$ldap) {
-        Kolab::log('L', "Unable to connect to LDAP server `$ip:$pt'", KOLAB_ERROR);
+        Skolab::log('L', "Unable to connect to LDAP server `$ip:$pt'", KOLAB_ERROR);
         if ($as) { return 0; } else { exit(1); }
     }
 
-    Kolab::log('L', "Binding to `$dn'");
+    Skolab::log('L', "Binding to `$dn'");
     my $ldapmesg = $ldap->bind(
         $dn,
         password    => $pw
     );
     if ($ldapmesg->code) {
-        Kolab::log('L', "Unable to bind to `$dn', LDAP Error = `" . $ldapmesg->error . "'", KOLAB_ERROR);
+        Skolab::log('L', "Unable to bind to `$dn', LDAP Error = `" . $ldapmesg->error . "'", KOLAB_ERROR);
         if ($as) { return 0; } else { exit(1); }
     }
 
@@ -366,11 +366,11 @@ sub ensureAsync
     my $ldap = shift || 0;
 
     if ($ldap && !$ldap->async) {
-        Kolab::log('L', 'LDAP operations are not asynchronous', KOLAB_ERROR);
+        Skolab::log('L', 'LDAP operations are not asynchronous', KOLAB_ERROR);
         exit(1);
     }
 
-    Kolab::log('L', 'LDAP operations are asynchronous', KOLAB_DEBUG);
+    Skolab::log('L', 'LDAP operations are asynchronous', KOLAB_DEBUG);
 }
 
 sub isObject
@@ -392,9 +392,9 @@ sub isDeleted
 {
     my $object = shift;
     my $p = shift || 'user';
-    my $del = $object->get_value($Kolab::config{$p . '_field_deleted'}, asref => 1 );
+    my $del = $object->get_value($Skolab::config{$p . '_field_deleted'}, asref => 1 );
     #foreach (@$del) {
-    #  return 1 if lc($_) eq lc($Kolab::config{'fqdnhostname'});
+    #  return 1 if lc($_) eq lc($Skolab::config{'fqdnhostname'});
     #}
     #return 0;
     return $#$del > 0;
@@ -406,13 +406,13 @@ sub mapAcls {
   my $sf = shift || 0;
   my @acls = map {
     my ($uid,$perm) = split(/\s+/,$_,2);
-    Kolab::log('L', "Kolab::LDAP::mapAcls() uid=$uid perm=$perm", KOLAB_DEBUG);
+    Skolab::log('L', "Skolab::LDAP::mapAcls() uid=$uid perm=$perm", KOLAB_DEBUG);
     my $post = 0;
     if( $perm =~ /(.*)\/post/ ) {
       $perm = $1;
       $post = 1;
     }
-    Kolab::log('L', "Kolab::LDAP::mapAcls() uid=$uid perm=$perm post=$post", KOLAB_DEBUG);
+    Skolab::log('L', "Skolab::LDAP::mapAcls() uid=$uid perm=$perm post=$post", KOLAB_DEBUG);
     if( lc $perm eq 'none' ) { $_ = "$uid none"; }
     elsif( lc $perm eq 'post' ) { $_ = "$uid p"; }
     elsif( lc $perm eq 'read' ) { $_ = "$uid lrs"; }
@@ -423,12 +423,12 @@ sub mapAcls {
     elsif( lc $perm eq 'all' ) { if( $sf ) { $_ = "$uid lrsiwdap"; } else { $_ = "$uid lrsiwcdap"; } }
     else { $_ = "$uid $perm"; } # passthrough
     if( $post ) { $_ .= 'p'; }
-    Kolab::log('L', "Kolab::LDAP::mapAcls() acl=$_", KOLAB_DEBUG);
+    Skolab::log('L', "Skolab::LDAP::mapAcls() acl=$_", KOLAB_DEBUG);
   } @$acls;
   if( $sf ) {
     push(@$acls, "manager lrsiwcdap");
   }
-  Kolab::log('L', "Kolab::LDAP::mapAcls() acls=".join(", ", @$acls), KOLAB_DEBUG);
+  Skolab::log('L', "Skolab::LDAP::mapAcls() acls=".join(", ", @$acls), KOLAB_DEBUG);
   return $acls;
 }
 
@@ -442,7 +442,7 @@ sub createObject
     my $doacls = shift || 0;
     my $objuidfield = shift || ($p eq 'user' ? 'mail' : ($p eq 'sf' ? 'cn' : ''));
 
-    Kolab::log('L', "Kolab::LDAP::createObject() called with obj uid field `$objuidfield' for obj type `$p'", KOLAB_DEBUG);
+    Skolab::log('L', "Skolab::LDAP::createObject() called with obj uid field `$objuidfield' for obj type `$p'", KOLAB_DEBUG);
 
     # No action for groups or external
     return if( $objuidfield eq '' );
@@ -453,27 +453,27 @@ sub createObject
     my $kolabhomeserver = lc($object->get_value('kolabhomeserver') || "");
     my $kolabimapserver = lc($object->get_value('kolabimapserver') || "");
     my $islocal = 1;
-    my $del = $object->get_value($Kolab::config{$p . '_field_deleted'}, asref => 1);
+    my $del = $object->get_value($Skolab::config{$p . '_field_deleted'}, asref => 1);
     if( ref($del) eq 'ARRAY' && @$del > 0 ) {
-        Kolab::log('L', "Kolab::LDAP::createObject() skipping object ".lc($object->get_value($objuidfield))
+        Skolab::log('L', "Skolab::LDAP::createObject() skipping object ".lc($object->get_value($objuidfield))
             ." because it is deleted", KOLAB_DEBUG);
         return;
     }
-    if( ($kolabhomeserver && $kolabhomeserver ne lc($Kolab::config{'fqdnhostname'})) 
+    if( ($kolabhomeserver && $kolabhomeserver ne lc($Skolab::config{'fqdnhostname'})) 
         || $kolabimapserver && $kolabimapserver ne lc(hostfqdn()) ) {
         # We are not on the home server
         if( $p eq 'sf' ) {
             # Dont create shared folders on other hosts than it's kolabhomeserver
-            Kolab::log('L', "Kolab::LDAP::createObject() skipping shared folder for other server $kolabhomeserver", KOLAB_DEBUG);
+            Skolab::log('L', "Skolab::LDAP::createObject() skipping shared folder for other server $kolabhomeserver", KOLAB_DEBUG);
             return;
         }
         my $kolabhomeserveronly = $object->get_value('kolabhomeserveronly');
         if( defined($kolabhomeserveronly) && $kolabhomeserveronly eq 'true' ) {
             # Don't create the user's mailbox if it should be created on the kolabHomeServer only
-            Kolab::log('L', "Kolab::LDAP::createObject() skipping user mailbox creation for other server $kolabhomeserver", KOLAB_DEBUG);
+            Skolab::log('L', "Skolab::LDAP::createObject() skipping user mailbox creation for other server $kolabhomeserver", KOLAB_DEBUG);
             return;
         }
-        Kolab::log('L', "Kolab::LDAP::createObject() for other server than $kolabhomeserver. TODO: Create referral or something, for now we just create an empty INBOX", KOLAB_DEBUG);
+        Skolab::log('L', "Skolab::LDAP::createObject() for other server than $kolabhomeserver. TODO: Create referral or something, for now we just create an empty INBOX", KOLAB_DEBUG);
         # We create INBOX on other servers also, to allow access to shared/published
         # folders on those servers because some IMAP clients abort the connection
         # to an IMAP server if they cannot access the INBOX.
@@ -481,7 +481,7 @@ sub createObject
     }
 
     if (!$cyrus) {
-        Kolab::log('L', 'object wants mailbox, but not connected to imap, returning', KOLAB_DEBUG);
+        Skolab::log('L', 'object wants mailbox, but not connected to imap, returning', KOLAB_DEBUG);
         return;
     }
 
@@ -498,23 +498,23 @@ sub createObject
         if( $#dn > 0 ) { $uid .= '@'.join('.',reverse(@dn)); }
     }
     if (!$uid) {
-        Kolab::log('L', "Kolab::LDAP::createObject() called with null id attribute `$objuidfield', returning", KOLAB_DEBUG);
+        Skolab::log('L', "Skolab::LDAP::createObject() called with null id attribute `$objuidfield', returning", KOLAB_DEBUG);
         return;
     }
 
-    Kolab::log('L', "Synchronising object `$uid'", KOLAB_DEBUG);
+    Skolab::log('L', "Synchronising object `$uid'", KOLAB_DEBUG);
 
-    my $guid = $object->get_value($Kolab::config{$p . '_field_guid'});
-    Kolab::log('L', "GUID attribute `" . $Kolab::config{$p . '_field_guid'} . "' is `$guid'", KOLAB_DEBUG);
+    my $guid = $object->get_value($Skolab::config{$p . '_field_guid'});
+    Skolab::log('L', "GUID attribute `" . $Skolab::config{$p . '_field_guid'} . "' is `$guid'", KOLAB_DEBUG);
     my $olduid = uidcacheFetch($guid);
     if ($olduid) {
         # We have records of the object
         $newuid_db{$guid} = $olduid if ($sync);
         if ($olduid ne $uid) {
             # The mailbox changed; bitch
-            Kolab::log('L', "Object `$uid' already exists as `$olduid'; refusing to create", KOLAB_WARN);
+            Skolab::log('L', "Object `$uid' already exists as `$olduid'; refusing to create", KOLAB_WARN);
         } else {
-            Kolab::log('L', "Object `$uid' already exists, skipping", KOLAB_DEBUG);
+            Skolab::log('L', "Object `$uid' already exists, skipping", KOLAB_DEBUG);
         }
         # Nothing changed; nothing to do
     } else {
@@ -523,31 +523,31 @@ sub createObject
         if ($oldgyarduid) {
             if ($sync) { $newuid_db{$guid} = $oldgyarduid; } else { uidcacheStore($guid, $oldgyarduid); }
         } else {
-            Kolab::log('L', "Creating user `$uid' corresponding to GUID `$guid'", KOLAB_DEBUG);
+            Skolab::log('L', "Creating user `$uid' corresponding to GUID `$guid'", KOLAB_DEBUG);
             my $partition = '';
-            my $imappartitions_script = $Kolab::config{'imappartitions_script'};
+            my $imappartitions_script = $Skolab::config{'imappartitions_script'};
             if ($imappartitions_script) {
                 my @partitions;
                 if (@partitions = `$imappartitions_script`) {
                     $partition = $partitions[rand($#partitions + 1)];
                     chomp $partition;
                 } else {
-                    Kolab::log('L', "Unable to run imappartitions_script `$imappartitions_script': $!", KOLAB_ERROR);
+                    Skolab::log('L', "Unable to run imappartitions_script `$imappartitions_script': $!", KOLAB_ERROR);
                 }
             }
             # We have a object that we have no previous record of, so create everything
             if ($sync) { $newuid_db{$guid} = $uid; } else { uidcacheStore($guid, $uid); }
-            Kolab::Cyrus::createMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0), $partition);
+            Skolab::Cyrus::createMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0), $partition);
             if( $p eq 'sf' ){
                 my $foldertype = lc($object->get_value('kolabfoldertype'));
 
                 if ( $foldertype ne '' ){
-                    Kolab::Cyrus::setFolderType($cyrus,$uid,1,$foldertype);
+                    Skolab::Cyrus::setFolderType($cyrus,$uid,1,$foldertype);
                 }
             }
             if( $p ne 'sf' && !$islocal ) {
                 # Hide user mailboxes on other servers
-                Kolab::Cyrus::setACL($cyrus,$uid,0, ["$uid rs"]);
+                Skolab::Cyrus::setACL($cyrus,$uid,0, ["$uid rs"]);
             } elsif( $p ne 'sf' ) {
                 # Deal with group and resource accounts
                 my $edn = Net::LDAP::Util::ldap_explode_dn($object->dn(), casefold=>'lower' );
@@ -556,7 +556,7 @@ sub createObject
                     # We need to give the calendar user access to the
                     # group's/resource's Calendar folder.
                     # TODO: Don't hardcode user and folder name
-                    Kolab::log('L', "Detected group or resource account, creating calendar folder", KOLAB_DEBUG );
+                    Skolab::log('L', "Detected group or resource account, creating calendar folder", KOLAB_DEBUG );
                     my $domain;
                     my $user;
                     if ($uid =~ /(.*)\@(.*)/) {
@@ -564,10 +564,10 @@ sub createObject
                         $domain = $2;
                     } else {
                         $user = $uid;
-                        $domain = $Kolab::config{'postfix-mydomain'};
+                        $domain = $Skolab::config{'postfix-mydomain'};
                     }
                     my $folder = $user . '/Calendar@' . $domain;
-                    Kolab::Cyrus::createCalendar($cyrus, $user, $domain, $folder, ["$uid all", 'calendar@' . $domain .' all']);
+                    Skolab::Cyrus::createCalendar($cyrus, $user, $domain, $folder, ["$uid all", 'calendar@' . $domain .' all']);
                 }
             }
         }
@@ -575,25 +575,25 @@ sub createObject
 
     if ($doacls) {
         my $acls = $object->get_value('acl', 'asref' => 1);
-        Kolab::Cyrus::setACL($cyrus, $uid, ($p eq 'sf' ? 1 : 0), mapAcls( $acls, ($p eq 'sf' ? 1:0)));
+        Skolab::Cyrus::setACL($cyrus, $uid, ($p eq 'sf' ? 1 : 0), mapAcls( $acls, ($p eq 'sf' ? 1:0)));
     }
 
-    my $quota = $object->get_value($Kolab::config{$p . '_field_quota'});
+    my $quota = $object->get_value($Skolab::config{$p . '_field_quota'});
     defined($quota) or ($quota = 0);
     my $oldquota = quotaFetch($guid);
     if( $quota != $oldquota ) {
-        Kolab::Cyrus::setQuota($cyrus, $uid, $quota*1024, ($p eq 'sf' ? 1 : 0));
+        Skolab::Cyrus::setQuota($cyrus, $uid, $quota*1024, ($p eq 'sf' ? 1 : 0));
         if( $quota == 0 ) {
             quotaDelete($guid);
         } else {
             quotaStore($guid, $quota);
         }
     }
-    Kolab::log('L', "createObject() done", KOLAB_DEBUG );
+    Skolab::log('L', "createObject() done", KOLAB_DEBUG );
 }
 
 sub createMasterLDAP {
-  my $uri = $Kolab::config{'ldap_master_uri'};
+  my $uri = $Skolab::config{'ldap_master_uri'};
 
   my $masterldap = Net::LDAP->new(
 	 $uri,
@@ -603,15 +603,15 @@ sub createMasterLDAP {
 	 onerror => 'undef' );
   if( defined( $masterldap ) ) {
     my $mesg = $masterldap->bind(
-				 $Kolab::config{'bind_dn'},
-				 password    => $Kolab::config{'bind_pw'});
+				 $Skolab::config{'bind_dn'},
+				 password    => $Skolab::config{'bind_pw'});
     if ($mesg->code) {
-      Kolab::log('L', "Unable to bind to `$uri', LDAP Error = `"
+      Skolab::log('L', "Unable to bind to `$uri', LDAP Error = `"
 		 .$mesg->error."'", KOLAB_ERROR);
       undef( $masterldap );
     }
   } else {
-    Kolab::log('L', "Unable to connect to `$uri'"
+    Skolab::log('L', "Unable to connect to `$uri'"
 	       , KOLAB_ERROR);
   }
   return $masterldap;
@@ -630,18 +630,18 @@ sub deleteObject
     my $remfromldap = shift || 0;
     my $p = shift || 'user';
 
-    my $guid = $object->get_value($Kolab::config{$p . '_field_guid'});
+    my $guid = $object->get_value($Skolab::config{$p . '_field_guid'});
     my $uid = uidcacheFetch($guid);
     if ($uid && !$cyrus) {
-        Kolab::log('L', 'object found in mboxcache, but not connected to imap, returning', KOLAB_DEBUG);
+        Skolab::log('L', 'object found in mboxcache, but not connected to imap, returning', KOLAB_DEBUG);
         return;
     }
 
     if ($remfromldap) {
         my $dn = $object->dn;
-	my $del = $object->get_value($Kolab::config{$p . '_field_deleted'}, asref => 1);
+	my $del = $object->get_value($Skolab::config{$p . '_field_deleted'}, asref => 1);
 	my $masterldap;
-	if( $Kolab::config{'ldap_master_uri'} eq $Kolab::config{'ldap_uri'} ) {
+	if( $Skolab::config{'ldap_master_uri'} eq $Skolab::config{'ldap_uri'} ) {
 	  # We are already connected to the LDAP master, just go ahead
 	  $masterldap = $ldap;
 	} else {
@@ -649,12 +649,12 @@ sub deleteObject
 	}
 	if( !defined( $masterldap ) ) {
 	  # Problem here, could not connect to master!
-	  Kolab::log('L', "Unable to remove DN `$dn', master LDAP server not available", KOLAB_WARN);
+	  Skolab::log('L', "Unable to remove DN `$dn', master LDAP server not available", KOLAB_WARN);
 	  return 0;
 	}
-	if( lc ($Kolab::config{'is_master'}) eq 'true' && ref($del) eq 'ARRAY' && scalar(@$del) == 1 ) {
+	if( lc ($Skolab::config{'is_master'}) eq 'true' && ref($del) eq 'ARRAY' && scalar(@$del) == 1 ) {
 	    # Ok we are the last one and the master
-	    if( $Kolab::config{'kolab_remove_objectclass'} ) {
+	    if( $Skolab::config{'kolab_remove_objectclass'} ) {
 		# Remove the kolab-related objectClasses
 		# Some people find it useful to integrate Kolab 
 		# with an existing LDAP database and when a Kolab
@@ -668,47 +668,47 @@ sub deleteObject
 		#
 		# PENDING(steffen): Only remove attributes that _have_ to
 		# be removed.
-		Kolab::log('L', "Removing Kolab objectClasses from DN `$dn'");
+		Skolab::log('L', "Removing Kolab objectClasses from DN `$dn'");
 		my $schema = $masterldap->schema( $dn );
                 # PENDING(steffen): Dont hardcode objectClasses
 		foreach my $c ( qw(kolabInetOrgPerson kolabGroupOfNames) ) {
 		    my @may = map $_->{name}, $schema->may($c);
 		    my @must = map $_->{name}, $schema->must($c);
-		    foreach my $attr (@must,@may,split(' ',$Kolab::config{'kolab_remove_attributes'})) {
+		    foreach my $attr (@must,@may,split(' ',$Skolab::config{'kolab_remove_attributes'})) {
 			# Remove attributes
-			Kolab::log('L', "Removing attribute $attr", KOLAB_WARN);
+			Skolab::log('L', "Removing attribute $attr", KOLAB_WARN);
 			my $mesg = $masterldap->modify( $dn,
 							delete => $attr );
 			if ($mesg && $mesg->code ) {
-			    Kolab::log('L', "Unable to remove attribute $attr from DN `$dn': ".$mesg->error, KOLAB_WARN);
+			    Skolab::log('L', "Unable to remove attribute $attr from DN `$dn': ".$mesg->error, KOLAB_WARN);
 			}
 		    }
 		    # Remove objectClass
 		    my $mesg = $masterldap->modify( $dn,
 						    delete => { 'objectClass' => $c } );
 		    if ($mesg && $mesg->code ) {
-			Kolab::log('L', "Unable to remove Kolab objectClas $_ from DN `$dn': ".$mesg->error, KOLAB_WARN);
+			Skolab::log('L', "Unable to remove Kolab objectClas $_ from DN `$dn': ".$mesg->error, KOLAB_WARN);
 		    }
 		}
 	    } else {
 		# Default behaviour, delete the object
-		Kolab::log('L', "Removing DN `$dn'");
+		Skolab::log('L', "Removing DN `$dn'");
 		my $mesg = $masterldap->delete($dn);
 		if ($mesg && $mesg->code ) {
-		    Kolab::log('L', "Unable to remove DN `$dn': ".$mesg->error, KOLAB_WARN);
+		    Skolab::log('L', "Unable to remove DN `$dn': ".$mesg->error, KOLAB_WARN);
 		}
 	    }
-	} elsif( lc ($Kolab::config{'is_master'}) eq 'false' ) {
+	} elsif( lc ($Skolab::config{'is_master'}) eq 'false' ) {
 	  # Just remove us from the kolabdeleteflag
 	  # master does not perform this step as it should 
 	  # be the last to delete and remove the object
-	  Kolab::log('L', "Removing ".$Kolab::config{'fqdnhostname'}." from ".
-		     $Kolab::config{$p . '_field_deleted'}." in `$dn'");
+	  Skolab::log('L', "Removing ".$Skolab::config{'fqdnhostname'}." from ".
+		     $Skolab::config{$p . '_field_deleted'}." in `$dn'");
 	  my $mesg = $masterldap->modify( $dn, delete =>
-					  { $Kolab::config{$p . '_field_deleted'} =>
-					    $Kolab::config{'fqdnhostname'} } );
+					  { $Skolab::config{$p . '_field_deleted'} =>
+					    $Skolab::config{'fqdnhostname'} } );
 	  if ($mesg && $mesg->code) {
-	    Kolab::log('L', "Unable to remove ".$Kolab::config{'fqdnhostname'}
+	    Skolab::log('L', "Unable to remove ".$Skolab::config{'fqdnhostname'}
 		       ." from kolabdeleteflag in `$dn': ".$mesg->error, KOLAB_WARN);
 	  }
 	}
@@ -718,26 +718,26 @@ sub deleteObject
 	}
     }
 
-    my $hooksdir = $Kolab::config{'kolab_hooksdir'} . '/delete';
-    opendir(DIR, $hooksdir) or Kolab::log('T', 'Given hook directory $hooksdir does not exist!', KOLAB_ERROR );
+    my $hooksdir = $Skolab::config{'kolab_hooksdir'} . '/delete';
+    opendir(DIR, $hooksdir) or Skolab::log('T', 'Given hook directory $hooksdir does not exist!', KOLAB_ERROR );
     my @hooks = grep { /^hook-/ } readdir (DIR);
     closedir(DIR);
 
     foreach my $hook (@hooks) {
-	system($Kolab::config{'kolab_hooksdir'} . '/delete/' . $hook . " $uid");
+	system($Skolab::config{'kolab_hooksdir'} . '/delete/' . $hook . " $uid");
 	if ($?==0) {
-	    Kolab::log('L', "Successfully ran hook $hook for user $uid.", KOLAB_DEBUG);
+	    Skolab::log('L', "Successfully ran hook $hook for user $uid.", KOLAB_DEBUG);
 	} else {
-	    Kolab::log('L', "Failed running hook $hook for user $uid.", KOLAB_ERROR);
+	    Skolab::log('L', "Failed running hook $hook for user $uid.", KOLAB_ERROR);
 	}
     }
 
     if (!$uid) {
-        Kolab::log('L', 'Deleted object not found in mboxcache, returning', KOLAB_DEBUG);
+        Skolab::log('L', 'Deleted object not found in mboxcache, returning', KOLAB_DEBUG);
         return;
     }
 
-    Kolab::Cyrus::deleteMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0));
+    Skolab::Cyrus::deleteMailbox($cyrus, $uid, ($p eq 'sf' ? 1 : 0));
     uidcacheDelete($guid);
     quotaDelete($guid);
     return 1;
@@ -745,9 +745,9 @@ sub deleteObject
 
 sub sync
 {
-    Kolab::log('L', 'Synchronising');
+    Skolab::log('L', 'Synchronising');
 
-    my $cyrus = Kolab::Cyrus::create;
+    my $cyrus = Skolab::Cyrus::create;
     %newuid_db = ();
 
     $user_timestamp  = syncBasic($cyrus, 'user', '', $user_timestamp, 0);
@@ -759,7 +759,7 @@ sub sync
       return 0;
     }
     # Check that all mailboxes correspond to LDAP objects
-    Kolab::log('L', 'Synchronising mailboxes');
+    Skolab::log('L', 'Synchronising mailboxes');
 
     my @mailboxes = $cyrus->list('*');
     my %objects;
@@ -797,7 +797,7 @@ sub sync
 
     syncDomains();
 
-    Kolab::log('L', 'Finished synchronisation');
+    Skolab::log('L', 'Finished synchronisation');
 }
 
 # Date::Parse doesn't understand this format
@@ -834,34 +834,34 @@ sub syncBasic
     my $ts = shift || "";
     my $doacls = shift || 0;
 
-    Kolab::log('L', "Synchronising `$p' objects");
+    Skolab::log('L', "Synchronising `$p' objects");
 
     my $ldap = &create(
-        $Kolab::config{$p . '_ldap_ip'},
-        $Kolab::config{$p . '_ldap_port'},
-        $Kolab::config{$p . '_bind_dn'},
-        $Kolab::config{$p . '_bind_pw'}
+        $Skolab::config{$p . '_ldap_ip'},
+        $Skolab::config{$p . '_ldap_port'},
+        $Skolab::config{$p . '_bind_dn'},
+        $Skolab::config{$p . '_bind_pw'}
     );
 
     my $ldapmesg;
     my $ldapobject;
 
-    my @dnlist = split(/;/, $Kolab::config{$p . '_dn_list'});
+    my @dnlist = split(/;/, $Skolab::config{$p . '_dn_list'});
     my $dn;
 
     foreach $dn (@dnlist) {
-        Kolab::log('L', "Synchronising `$p' DN `$dn'");
+        Skolab::log('L', "Synchronising `$p' DN `$dn'");
 
         # First of all, remove any objects explicitly marked for deletion
         $ldapmesg = $ldap->search(
             base    => $dn,
             scope   => 'sub',
-            filter  => '(&(objectClass=' . $Kolab::config{$p . '_object_class'} . ")$add(" . $Kolab::config{$p . '_field_deleted'} . '='.$Kolab::config{'fqdnhostname'}.'))',
+            filter  => '(&(objectClass=' . $Skolab::config{$p . '_object_class'} . ")$add(" . $Skolab::config{$p . '_field_deleted'} . '='.$Skolab::config{'fqdnhostname'}.'))',
             attrs   => [
                 'objectClass',
-                $Kolab::config{$p . '_field_guid'},
-                $Kolab::config{$p . '_field_modified'},
-                $Kolab::config{$p . '_field_deleted'},
+                $Skolab::config{$p . '_field_guid'},
+                $Skolab::config{$p . '_field_modified'},
+                $Skolab::config{$p . '_field_deleted'},
             ],
         );
 
@@ -870,53 +870,53 @@ sub syncBasic
                 deleteObject($ldap, $cyrus, $ldapobject, 1, $p);
             }
         } else {
-            Kolab::log('L', "Unable to locate deleted `$p' objects in DN `$dn'", KOLAB_WARN);
+            Skolab::log('L', "Unable to locate deleted `$p' objects in DN `$dn'", KOLAB_WARN);
         }
 
         # Now check that all objects in LDAP have corresponding mailboxes
         # This also resurrects any missing users, if neccessary
 	my $filter;
 	if( $ts eq "" ) {
-	  $filter = '(&(objectClass=' . $Kolab::config{$p . '_object_class'} . ")$add)",
+	  $filter = '(&(objectClass=' . $Skolab::config{$p . '_object_class'} . ")$add)",
 	} else {
-	  $filter = '(&(objectClass=' . $Kolab::config{$p . '_object_class'} . ")("
-	    .$Kolab::config{$p.'_field_modified'}.">=$ts)$add)";
+	  $filter = '(&(objectClass=' . $Skolab::config{$p . '_object_class'} . ")("
+	    .$Skolab::config{$p.'_field_modified'}.">=$ts)$add)";
 	}
-	Kolab::log('L', "filter is $filter", KOLAB_DEBUG);
+	Skolab::log('L', "filter is $filter", KOLAB_DEBUG);
         $ldapmesg = $ldap->search(
             base    => $dn,
             scope   => 'sub',
             filter  => $filter,
             attrs   => [
                 '*',
-                $Kolab::config{$p . '_field_guid'},
-		$Kolab::config{$p . '_field_modified'},
-                $Kolab::config{$p . '_field_quota'},
-                $Kolab::config{$p . '_field_deleted'},
+                $Skolab::config{$p . '_field_guid'},
+		$Skolab::config{$p . '_field_modified'},
+                $Skolab::config{$p . '_field_quota'},
+                $Skolab::config{$p . '_field_deleted'},
             ],
         );
 
         if ( UNIVERSAL::isa( $ldapmesg, 'Net::LDAP::Search') && $ldapmesg->code() <= 0) {
 	    while( $ldapobject = $ldapmesg->pop_entry ) {
                 createObject($ldap, $cyrus, $ldapobject, 1, $p, $doacls);
-		$ts = max_generalized_time($ts,$ldapobject->get_value($Kolab::config{$p . '_field_modified'}));
+		$ts = max_generalized_time($ts,$ldapobject->get_value($Skolab::config{$p . '_field_modified'}));
             }
         } else {
-            Kolab::log('L', "Unable to locate `$p' objects in DN `$dn'", KOLAB_WARN);
+            Skolab::log('L', "Unable to locate `$p' objects in DN `$dn'", KOLAB_WARN);
         }
 
-        Kolab::log('L', "Finished synchronising `$p' DN `$dn'");
+        Skolab::log('L', "Finished synchronising `$p' DN `$dn'");
     }
 
     &destroy($ldap);
 
-    Kolab::log('L', "Finished `$p' object synchronisation");
+    Skolab::log('L', "Finished `$p' object synchronisation");
     return $ts;
 }
 
 sub syncDomains
 {
-    Kolab::log('L', "Synchronising domains");
+    Skolab::log('L', "Synchronising domains");
 
     my $ldapmesg;
     my $uid;
@@ -925,17 +925,17 @@ sub syncDomains
     my $domain;
 
     my $ldap = &create(
-        $Kolab::config{'ldap_ip'},
-        $Kolab::config{'ldap_port'},
-        $Kolab::config{'bind_dn'},
-        $Kolab::config{'bind_pw'}
+        $Skolab::config{'ldap_ip'},
+        $Skolab::config{'ldap_port'},
+        $Skolab::config{'bind_dn'},
+        $Skolab::config{'bind_pw'}
     );
 
     # If we have an old "cn=calendar" we need to fix the DN of that
     # object
-    my $dn = 'cn=calendar,cn=internal,' . $Kolab::config{'base_dn'};
+    my $dn = 'cn=calendar,cn=internal,' . $Skolab::config{'base_dn'};
     $ldapmesg = $ldap->search(
-        base    => 'cn=internal,' . $Kolab::config{'base_dn'},
+        base    => 'cn=internal,' . $Skolab::config{'base_dn'},
         scope   => 'one',
 	filter  => '(&(objectClass=kolabInetOrgPerson)(cn=calendar))',
             attrs   => [
@@ -945,24 +945,24 @@ sub syncDomains
         );
 
     if ( UNIVERSAL::isa( $ldapmesg, 'Net::LDAP::Search') && $ldapmesg->count() > 0) {
-        Kolab::log('L', "Identified old calendar user with DN `$dn'", KOLAB_DEBUG);
-        my $cn = 'cn=' . $Kolab::config{'calendar_id'} . '@' . $Kolab::config{'postfix-mydomain'};
+        Skolab::log('L', "Identified old calendar user with DN `$dn'", KOLAB_DEBUG);
+        my $cn = 'cn=' . $Skolab::config{'calendar_id'} . '@' . $Skolab::config{'postfix-mydomain'};
         $ldap->moddn($dn, newrdn => $cn, deleteoldrdn => 1);
-        Kolab::log('L', "Renamed old calendar user with DN `$dn' to DN `$cn'", KOLAB_INFO);
+        Skolab::log('L', "Renamed old calendar user with DN `$dn' to DN `$cn'", KOLAB_INFO);
     } else {
-	Kolab::log('L', "Unable to locate old calendar user with DN `$dn'", KOLAB_DEBUG);
+	Skolab::log('L', "Unable to locate old calendar user with DN `$dn'", KOLAB_DEBUG);
     }
 
-    if( ref($Kolab::config{'postfix-mydestination'}) eq 'ARRAY' ) {
-	@domains = @{$Kolab::config{'postfix-mydestination'}};
+    if( ref($Skolab::config{'postfix-mydestination'}) eq 'ARRAY' ) {
+	@domains = @{$Skolab::config{'postfix-mydestination'}};
     } else {
-	@domains =( $Kolab::config{'postfix-mydestination'} );
+	@domains =( $Skolab::config{'postfix-mydestination'} );
     }
 
-    my $sha_pw = hash_pw($Kolab::config{'calendar_pw'});
+    my $sha_pw = hash_pw($Skolab::config{'calendar_pw'});
     foreach $domain (@domains) {
-	$uid = $Kolab::config{'calendar_id'} . '@' . $domain;
-	$dn = 'cn=' . $uid . ',cn=internal,' . $Kolab::config{'base_dn'};
+	$uid = $Skolab::config{'calendar_id'} . '@' . $domain;
+	$dn = 'cn=' . $uid . ',cn=internal,' . $Skolab::config{'base_dn'};
 	$ldapmesg = $ldap->search(
 	    base    => $dn,
 	    scope   => 'one',
@@ -973,7 +973,7 @@ sub syncDomains
 	    ],
 	    );
 	if ( UNIVERSAL::isa( $ldapmesg, 'Net::LDAP::Search') && $ldapmesg->code() <= 0) {
-	    Kolab::log('L', "Calendar user for domain `$domain' exists", KOLAB_DEBUG);
+	    Skolab::log('L', "Calendar user for domain `$domain' exists", KOLAB_DEBUG);
 	} else {
 	    $ldapobject = Net::LDAP::Entry->new;
 	    $ldapobject->replace('cn' => $uid, 
@@ -984,7 +984,7 @@ sub syncDomains
 	    $ldapobject->dn($dn);
 	    $ldapobject->update($ldap);
 	    undef $ldapobject;
-	    Kolab::log('L', "Created new calendar user with DN `$dn' for domain `$domain'", KOLAB_INFO);
+	    Skolab::log('L', "Created new calendar user with DN `$dn' for domain `$domain'", KOLAB_INFO);
 	}
     }
 
@@ -1013,7 +1013,7 @@ sub ldap_error {
     my $errstr = $mesg->dn || '';
     $errstr .= ": " if $errstr;
     $errstr .= $mesg->error if $mesg->error;
-    Kolab::log('L', $errstr, KOLAB_ERROR);
+    Skolab::log('L', $errstr, KOLAB_ERROR);
 }
 
 
@@ -1023,11 +1023,11 @@ __END__
 
 =head1 NAME
 
-Kolab::LDAP - Perl extension for generic LDAP code
+Skolab::LDAP - Perl extension for generic LDAP code
 
 =head1 ABSTRACT
 
-  Kolab::LDAP contains functions used to create/delete objects,
+  Skolab::LDAP contains functions used to create/delete objects,
   as well as synchronise LDAP and Cyrus.
 
 =head1 COPYRIGHT AND AUTHORS

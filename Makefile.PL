@@ -126,7 +126,7 @@ if ($ExtUtils::MakeMaker::VERSION >= 6.42) {
 
 WriteMakefile(
     NAME              => 'perl-kolab',
-    VERSION           => $Kolab::VERSION,
+    VERSION           => $Skolab::VERSION,
     INSTALLDIRS       => 'vendor',
     EXE_FILES         => [ 'bin/kolab_smtpdpolicy',
                            'bin/kolabquotareport',

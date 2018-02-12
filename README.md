@@ -1,14 +1,13 @@
-perl-kolab
-==========
+# perl-Skolab
 
-perl-kolab provides a basic set of perl modules required for the Kolab
+perl-Skolab provides a basic set of Perl modules required for the Skolab
 Groupware server.
 
-COPYRIGHT
+## COPYRIGHT
 
 See the AUTHORS file provided with this package.
 
-LICENCE
+## LICENCE
 
 This  program is free  software; you can redistribute  it and/or
 modify it  under the terms of the GNU  General Public License as

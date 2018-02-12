@@ -118,7 +118,7 @@ use Net::LDAP qw(LDAP_NO_SUCH_OBJECT);
 use Net::LDAP::Entry;
 use Net::hostent;
 use Socket;
-use Kolab::Util;
+use Skolab::Util;
 
 
 #
@@ -157,7 +157,7 @@ sub mylog {
 
   my $text = sprintf( $fmt, @_ );
 
-  #Kolab::log( 'P', $text );
+  #Skolab::log( 'P', $text );
   syslog $prio, $text;
   print "$text\n";
 }

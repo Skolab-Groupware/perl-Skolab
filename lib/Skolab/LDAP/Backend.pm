@@ -1,4 +1,4 @@
-package Kolab::LDAP::Backend;
+package Skolab::LDAP::Backend;
 
 ##  COPYRIGHT
 ##  ---------
@@ -28,7 +28,7 @@ use 5.008;
 use strict;
 use warnings;
 use Kolab;
-use Kolab::Util;
+use Skolab::Util;
 use vars qw(
     %startup
     %run
@@ -64,22 +64,22 @@ sub load
 
     if (!defined $non_directory) {
       $p .= '_' if ($p);
-      $backend = $Kolab::config{$p . 'directory_mode'};
+      $backend = $Skolab::config{$p . 'directory_mode'};
     } else {
       $backend = $p;
     }
     return if (exists($backends{$backend}));
 
-    Kolab::log('B', "Loading backend `$backend'");
+    Skolab::log('B', "Loading backend `$backend'");
 
-    unless (eval "require Kolab::LDAP::Backend::$backend") {
-        Kolab::log('B', "Error is: $@", KOLAB_ERROR) if $@;
-        Kolab::log('B', "Backend `$backend' does not exist or has errors, exiting", KOLAB_ERROR);
+    unless (eval "require Skolab::LDAP::Backend::$backend") {
+        Skolab::log('B', "Error is: $@", KOLAB_ERROR) if $@;
+        Skolab::log('B', "Backend `$backend' does not exist or has errors, exiting", KOLAB_ERROR);
         exit(1);
     }
 
-    $startup{$backend} = \&{'Kolab::LDAP::Backend::' . $backend . '::startup'};
-    $run{$backend} = \&{'Kolab::LDAP::Backend::' . $backend . '::run'};
+    $startup{$backend} = \&{'Skolab::LDAP::Backend::' . $backend . '::startup'};
+    $run{$backend} = \&{'Skolab::LDAP::Backend::' . $backend . '::run'};
 
     $backends{$backend} = 1;
 }
@@ -90,8 +90,8 @@ sub startup
     foreach my $backend (keys %backends) {
         my $func = $startup{$backend};
         unless (eval '&$func') {
-            $func = 'Kolab::LDAP::Backend::' . $backend . '::startup';
-            Kolab::log('B', "Error in function `$func': $@, exiting", KOLAB_ERROR);
+            $func = 'Skolab::LDAP::Backend::' . $backend . '::startup';
+            Skolab::log('B', "Error in function `$func': $@, exiting", KOLAB_ERROR);
             exit(1);
         }
     }
@@ -104,8 +104,8 @@ sub run
 
     my $func = $run{$backend};
     unless (eval '&$func') {
-        $func = 'Kolab::LDAP::Backend::' . $backend . '::run';
-	Kolab::log('B', "Error in function `$func': $@, exiting", KOLAB_ERROR);
+        $func = 'Skolab::LDAP::Backend::' . $backend . '::run';
+	Skolab::log('B', "Error in function `$func': $@, exiting", KOLAB_ERROR);
         exit(1);
     }
 }
@@ -116,12 +116,12 @@ __END__
 
 =head1 NAME
 
-Kolab::LDAP::Backend - Perl extension for abstract directory
+Skolab::LDAP::Backend - Perl extension for abstract directory
 service usage
 
 =head1 ABSTRACT
 
-  Kolab::LDAP::Backend is basically an interface to the various
+  Skolab::LDAP::Backend is basically an interface to the various
   directory service backends that are available.
 
 =head1 COPYRIGHT AND AUTHORS

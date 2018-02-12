@@ -1,4 +1,4 @@
-package Kolab::Util;
+package Skolab::Util;
 
 ##  COPYRIGHT
 ##  ---------
@@ -140,11 +140,11 @@ __END__
 
 =head1 NAME
 
-Kolab::Util - Perl extension for general utility functions
+Skolab::Util - Perl extension for general utility functions
 
 =head1 ABSTRACT
 
-  Kolab::Util contains several basic utility functions.
+  Skolab::Util contains several basic utility functions.
 
 =head1 COPYRIGHT AND AUTHORS
 

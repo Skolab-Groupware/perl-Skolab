@@ -57,19 +57,19 @@ use Mail::Message;
 use Mail::Transport::SMTP;
 use Cyrus::IMAP::Admin;
 use Kolab;
-use Kolab::Util;
-use Kolab::LDAP;
+use Skolab::Util;
+use Skolab::LDAP;
 use File::Basename;
 use vars qw($opt_d);
 
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
 
-Kolab::LDAP::startup($Kolab::config{'kolab_statedir'});
+Skolab::LDAP::startup($Skolab::config{'kolab_statedir'});
 
 getopts('d');
 if ($opt_d) {
-    foreach my $key (sort keys %Kolab::config) {
-        print "$key : " . $Kolab::config{$key} . "\n";
+    foreach my $key (sort keys %Skolab::config) {
+        print "$key : " . $Skolab::config{$key} . "\n";
     }
     #exit 0;
 }
@@ -114,13 +114,13 @@ sub fatal_exit {
 my $verbose = 0;
 my $warninterval = 60*60*24; # seconds between warnings
 my $warnmessage = '';
-my $quotawarnpct = $Kolab::config{'cyrus-quotawarn'};
+my $quotawarnpct = $Skolab::config{'cyrus-quotawarn'};
 fatal_exit( "Can't read configuration, please make sure that kolabquotawarn runs with sufficient privileges")
   unless $quotawarnpct
-  && $Kolab::config{'cyrus_admin'}
-  && $Kolab::config{'cyrus_admin_pw'};
+  && $Skolab::config{'cyrus_admin'}
+  && $Skolab::config{'cyrus_admin_pw'};
 my %quotawarn_db;
-my $warnh = new IO::File "< $Kolab::config{'kolab_quotawarning'}";
+my $warnh = new IO::File "< $Skolab::config{'kolab_quotawarning'}";
 if( defined($warnh) ) {
   $warnmessage = join( '', $warnh->getlines );
   $warnmessage =~ s/<admin>/MAILER-DAEMON/g;
@@ -129,7 +129,7 @@ if( defined($warnh) ) {
   fatal_exit( "Can't open quotawarning.txt" );
 }
 
-dbmopen( %quotawarn_db, "$Kolab::config{'kolab_statedir'}/quotawarn.db", 0666 )
+dbmopen( %quotawarn_db, "$Skolab::config{'kolab_statedir'}/quotawarn.db", 0666 )
   || fatal_exit ('Unable to open quotawarn db');
 
 if( $opt_d ) {
@@ -213,11 +213,11 @@ sub kolablistquotas {
 mylog( $syslog_priority, "starting up") if $verbose;
 
 ### Connect to Cyrus
-my $cyrus = Cyrus::IMAP::Admin->new($Kolab::config{'connect_addr'});
+my $cyrus = Cyrus::IMAP::Admin->new($Skolab::config{'connect_addr'});
 $cyrus || fatal_exit( 'Unable to connect to local Cyrus admin interface' );
 $cyrus->authenticate(
-					 'User'          => $Kolab::config{'cyrus_admin'},
-					 'Password'      => $Kolab::config{'cyrus_admin_pw'},
+					 'User'          => $Skolab::config{'cyrus_admin'},
+					 'Password'      => $Skolab::config{'cyrus_admin_pw'},
 					 'Mechanism'    => 'LOGIN', )
   || fatal_exit("Unable to authenticate with Cyrus admin interface");
 

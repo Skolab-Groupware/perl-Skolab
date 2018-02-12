@@ -30,8 +30,8 @@ use warnings;
 use Sys::Syslog;
 use URI;
 use Net::LDAP;
-use Kolab::Util;
-#use Kolab::LDAP;
+use Skolab::Util;
+#use Skolab::LDAP;
 use vars qw(%config $reloadOk);
 
 require Exporter;
@@ -59,18 +59,18 @@ our @EXPORT = qw(
 );
 
 # The Kolab version number for the perl-kolab package
-our $KOLAB_BASE_VERSION = "2.3";
+our $SKOLAB_BASE_VERSION = "2.4";
 
 # Are current releases cvs based or is this a real release?
-my $KOLAB_CVS = 1;
+my $KOLAB_GIT = 1;
 
 our $KOLAB_RELEASE = sprintf "%0004d%02d%02d", ((gmtime)[5] + 1900), ((gmtime)[4] + 1), (gmtime)[3];
 
-if ($KOLAB_CVS) {
-    our $KOLAB_VERSION = $KOLAB_BASE_VERSION . "+git";
+if ($SKOLAB_GIT) {
+    our $KOLAB_VERSION = $SKOLAB_BASE_VERSION . "+git";
     our $VERSION = $KOLAB_VERSION . $KOLAB_RELEASE;
 } else {
-    our $KOLAB_VERSION = $KOLAB_BASE_VERSION;
+    our $KOLAB_VERSION = $SKOLAB_BASE_VERSION;
     our $VERSION = $KOLAB_VERSION;
 }
 
@@ -205,7 +205,7 @@ sub reloadConfig
 	    $error = 1;
         }
 
-        #$ldap = Kolab::LDAP::create(
+        #$ldap = Skolab::LDAP::create(
         #    $config{'ldap_ip'},
         #    $config{'ldap_port'},
         #    $config{'bind_dn'},
@@ -266,8 +266,8 @@ sub reloadConfig
     # Defaults to `slurpd'
     #
     #   NOTE: A plugin scheme is used for this; the backend module loaded
-    #   is `Kolab::LDAP::$config{'directory_mode'}, so anyone is able to slot
-    #   in a new Kolab::LDAP:: module, change `directory_mode' and have the new
+    #   is `Skolab::LDAP::$config{'directory_mode'}, so anyone is able to slot
+    #   in a new Skolab::LDAP:: module, change `directory_mode' and have the new
     #   module used as a backend (as long as it conforms to the correct
     #   interface, that is).
     #
@@ -419,7 +419,7 @@ sub reloadConfig
 #    $config{'gyard_deletion_period'} = 7 * 24 * 60 if (!exists $config{'gyard_deletion_period'});
 
     # That's it! We now have our config hash.
-    #Kolab::LDAP::destroy($ldap);
+    #Skolab::LDAP::destroy($ldap);
     if (defined($ldap) && $ldap->isa('Net::LDAP')) {
         $ldap->unbind;
         $ldap->disconnect;

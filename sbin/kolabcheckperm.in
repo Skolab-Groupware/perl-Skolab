@@ -33,9 +33,9 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 use strict;
 use Kolab;
-use Kolab::Util;
-use Kolab::Conf;
+use Skolab::Util;
+use Skolab::Conf;
 
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
 
-exit( Kolab::Conf::checkPermissions>0?0:-1 );
+exit( Skolab::Conf::checkPermissions>0?0:-1 );

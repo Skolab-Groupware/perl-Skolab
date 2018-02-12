@@ -36,13 +36,13 @@ use strict;
 use Kolab;
 use IO::File;
 
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
 
-my $imap_conf = "$Kolab::config{'imap_confdir'}/imapd.conf";
+my $imap_conf = "$Skolab::config{'imap_confdir'}/imapd.conf";
 
 my $file;
 if (!($file = IO::File->new($imap_conf, 'r'))) {
-    Kolab::log('T', "Unable to open IMAP configuration file `$imap_conf': $!", KOLAB_ERROR);
+    Skolab::log('T', "Unable to open IMAP configuration file `$imap_conf': $!", KOLAB_ERROR);
     # Error, use default partition
     print "\n";
     exit(1);

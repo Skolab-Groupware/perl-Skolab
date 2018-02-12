@@ -68,16 +68,16 @@ my (%db, %db2, %sorted);
 
 usage if ($func !~ /list/i && $func !~ /del/i && $func !~ /flush/i);
 
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
 
 if ($cache =~ /mbox/i) {
-    dbmopen(%db, $Kolab::config{'kolab_mailboxuiddb'}, 0666)
+    dbmopen(%db, $Skolab::config{'kolab_mailboxuiddb'}, 0666)
         || die "Unable to open mail uid cache";
 } elsif ($cache =~ /gyard/i) {
-    dbmopen(%db, $Kolab::config{'graveyard_uidcache'}, 0666)
+    dbmopen(%db, $Skolab::config{'graveyard_uidcache'}, 0666)
         || die "Unable to open graveyard uid cache";
 
-    dbmopen(%db2, $Kolab::config{'graveyard_tscache'}, 0666)
+    dbmopen(%db2, $Skolab::config{'graveyard_tscache'}, 0666)
         || die "Unable to open graveyard timestamp cache";
 } else { usage; }
 

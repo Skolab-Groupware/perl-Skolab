@@ -1,4 +1,4 @@
-package Kolab::LDAP::Backend::fds;
+package Skolab::LDAP::Backend::fds;
 
 ##
 ##  Copyright (c) 2003  Code Fusion cc, Stuart Bing� <s.binge@codefusion.co.za>
@@ -22,8 +22,8 @@ use 5.008;
 use strict;
 use warnings;
 use Kolab;
-use Kolab::Util;
-use Kolab::LDAP;
+use Skolab::Util;
+use Skolab::LDAP;
 use Net::LDAP;
 use Net::LDAP::Control;
 #use Mozilla::LDAP::API;
@@ -52,19 +52,19 @@ sub startup { 1; }
 
 sub shutdown
 {
-    Kolab::log('FDS', 'Shutting down');
+    Skolab::log('FDS', 'Shutting down');
     exit(0);
 }
 
 sub abort
 {
-    Kolab::log('FDS', 'Aborting');
+    Skolab::log('FDS', 'Aborting');
     exit(1);
 }
 
 sub changeCallback
 {
-    Kolab::log('FDS', 'Change notification received', KOLAB_DEBUG);
+    Skolab::log('FDS', 'Change notification received', KOLAB_DEBUG);
 
     ###   $_[0]   isa     Net::LDAP::Message
     ###   $_[1]   shouldbea   Net::LDAP::Entry
@@ -74,51 +74,51 @@ sub changeCallback
 
     my $issearch = $mesg->isa("Net::LDAP::Search");
     
-    Kolab::log('FDS', "issearch=" . $issearch , KOLAB_DEBUG);
+    Skolab::log('FDS', "issearch=" . $issearch , KOLAB_DEBUG);
     if (!$issearch) {
-    Kolab::log('FDS', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
+    Skolab::log('FDS', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
     if ($mesg->code == 88) {
-        Kolab::log('FDS', 'changeCallback() -> Exit code received, returning', KOLAB_DEBUG);
+        Skolab::log('FDS', 'changeCallback() -> Exit code received, returning', KOLAB_DEBUG);
         return;
     } elsif ($mesg->code) {
-        Kolab::log('FDS', "mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
+        Skolab::log('FDS', "mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
         &abort;
     }   
     } else {
-    Kolab::log('FDS', 'mesg is a search object, not testing code', KOLAB_DEBUG);
+    Skolab::log('FDS', 'mesg is a search object, not testing code', KOLAB_DEBUG);
     }
 
-    Kolab::log('FDS', "entry=" . $entry , KOLAB_DEBUG);
+    Skolab::log('FDS', "entry=" . $entry , KOLAB_DEBUG);
     
     if (!$entry) {
-    Kolab::log('FDS', 'changeCallback() called with a null entry', KOLAB_DEBUG);
+    Skolab::log('FDS', 'changeCallback() called with a null entry', KOLAB_DEBUG);
     goto FOO;
     return;
     } elsif (!$entry->isa("Net::LDAP::Entry")) {
-    Kolab::log('FDS', 'changeCallback() called with an invalid entry', KOLAB_DEBUG);
+    Skolab::log('FDS', 'changeCallback() called with an invalid entry', KOLAB_DEBUG);
     return;
     }
 
-    if (!Kolab::LDAP::isObject($entry, $Kolab::config{'user_object_class'}) &&
-        !Kolab::LDAP::isObject($entry, 'kolab')) {
-    Kolab::log('FDS', "Entry is not a `" . $Kolab::config{'user_object_class'} . "' or kolab configuration object, returning", KOLAB_DEBUG);
+    if (!Skolab::LDAP::isObject($entry, $Skolab::config{'user_object_class'}) &&
+        !Skolab::LDAP::isObject($entry, 'kolab')) {
+    Skolab::log('FDS', "Entry is not a `" . $Skolab::config{'user_object_class'} . "' or kolab configuration object, returning", KOLAB_DEBUG);
     return;
     }
 
 FOO:
-    Kolab::log('FDS', "Calling Kolab::LDAP::sync", KOLAB_DEBUG);
-    Kolab::LDAP::sync;
-    system($Kolab::config{'kolabconf_script'}) == 0 || Kolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
-    Kolab::log('FDS', "Finished Kolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
+    Skolab::log('FDS', "Calling Skolab::LDAP::sync", KOLAB_DEBUG);
+    Skolab::LDAP::sync;
+    system($Skolab::config{'kolabconf_script'}) == 0 || Skolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
+    Skolab::log('FDS', "Finished Skolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
     sleep 1; # we get too many bogus change notifications!
 
-#    my $deleted = $entry->get_value($Kolab::config{'user_field_deleted'}) || 0;
+#    my $deleted = $entry->get_value($Skolab::config{'user_field_deleted'}) || 0;
 #    if ($deleted) {
-#    Kolab::LDAP::deleteObject($ldap, $cyrus, $entry);
+#    Skolab::LDAP::deleteObject($ldap, $cyrus, $entry);
 #    return;
 #    }
 #
-#    Kolab::LDAP::createObject($ldap, $cyrus, $entry);
+#    Skolab::LDAP::createObject($ldap, $cyrus, $entry);
 }
 
 sub run {
@@ -130,37 +130,37 @@ sub run {
 
   END {
     alarm 0;
-    Kolab::LDAP::destroy($ldap);
+    Skolab::LDAP::destroy($ldap);
   }
 
   my $mesg;
 
-  Kolab::log('FDS', 'Listener starting up');
+  Skolab::log('FDS', 'Listener starting up');
 
-  $cyrus = Kolab::Cyrus::create;
+  $cyrus = Skolab::Cyrus::create;
 
-  Kolab::log('FDS', 'Cyrus connection established', KOLAB_DEBUG);
+  Skolab::log('FDS', 'Cyrus connection established', KOLAB_DEBUG);
 
   while (1) {
-    Kolab::log('FDS', 'Creating LDAP connection to FDS server', KOLAB_DEBUG);
+    Skolab::log('FDS', 'Creating LDAP connection to FDS server', KOLAB_DEBUG);
 
-    $ldap = Kolab::LDAP::create($Kolab::config{'user_ldap_ip'},
-                                $Kolab::config{'user_ldap_port'},
-                                $Kolab::config{'user_bind_dn'},
-                                $Kolab::config{'user_bind_pw'},
+    $ldap = Skolab::LDAP::create($Skolab::config{'user_ldap_ip'},
+                                $Skolab::config{'user_ldap_port'},
+                                $Skolab::config{'user_bind_dn'},
+                                $Skolab::config{'user_bind_pw'},
                                 1
                                );
     if (!$ldap) {
-        Kolab::log('FDS', 'Sleeping 5 seconds...');
+        Skolab::log('FDS', 'Sleeping 5 seconds...');
         sleep 5;
         next;
     }
 
-    Kolab::log('FDS', 'LDAP connection established', KOLAB_DEBUG);
+    Skolab::log('FDS', 'LDAP connection established', KOLAB_DEBUG);
 
-    Kolab::LDAP::ensureAsync($ldap);
+    Skolab::LDAP::ensureAsync($ldap);
 
-    Kolab::log('FDS', 'Async checked', KOLAB_DEBUG);
+    Skolab::log('FDS', 'Async checked', KOLAB_DEBUG);
 
     my $ctrl = Net::LDAP::Control->new(
     #    type    => '1.2.840.113556.1.4.528',
@@ -168,20 +168,20 @@ sub run {
         critical    => 'true'
     );
 
-    Kolab::log('FDS', 'Control created', KOLAB_DEBUG);
+    Skolab::log('FDS', 'Control created', KOLAB_DEBUG);
 
-    my @userdns = split(/;/, $Kolab::config{'user_dn_list'});
+    my @userdns = split(/;/, $Skolab::config{'user_dn_list'});
     my $userdn;
 
-    Kolab::log('FDS', 'User DN list = ' . $Kolab::config{'user_dn_list'}, KOLAB_DEBUG);
+    Skolab::log('FDS', 'User DN list = ' . $Skolab::config{'user_dn_list'}, KOLAB_DEBUG);
 
     if (length(@userdns) == 0) {
-    Kolab::log('FDS', 'No user DNs specified, exiting', KOLAB_ERROR);
+    Skolab::log('FDS', 'No user DNs specified, exiting', KOLAB_ERROR);
     exit(1);
     }
 
     foreach $userdn (@userdns) {
-      Kolab::log('FDS', "Registering change notification on DN `$userdn'");
+      Skolab::log('FDS', "Registering change notification on DN `$userdn'");
 
       $mesg = $ldap->search (base     => $userdn,
                              scope    => 'one',
@@ -189,29 +189,29 @@ sub run {
                              callback => \&changeCallback,
                              filter   => '(objectClass=*)',
                              attrs    => [ '*',
-                                           $Kolab::config{'user_field_guid'},
-                                           $Kolab::config{'user_field_modified'},
-                                           $Kolab::config{'user_field_quota'},
-                                           $Kolab::config{'user_field_deleted'},
+                                           $Skolab::config{'user_field_guid'},
+                                           $Skolab::config{'user_field_modified'},
+                                           $Skolab::config{'user_field_quota'},
+                                           $Skolab::config{'user_field_deleted'},
                                          ],
         );
 
 #          $status = ldap_create_persistentsearch_control($ld,$changetypes,$changesonly,$return_echg_ctrls,$ctrl_iscritical,$ctrlp);
 
-        Kolab::log('FDS', "Change notification registered on `$userdn'");
+        Skolab::log('FDS', "Change notification registered on `$userdn'");
     }
 
     eval {
         local $SIG{ALRM} = sub {
         alarm 0;
-        Kolab::log('FDS', 'Connection refresh period expired; tearing down connection');
+        Skolab::log('FDS', 'Connection refresh period expired; tearing down connection');
 
-        Kolab::LDAP::destroy($ldap);
+        Skolab::LDAP::destroy($ldap);
         next;
         };
 
-        Kolab::log('FDS', 'Waiting for changes (refresh period = ' . $Kolab::config{'conn_refresh_period'} . ' minutes)...');
-        alarm $Kolab::config{'conn_refresh_period'} * 60;
+        Skolab::log('FDS', 'Waiting for changes (refresh period = ' . $Skolab::config{'conn_refresh_period'} . ' minutes)...');
+        alarm $Skolab::config{'conn_refresh_period'} * 60;
         $mesg->sync;
         alarm 0;
     };
@@ -225,11 +225,11 @@ __END__
 
 =head1 NAME
 
-Kolab::LDAP::Backend::fds - Perl extension for Fedora Directory Server or Redhat Directory Server backend
+Skolab::LDAP::Backend::fds - Perl extension for Fedora Directory Server or Redhat Directory Server backend
 
 =head1 ABSTRACT
 
-  Kolab::LDAP::Backend::fds handles Fedora Directory Server or Redhat Directory Server backend to the
+  Skolab::LDAP::Backend::fds handles Fedora Directory Server or Redhat Directory Server backend to the
   kolab daemon.
 
 =head1 AUTHOR

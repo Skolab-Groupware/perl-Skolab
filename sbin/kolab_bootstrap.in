@@ -59,7 +59,7 @@ use Socket;
 use IO::File;
 use IO::Select;
 use Kolab;
-use Kolab::Conf;
+use Skolab::Conf;
 use Net::Domain qw(hostfqdn);
 use Net::LDAP;
 use Net::LDAP::Entry;
@@ -73,7 +73,7 @@ use Digest::SHA1;
 use MIME::Base64;
 
 # Reload only kolab.globals into our configuration.
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals", 1);
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals", 1);
 
 my $kolab_config = "@CONFIG_DIR@/kolab.conf";
 my %kolab_config;
@@ -118,7 +118,7 @@ sub checkPort {
     print ("Error: Found $name running on Port $port\n");
     print ("Check your installation!\n");
     print ("You must stop the service $name before running Kolab\n");
-    print ("You may try to execute \"$Kolab::config{'KOLABRC'} rc all stop\" initially\n");
+    print ("You may try to execute \"$Skolab::config{'KOLABRC'} rc all stop\" initially\n");
     exit 1;
   }
 }
@@ -126,7 +126,7 @@ sub checkPort {
 # Hash a password
 sub hashPassword {
   my $pw = shift;
-  my $hashcmd = "$Kolab::config{'hashmethod'} ".qquote($pw,":shell");
+  my $hashcmd = "$Skolab::config{'hashmethod'} ".qquote($pw,":shell");
   (my $hashpw = `$hashcmd`) or die $@;
   chomp($hashpw);
   return $hashpw;
@@ -261,7 +261,7 @@ checkPort("lmtp server", 2003);
 
 print ("Excellent all required Ports are available!\n");
 
-system("$Kolab::config{'sbindir'}/slapcat >/dev/null 2>&1");
+system("$Skolab::config{'sbindir'}/slapcat >/dev/null 2>&1");
 if ($?==0) {
   print ("\nFound existing configuration\n");
   print "\nBootstrapping Kolab will overwrite old configuration\n";
@@ -272,21 +272,21 @@ if ($?==0) {
   }
   print "Creating backup of old configuration (LDAP, kolab.conf and certificates)\n";
 
-  my $backupfiles = "$Kolab::config{'backupfiles'}";
-  if ($backupfiles ne "" && ! -s "$Kolab::config{'backupdir'}/kolab_backup-orig.tar.bz2") {
+  my $backupfiles = "$Skolab::config{'backupfiles'}";
+  if ($backupfiles ne "" && ! -s "$Skolab::config{'backupdir'}/kolab_backup-orig.tar.bz2") {
     # Do a one-time backup.  This is to backup the original configuration
     # files that were configured by user.  The one-time backup is marked with
     # orig.
-    system("tar cjPf $Kolab::config{'backupdir'}/kolab_backup-orig.tar.bz2 $backupfiles");
+    system("tar cjPf $Skolab::config{'backupdir'}/kolab_backup-orig.tar.bz2 $backupfiles");
     print "The orginal configuration files have been backed up to:\n";
-    print "  $Kolab::config{'backupdir'}/kolab_backup-orig.tar.bz2\n"
+    print "  $Skolab::config{'backupdir'}/kolab_backup-orig.tar.bz2\n"
   }
   my $epochseconds = timelocal(gmtime);
-  my $backupdir="$Kolab::config{'backupdir'}/backup".$epochseconds;
+  my $backupdir="$Skolab::config{'backupdir'}/backup".$epochseconds;
   mkdir($backupdir,0700) || die "cannot mkdir : $!";
 
   print "creating backup of LDAP repository\n";
-  system("cp -pRP \"$Kolab::config{'ldapserver_dir'}\" \"$backupdir/openldap-data\"");
+  system("cp -pRP \"$Skolab::config{'ldapserver_dir'}\" \"$backupdir/openldap-data\"");
 
   print "creating backup of CA data\n";
   if (-d "@CONFIG_DIR@/ca") {
@@ -301,18 +301,18 @@ if ($?==0) {
   }
 
   # Potentially dangerous code, be defensive.  The "rm -f" command could remove
-  # the wrong files when the variable $Kolab::config{'ldapserver_dir'} is not
+  # the wrong files when the variable $Skolab::config{'ldapserver_dir'} is not
   # assigned correctly.  See kolab/issue4009.  With the current implementation
   # it is of course still possible to remove the wrong files, but this is a
   # good trade off between defensive code and too much code.
-  if ((defined $Kolab::config{'ldapserver_dir'})
-    and ($Kolab::config{'ldapserver_dir'} ne "")
-    and ($Kolab::config{'ldapserver_dir'} ne "/")) {
+  if ((defined $Skolab::config{'ldapserver_dir'})
+    and ($Skolab::config{'ldapserver_dir'} ne "")
+    and ($Skolab::config{'ldapserver_dir'} ne "/")) {
     print "Cleaning up LDAP\n";
-    system("rm -f \"$Kolab::config{'ldapserver_dir'}\"/*");
+    system("rm -f \"$Skolab::config{'ldapserver_dir'}\"/*");
   } else {
     print "Error: variable ldapserver_dir incorrectly defined: ".
-      $Kolab::config{'ldapserver_dir'}."\n";
+      $Skolab::config{'ldapserver_dir'}."\n";
     exit 1;
   }
 
@@ -324,7 +324,7 @@ if ($?==0) {
 # fetch fresh template
 copy("@CONFIG_DIR@/templates/kolab.conf.template", $kolab_config);
 
-%kolab_config = Kolab::readConfig(\%kolab_config, $kolab_config);
+%kolab_config = Skolab::readConfig(\%kolab_config, $kolab_config);
 
 my $fqdnhostname = $kolab_config{'fqdnhostname'} || die "could not read fqdnhostname from $kolab_config";
 my $is_master = $kolab_config{'is_master'} || "true";
@@ -374,7 +374,7 @@ if ( $tmp2 eq "2" ) {
   print "Proceeding with master server setup\n\n";
 }
 
-$Kolab::config{"is_master"} = $is_master;
+$Skolab::config{"is_master"} = $is_master;
 
 if ( $is_master eq "true" ) {
   ##### Master server setup
@@ -406,7 +406,7 @@ if ( $is_master eq "true" ) {
       print " bind_dn : $bind_dn\n";
     }
     if ($bind_pw =~ /\@\@\@/) {
-      $bind_pw = `$Kolab::config{'bindir'}/openssl rand -base64 12`;
+      $bind_pw = `$Skolab::config{'bindir'}/openssl rand -base64 12`;
       chomp $bind_pw;
       $bind_pw = getUserInput("Please choose a manager password", $bind_pw);
       print " bind_pw : $bind_pw\n";
@@ -418,12 +418,12 @@ if ( $is_master eq "true" ) {
       $php_dn =~ s/\@\@\@kolab_basedn\@\@\@/$base_dn/g;
     }
     if ($php_pw =~ /\@\@\@/) {
-      $php_pw = `$Kolab::config{'bindir'}/openssl rand -base64 30`;
+      $php_pw = `$Skolab::config{'bindir'}/openssl rand -base64 30`;
       chomp $php_pw;
     }
 
     if ($calendar_pw =~ /\@\@\@/) {
-      $calendar_pw = `$Kolab::config{'bindir'}/openssl rand -base64 30`;
+      $calendar_pw = `$Skolab::config{'bindir'}/openssl rand -base64 30`;
       chomp $calendar_pw;
     }
 
@@ -446,7 +446,7 @@ if ( $is_master eq "true" ) {
     undef $fd;
     print "done modifying $kolab_config\n\n";
     chmod 0600, $kolab_config;
-    kolab_chown "$Kolab::config{'kolab_musr'}","$Kolab::config{'kolab_mgrp'}", $kolab_config;
+    kolab_chown "$Skolab::config{'kolab_musr'}","$Skolab::config{'kolab_mgrp'}", $kolab_config;
     print "IMPORTANT NOTE:\n";
     print "use login=manager and passwd=$bind_pw when you log into the webinterface!\n\n";
   }
@@ -465,7 +465,7 @@ if ( $is_master eq "true" ) {
     }
   };
 
-  my $confname = "$Kolab::config{'sasl_smtpconffile'}";
+  my $confname = "$Skolab::config{'sasl_smtpconffile'}";
   copy("@CONFIG_DIR@/templates/smtpd.conf.template", $confname) || die "could not write to $confname";
 
   getopts('b');
@@ -484,19 +484,19 @@ if ( $is_master eq "true" ) {
         exit 1;
       }
 
-      $Kolab::config{'directory_replication_mode_is_syncrepl'} = 'true' if ($Kolab::config{'directory_mode'} eq 'syncrepl');
-      $Kolab::config{"base_dn"} = $base_dn;
-      $Kolab::config{"bind_dn"} = $bind_dn;
-      $Kolab::config{"bind_pw_hash"} = $bind_pw_hash;
-      $Kolab::config{"slurpd_addr"} = $slurpd_addr;
-      $Kolab::config{"slurpd_port"} = $slurpd_port;
+      $Skolab::config{'directory_replication_mode_is_syncrepl'} = 'true' if ($Skolab::config{'directory_mode'} eq 'syncrepl');
+      $Skolab::config{"base_dn"} = $base_dn;
+      $Skolab::config{"bind_dn"} = $bind_dn;
+      $Skolab::config{"bind_pw_hash"} = $bind_pw_hash;
+      $Skolab::config{"slurpd_addr"} = $slurpd_addr;
+      $Skolab::config{"slurpd_port"} = $slurpd_port;
 
       # During boot some settings like TLS certificates are not defined yet and
       # hence can't be used, these definitons are skipped when
       # bootstrap_config = true
-      $Kolab::config{"bootstrap_config"} = 'true';
-      my $templatedir = $Kolab::config{"templatedir"};
-      Kolab::Conf::rebuildTemplates(
+      $Skolab::config{"bootstrap_config"} = 'true';
+      my $templatedir = $Skolab::config{"templatedir"};
+      Skolab::Conf::rebuildTemplates(
             dorunonchange =>0,
             templates => [
               "$templatedir/slapd.access.template",
@@ -504,15 +504,15 @@ if ( $is_master eq "true" ) {
               "$templatedir/slapd.replicas.template"
             ],
         );
-      $Kolab::config{"bootstrap_config"} = 'false';
+      $Skolab::config{"bootstrap_config"} = 'false';
 
       # now we must startup slapd
       print "temporarily starting slapd\n";
       $ldap_uri = "ldap://127.0.0.1:389/";
       # ensure that the database has correct permissions
-      @files = <$Kolab::config{'ldapserver_dir'}/*>;
-      system("chown $Kolab::config{'ldapserver_rusr'}:$Kolab::config{'ldapserver_grp'} $Kolab::config{'ldapserver_dir'}/*") if (@files);
-      (system("$Kolab::config{'libexecdir'}/openldap/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
+      @files = <$Skolab::config{'ldapserver_dir'}/*>;
+      system("chown $Skolab::config{'ldapserver_rusr'}:$Skolab::config{'ldapserver_grp'} $Skolab::config{'ldapserver_dir'}/*") if (@files);
+      (system("$Skolab::config{'libexecdir'}/openldap/slapd -h ldap://127.0.0.1:389/ -f $Skolab::config{'ldapserver_confdir'}/slapd.conf -u $Skolab::config{'ldapserver_rusr'} -g $Skolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
       print ("Waiting for OpenLDAP to start\n");
       sleep 10;
 
@@ -652,33 +652,33 @@ if ( $is_master eq "true" ) {
 
    print "Create initial config files for postfix, apache, cyrus imap, saslauthd\n";
 
-   if ("$Kolab::config{'WITHOPENPKG'}" eq "yes") {
-     # $Kolab::config{'sysconfdir'}/rc.conf can be used to change the startup behaviour
+   if ("$Skolab::config{'WITHOPENPKG'}" eq "yes") {
+     # $Skolab::config{'sysconfdir'}/rc.conf can be used to change the startup behaviour
      # of programs, that have been installed with openpkg. On non openpkg
      # this could be done with e.g. /etc/sysconfig/ldap.
      my $cfg;
-     open(FH, "<$Kolab::config{'sysconfdir'}/rc.conf") || die;
+     open(FH, "<$Skolab::config{'sysconfdir'}/rc.conf") || die;
      $cfg .= $_ while (<FH>);
      close(FH);
 
      $cfg =~ s/\n((openldap_url|sasl_authmech)\S*=[^\n]*)/#$1\n/sg;
      $cfg .= "openldap_url=\"ldap:// ldaps://\"\nsasl_authmech=\"ldap\"\n";
 
-     open(FH, ">$Kolab::config{'sysconfdir'}/rc.conf") || die;
+     open(FH, ">$Skolab::config{'sysconfdir'}/rc.conf") || die;
      print FH $cfg;
      close(FH);
      undef $cfg;
    }
 
    #print " running @CONFIG_DIR@/kolab -v -o -l$ldap_uri\n";
-   print "running $Kolab::config{'sbindir'}/kolabconf -n\n";
+   print "running $Skolab::config{'sbindir'}/kolabconf -n\n";
 
    #system("@CONFIG_DIR@/kolab -v -o -l$ldap_uri");
-   system("$Kolab::config{'sbindir'}/kolabconf -n");
+   system("$Skolab::config{'sbindir'}/kolabconf -n");
 
    if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
       print "\nkill temporary slapd\n\n";
-      system("$Kolab::config{'KOLABRC'} rc openldap stop");
+      system("$Skolab::config{'KOLABRC'} rc openldap stop");
       sleep 1; # actually race should be impossible
       system("killall -9 slapd >/dev/null 2>&1");
    }
@@ -705,13 +705,13 @@ Now we need to create a cerificate authority (CA) for Kolab and a server
 certificate. You will be prompted for a passphrase for the CA.
 ################################################################################
 EOS
-    kolab_system("$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newca $fqdn");
-    kolab_system("$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
-    kolab_system("$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem");
-    kolab_system("$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -sign @CONFIG_DIR@/newreq.pem @CONFIG_DIR@/cert.pem");
-    kolab_system("chgrp $Kolab::config{'pki_grp'} @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
+    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newca $fqdn");
+    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
+    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem");
+    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -sign @CONFIG_DIR@/newreq.pem @CONFIG_DIR@/cert.pem");
+    kolab_system("chgrp $Skolab::config{'pki_grp'} @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
     kolab_system("chmod 0640 @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
-    my $cafile = $Kolab::config{'kolab_cafile'};
+    my $cafile = $Skolab::config{'kolab_cafile'};
     if ($cafile eq '') {
       $cafile = "@CONFIG_DIR@/ca/cacert.pem";
     } else {
@@ -731,7 +731,7 @@ EOS
   ##### Slave server setup
 
   print "stop running slapd (if any)\n";
-  kolab_system("$Kolab::config{'KOLABRC'} rc openldap stop");
+  kolab_system("$Skolab::config{'KOLABRC'} rc openldap stop");
 
   # Make sure that no rogue demons are running
   tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
@@ -761,7 +761,7 @@ EOS
   $bind_pw = getUserInput("Manager password");
   $bind_pw_hash = hashPassword($bind_pw);
 
-  my $confname = "$Kolab::config{'sasl_smtpconffile'}";
+  my $confname = "$Skolab::config{'sasl_smtpconffile'}";
   copy("@CONFIG_DIR@/templates/smtpd.conf.template", $confname) || die "could not write to $confname";
 
   print "Checking server info...\n";
@@ -848,26 +848,26 @@ EOS
   undef $fd;
   print "done modifying $kolab_config\n\n";
   chmod 0600, $kolab_config;
-  kolab_chown "$Kolab::config{'kolab_musr'}","$Kolab::config{'kolab_mgrp'}",$kolab_config;
+  kolab_chown "$Skolab::config{'kolab_musr'}","$Skolab::config{'kolab_mgrp'}",$kolab_config;
 
-  if ($Kolab::config{'directory_mode'} ne "syncrepl" ) {
+  if ($Skolab::config{'directory_mode'} ne "syncrepl" ) {
     print << 'EOS';
 Now the master server needs to be stopped briefly while the contents of the LDAP database
 is copied over to this slave. Please make sure that this slave is entered into the list
 of kolabhosts on the master before proceeding.
 EOS
-    kolab_system("ssh -C $master_host \'$Kolab::config{'KOLABRC'} rc openldap stop".
-                 " && $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pcf - openldap-data".
-                 " && $Kolab::config{'KOLABRC'} rc openldap start\'".
-                 " | $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pxf -");
+    kolab_system("ssh -C $master_host \'$Skolab::config{'KOLABRC'} rc openldap stop".
+                 " && $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pcf - openldap-data".
+                 " && $Skolab::config{'KOLABRC'} rc openldap start\'".
+                 " | $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pxf -");
   }
 
   # FIXME: we should get rid of this construct because it makes the code hard to read.
   #        A if (-e @sysconfdir@/rc.conf) statement should be enough.
-  if ("$Kolab::config{'WITHOPENPKG'}" eq "yes") {
+  if ("$Skolab::config{'WITHOPENPKG'}" eq "yes") {
     print "Updating configuration, please ignore any initial errors from kolabconf\n\n";
     my $cfg;
-    open(FH, "<$Kolab::config{'sysconfdir'}/rc.conf") || die;
+    open(FH, "<$Skolab::config{'sysconfdir'}/rc.conf") || die;
     $cfg .= $_ while (<FH>);
     close(FH);
 
@@ -875,7 +875,7 @@ EOS
     # $cfg .= "openldap_enable=\"no\"\nopenldap_url=\"\"\nsasl_authmech=\"ldap\"\n";
     $cfg .= "\nopenldap_url=\"ldap:// ldaps://\"\nsasl_authmech=\"ldap\"\n";
 
-    open(FH, ">$Kolab::config{'sysconfdir'}/rc.conf") || die;
+    open(FH, ">$Skolab::config{'sysconfdir'}/rc.conf") || die;
     print FH $cfg;
     close(FH);
     undef $cfg;
@@ -906,17 +906,17 @@ master server and the passphrase for the CA key on the master.
 EOS
 
     # Create cert req
-    kolab_system("$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
-    kolab_system("$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem ");
+    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
+    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem ");
     # Log into master and sign cert request
     kolab_system("scp @CONFIG_DIR@/newreq.pem $master_host:@CONFIG_DIR@/$fqdn-req.pem");
-    kolab_system("ssh -C $master_host \"$Kolab::config{'kolab_scriptsdir'}/kolab_ca.sh -sign @CONFIG_DIR@/$fqdn-req.pem @CONFIG_DIR@/$fqdn.pem;\"");
+    kolab_system("ssh -C $master_host \"$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -sign @CONFIG_DIR@/$fqdn-req.pem @CONFIG_DIR@/$fqdn.pem;\"");
     kolab_system("scp $master_host:@CONFIG_DIR@/$fqdn.pem @CONFIG_DIR@/cert.pem");
     kolab_system("ssh -C $master_host \"rm @CONFIG_DIR@/$fqdn.pem @CONFIG_DIR@/$fqdn-req.pem\"");
     die("Creation of @CONFIG_DIR@/cert.pem failed") unless -f "@CONFIG_DIR@/cert.pem";
-    kolab_system("chgrp $Kolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/key.pem;");
+    kolab_system("chgrp $Skolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/key.pem;");
     kolab_system("chmod 0640 @CONFIG_DIR@/key.pem;");
-    kolab_system("chgrp $Kolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/cert.pem;");
+    kolab_system("chgrp $Skolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/cert.pem;");
     kolab_system("chmod 0640 @CONFIG_DIR@/cert.pem;");
 
     print <<'EOS';
@@ -926,7 +926,7 @@ Certificate creation done!
 EOS
   }
 
-  kolab_system("$Kolab::config{'sbindir'}/kolabconf -n");
+  kolab_system("$Skolab::config{'sbindir'}/kolabconf -n");
 
   $fd = IO::File->new($kolab_config, "w+") || die "could not open $kolab_config";
   binmode($fd, ":encoding(UTF-8)");
@@ -951,6 +951,6 @@ EOS
 
 #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
 print "kolab is now ready to run!\n";
-print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
+print "please run '$Skolab::config{'KOLABRC'} rc all start'\n";
 print ("Use login=manager and passwd=$bind_pw when you log into\n");
-print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");
+print ("the webinterface https://$fqdn$Skolab::config{'kolab_wui'} !\n");

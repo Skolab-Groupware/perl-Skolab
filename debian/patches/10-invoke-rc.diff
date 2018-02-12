@@ -4,8 +4,8 @@
 ## DP: Debian specific invocation of services
 
 @DPATCH@
---- a/lib/Kolab/Conf.pm
-+++ b/lib/Kolab/Conf.pm
+--- a/lib/Skolab/Conf.pm
++++ b/lib/Skolab/Conf.pm
 @@ -642,10 +642,11 @@
          # $cmd can contain:
          # - /usr/sbin/postmap: should always be executed
@@ -16,7 +16,7 @@
          # prohibited by the user with the "-n" option.
 -        if ($args{doreload} || $cmd !~ / rc \S+ re(start|load)/) {
 +        if ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) \S+ re(start|load)/) {
-             Kolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+             Skolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
              system($cmd);
          } else {
 --- a/sbin/kolab_bootstrap.in
@@ -25,7 +25,7 @@
      print ("Error: Found $name running on Port $port\n");
      print ("Check your installation!\n");
      print ("You must stop the service $name before running Kolab\n");
--    print ("You may try to execute \"$Kolab::config{'KOLABRC'} rc all stop\" initially\n");
+-    print ("You may try to execute \"$Skolab::config{'KOLABRC'} rc all stop\" initially\n");
 +    print ("You may try to execute \"/etc/init.d/\$DAEMON stop\" initially\n");
      exit 1;
    }
@@ -34,7 +34,7 @@
  
     if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
        print "\nkill temporary slapd\n\n";
--      system("$Kolab::config{'KOLABRC'} rc openldap stop");
+-      system("$Skolab::config{'KOLABRC'} rc openldap stop");
 +      system("invoke-rc.d slapd stop");
        sleep 1; # actually race should be impossible
        system("killall -9 slapd >/dev/null 2>&1");
@@ -43,7 +43,7 @@
    ##### Slave server setup
  
    print "stop running slapd (if any)\n";
--  kolab_system("$Kolab::config{'KOLABRC'} rc openldap stop");
+-  kolab_system("$Skolab::config{'KOLABRC'} rc openldap stop");
 +  kolab_system("invoke-rc.d slapd stop");
  
    # Make sure that no rogue demons are running
@@ -52,19 +52,19 @@
  is copied over to this slave. Please make sure that this slave is entered into the list
  of kolabhosts on the master before proceeding.
  EOS
--    kolab_system("ssh -C $master_host \'$Kolab::config{'KOLABRC'} rc openldap stop".
+-    kolab_system("ssh -C $master_host \'$Skolab::config{'KOLABRC'} rc openldap stop".
 +    kolab_system("ssh -C $master_host \'invoke-rc.d slapd stop".
-                  " && $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pcf - openldap-data".
--                 " && $Kolab::config{'KOLABRC'} rc openldap start\'".
+                  " && $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pcf - openldap-data".
+-                 " && $Skolab::config{'KOLABRC'} rc openldap start\'".
 +                 " && invoke-rc.d slapd start\'".
-                  " | $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pxf -");
+                  " | $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pxf -");
    }
  
 @@ -951,6 +951,6 @@
  
  #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
  print "kolab is now ready to run!\n";
--print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
+-print "please run '$Skolab::config{'KOLABRC'} rc all start'\n";
 +print "please restart all the daemons\n";
  print ("Use login=manager and passwd=$bind_pw when you log into\n");
- print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");
+ print ("the webinterface https://$fqdn$Skolab::config{'kolab_wui'} !\n");

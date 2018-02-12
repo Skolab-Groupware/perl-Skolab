@@ -1,4 +1,4 @@
-package Kolab::LDAP::Backend::syncrepl;
+package Skolab::LDAP::Backend::syncrepl;
 
 ##
 ##  Copyright (c) 2008  Mathieu Parent <math.parent@gmail.com>
@@ -20,7 +20,7 @@ use 5.008;
 use strict;
 use warnings;
 use Kolab;
-use Kolab::LDAP;
+use Skolab::LDAP;
 use Net::LDAP qw(
 	LDAP_USER_CANCELED
 	LDAP_SYNC_REFRESH_ONLY
@@ -60,14 +60,14 @@ sub mode {
 # giving an argument means: set
 sub cookie {
   my($cookie) = @_;
-  my $syncrepl_cookie_file = $Kolab::config{'syncrepl_cookie_file'} || '/tmp/kolab_syncrepl_cookie_file';
+  my $syncrepl_cookie_file = $Skolab::config{'syncrepl_cookie_file'} || '/tmp/kolab_syncrepl_cookie_file';
   if(defined($cookie)) {
     if(!open(COOKIE_FILE, '>', $syncrepl_cookie_file)) {
-        Kolab::log("SYNCREPL', 'Cannot open file `".$syncrepl_cookie_file.
+        Skolab::log("SYNCREPL', 'Cannot open file `".$syncrepl_cookie_file.
         "' for writing: $!", KOLAB_DEBUG);
         &abort;
     }
-    Kolab::log("SYNCREPL', 'Writing cookie to file: ".$cookie, KOLAB_DEBUG);
+    Skolab::log("SYNCREPL', 'Writing cookie to file: ".$cookie, KOLAB_DEBUG);
     print COOKIE_FILE $cookie;
     close(COOKIE_FILE);
     return $cookie;
@@ -78,7 +78,7 @@ sub cookie {
         close COOKIE_FILE;
     }
     if(!open(COOKIE_FILE, '+<', $syncrepl_cookie_file)) {
-        Kolab::log("SYNCREPL', 'Cannot open file `".$syncrepl_cookie_file.
+        Skolab::log("SYNCREPL', 'Cannot open file `".$syncrepl_cookie_file.
         "' for reading: $!", KOLAB_DEBUG);
         &abort;
     }
@@ -94,13 +94,13 @@ sub startup { 1; }
 
 sub shutdown
 {
-  Kolab::log('SYNCREPL', 'Shutting down');
+  Skolab::log('SYNCREPL', 'Shutting down');
   exit(0);
 }
 
 sub abort
 {
-    Kolab::log('SYNCREPL', 'Aborting');
+    Skolab::log('SYNCREPL', 'Aborting');
     exit(1);
 }
 
@@ -113,56 +113,56 @@ sub run {
 
   END {
     alarm 0;
-    Kolab::LDAP::destroy($ldap);
+    Skolab::LDAP::destroy($ldap);
   }
   my $mesg;
 
   while (1) {
-    Kolab::log('SYNCREPL', 'Creating LDAP connection to LDAP server', KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', 'Creating LDAP connection to LDAP server', KOLAB_DEBUG);
 
-    $ldap = Kolab::LDAP::create($Kolab::config{'user_ldap_ip'},
-                                $Kolab::config{'user_ldap_port'},
-                                $Kolab::config{'user_bind_dn'},
-                                $Kolab::config{'user_bind_pw'},
+    $ldap = Skolab::LDAP::create($Skolab::config{'user_ldap_ip'},
+                                $Skolab::config{'user_ldap_port'},
+                                $Skolab::config{'user_bind_dn'},
+                                $Skolab::config{'user_bind_pw'},
                                 1
                                );
     if (!$ldap) {
-        Kolab::log('SYNCREPL', 'Sleeping 5 seconds...');
+        Skolab::log('SYNCREPL', 'Sleeping 5 seconds...');
         sleep 5;
         next;
     }
     $disconnected = 0;  
 
-    Kolab::log('SYNCREPL', 'LDAP connection established', KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', 'LDAP connection established', KOLAB_DEBUG);
 
-    Kolab::LDAP::ensureAsync($ldap);
-    Kolab::log('SYNCREPL', 'Async checked', KOLAB_DEBUG);
+    Skolab::LDAP::ensureAsync($ldap);
+    Skolab::log('SYNCREPL', 'Async checked', KOLAB_DEBUG);
 
     while($ldap and not $disconnected) {
       my $ctrl = Net::LDAP::Control::SyncRequest->new(
-        mode       => Kolab::LDAP::Backend::syncrepl::mode(),
-        cookie     => Kolab::LDAP::Backend::syncrepl::cookie(),
+        mode       => Skolab::LDAP::Backend::syncrepl::mode(),
+        cookie     => Skolab::LDAP::Backend::syncrepl::cookie(),
         reloadHint => 0);
-      Kolab::log('SYNCREPL', 'Control created: mode='.$ctrl->mode().
+      Skolab::log('SYNCREPL', 'Control created: mode='.$ctrl->mode().
       	'; cookie='.$ctrl->cookie().
       	'; reloadHint='.$ctrl->reloadHint(), KOLAB_DEBUG);
 
       #search
-      my $mesg = $ldap->search(base     => $Kolab::config{'base_dn'},
+      my $mesg = $ldap->search(base     => $Skolab::config{'base_dn'},
                                scope    => 'sub',
                                control  => [ $ctrl ],
                                callback => \&searchCallback, # call for each entry
                                filter   => "(objectClass=*)",
                                attrs    => [ '*',
-                                             $Kolab::config{'user_field_guid'},
-                                             $Kolab::config{'user_field_modified'},
-                                             $Kolab::config{'user_field_quota'},
-                                             $Kolab::config{'user_field_deleted'},
+                                             $Skolab::config{'user_field_guid'},
+                                             $Skolab::config{'user_field_modified'},
+                                             $Skolab::config{'user_field_quota'},
+                                             $Skolab::config{'user_field_deleted'},
                                            ],
                               );
-      Kolab::log('SYNCREPL', 'Search created', KOLAB_DEBUG);
+      Skolab::log('SYNCREPL', 'Search created', KOLAB_DEBUG);
       $mesg->sync;
-      Kolab::log('SYNCREPL', "Finished Net::LDAP::Search::sync sleeping 10s", KOLAB_DEBUG);
+      Skolab::log('SYNCREPL', "Finished Net::LDAP::Search::sync sleeping 10s", KOLAB_DEBUG);
       sleep 10;
     }
   }
@@ -176,105 +176,105 @@ sub searchCallback {
   my @controls = $mesg->control;
   my @sync_controls = ();
   if($param2 && $param2->isa("Net::LDAP::Entry")) {
-    Kolab::log('SYNCREPL', 'Received Search Entry', KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', 'Received Search Entry', KOLAB_DEBUG);
     #retrieve Sync State Control
     foreach my $ctrl (@controls) {
       push(@sync_controls, $ctrl)
         if $ctrl->isa('Net::LDAP::Control::SyncState');
     }
     if(@sync_controls>1) {
-      Kolab::log('SYNCREPL', 'Got search entry with multiple Sync State controls',
+      Skolab::log('SYNCREPL', 'Got search entry with multiple Sync State controls',
         KOLAB_DEBUG);
       return;
     }
     if(!@sync_controls) {
-      Kolab::log('SYNCREPL', 'Got search entry without Sync State control',
+      Skolab::log('SYNCREPL', 'Got search entry without Sync State control',
         KOLAB_DEBUG);
       return;
     }
     if(!$sync_controls[0]->entryUUID) {
-      Kolab::log('SYNCREPL', 'Got empty entryUUID', KOLAB_DEBUG);
+      Skolab::log('SYNCREPL', 'Got empty entryUUID', KOLAB_DEBUG);
       return;
     }
-    Kolab::log('SYNCREPL', 'Search Entry has Sync State Control: '.
+    Skolab::log('SYNCREPL', 'Search Entry has Sync State Control: '.
       'state='.$sync_controls[0]->state().
       '; entryUUID='.unpack("H*",$sync_controls[0]->entryUUID()).
       '; cookie='.(defined($sync_controls[0]->cookie()) ? $sync_controls[0]->cookie() : 'UNDEF')
 	, KOLAB_DEBUG);
     if(defined($sync_controls[0]->cookie)) {
-      Kolab::LDAP::Backend::syncrepl::cookie($sync_controls[0]->cookie);
-      Kolab::log('SYNCREPL',"New cookie: ".Kolab::LDAP::Backend::syncrepl::cookie(),
+      Skolab::LDAP::Backend::syncrepl::cookie($sync_controls[0]->cookie);
+      Skolab::log('SYNCREPL',"New cookie: ".Skolab::LDAP::Backend::syncrepl::cookie(),
         KOLAB_DEBUG);
     }
-    Kolab::log('SYNCREPL', "Entry (".$param2->changetype."): ".$param2->dn(), KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', "Entry (".$param2->changetype."): ".$param2->dn(), KOLAB_DEBUG);
   } elsif($param2 && $param2->isa("Net::LDAP::Reference")) {
-    Kolab::log('SYNCREPL', 'Received Search Reference', KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', 'Received Search Reference', KOLAB_DEBUG);
     return;
   #if it not first control?
   } elsif($controls[0] and $controls[0]->isa('Net::LDAP::Control::SyncDone')) {
-    Kolab::log('SYNCREPL', 'Received Sync Done Control: '.
+    Skolab::log('SYNCREPL', 'Received Sync Done Control: '.
       'cookie='.(defined($controls[0]->cookie()) ? $controls[0]->cookie() : 'UNDEF').
       '; refreshDeletes='.$controls[0]->refreshDeletes(), KOLAB_DEBUG);
     #we have a new cookie
     if(defined($controls[0]->cookie())
         and not $controls[0]->cookie() eq '' 
-        and not $controls[0]->cookie() eq Kolab::LDAP::Backend::syncrepl::cookie()) {
-      Kolab::LDAP::Backend::syncrepl::cookie($controls[0]->cookie());
-      Kolab::log('SYNCREPL', "New cookie: ".
-        Kolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
-      Kolab::log('SYNCREPL', "Calling Kolab::LDAP::sync", KOLAB_DEBUG);
-      Kolab::LDAP::sync;
-      system($Kolab::config{'kolabconf_script'}) == 0
-        || Kolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
-      Kolab::log('SYNCREPL', "Finished Kolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
+        and not $controls[0]->cookie() eq Skolab::LDAP::Backend::syncrepl::cookie()) {
+      Skolab::LDAP::Backend::syncrepl::cookie($controls[0]->cookie());
+      Skolab::log('SYNCREPL', "New cookie: ".
+        Skolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
+      Skolab::log('SYNCREPL', "Calling Skolab::LDAP::sync", KOLAB_DEBUG);
+      Skolab::LDAP::sync;
+      system($Skolab::config{'kolabconf_script'}) == 0
+        || Skolab::log('SD', "Failed to run kolabconf: $?", KOLAB_ERROR);
+      Skolab::log('SYNCREPL', "Finished Skolab::LDAP::sync sleeping 1s", KOLAB_DEBUG);
       sleep 1; # we get too many bogus change notifications!
 	  } 
   } elsif($param2 && $param2->isa("Net::LDAP::Intermediate")) {
-    Kolab::log('SYNCREPL', 'Received Intermediate Message', KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', 'Received Intermediate Message', KOLAB_DEBUG);
     my $attrs = $param2->{asn};
     if($attrs->{newcookie}) {
-      Kolab::LDAP::Backend::syncrepl::cookie($attrs->{newcookie});
-      Kolab::log('SYNCREPL', "New cookie: ".
-        Kolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
+      Skolab::LDAP::Backend::syncrepl::cookie($attrs->{newcookie});
+      Skolab::log('SYNCREPL', "New cookie: ".
+        Skolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
     } elsif(my $refreshInfos = ($attrs->{refreshDelete} || $attrs->{refreshPresent})) {
-      Kolab::LDAP::Backend::syncrepl::cookie($refreshInfos->{cookie})
+      Skolab::LDAP::Backend::syncrepl::cookie($refreshInfos->{cookie})
         if defined($refreshInfos->{cookie});
-      Kolab::log('SYNCREPL', 
+      Skolab::log('SYNCREPL', 
         (defined($refreshInfos->{cookie}) ? 'New ' : 'Empty ').
         "cookie from ".
         ($attrs->{refreshDelete} ? 'refreshDelete' : 'refreshPresent').
         " (refreshDone=".$refreshInfos->{refreshDone}."): ".
-        Kolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
+        Skolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
     } elsif(my $syncIdSetInfos = $attrs->{syncIdSet}) {
-      Kolab::LDAP::Backend::syncrepl::cookie($syncIdSetInfos->{cookie})
+      Skolab::LDAP::Backend::syncrepl::cookie($syncIdSetInfos->{cookie})
         if defined($syncIdSetInfos->{cookie});
-      Kolab::log('SYNCREPL', 
+      Skolab::log('SYNCREPL', 
         (defined($syncIdSetInfos->{cookie}) ? 'Empty ' : 'New ').
         "cookie from syncIdSet".
         " (refreshDeletes=".$syncIdSetInfos->{refreshDeletes}."): ".
-        Kolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
+        Skolab::LDAP::Backend::syncrepl::cookie(), KOLAB_DEBUG);
       foreach my $syncUUID ($syncIdSetInfos->{syncUUIDs}) {
-        Kolab::log('SYNCREPL', 'entryUUID='.
+        Skolab::log('SYNCREPL', 'entryUUID='.
           unpack("H*",$syncUUID), KOLAB_DEBUG);
       }
     }
   } elsif($mesg->code) {
     if ($mesg->code == 1) {
-      Kolab::log('SYNCREPL', 'Communication Error: disconnecting', KOLAB_DEBUG);
+      Skolab::log('SYNCREPL', 'Communication Error: disconnecting', KOLAB_DEBUG);
       $disconnected = 1;
       return 0;
     } elsif ($mesg->code == LDAP_USER_CANCELED) {
-        Kolab::log('SYNCREPL', 'searchCallback() -> Exit code received, returning', KOLAB_DEBUG);
+        Skolab::log('SYNCREPL', 'searchCallback() -> Exit code received, returning', KOLAB_DEBUG);
         return;
     } elsif ($mesg->code == 4096) {
-        Kolab::log('SYNCREPL', 'Refresh required', KOLAB_DEBUG);
-        Kolab::LDAP::Backend::syncrepl::cookie('');
+        Skolab::log('SYNCREPL', 'Refresh required', KOLAB_DEBUG);
+        Skolab::LDAP::Backend::syncrepl::cookie('');
     } else {
-        Kolab::log('SYNCREPL', "searchCallback: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
+        Skolab::log('SYNCREPL', "searchCallback: mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
         &abort;
     }   
   } else {
-    Kolab::log('SYNCREPL', 'Received something else', KOLAB_DEBUG);
+    Skolab::log('SYNCREPL', 'Received something else', KOLAB_DEBUG);
   }
   return 0;
 }
@@ -284,11 +284,11 @@ __END__
 
 =head1 NAME
 
-Kolab::LDAP::Backend::syncrepl - Perl extension for RFC 4533 compliant LDAP server backend
+Skolab::LDAP::Backend::syncrepl - Perl extension for RFC 4533 compliant LDAP server backend
 
 =head1 ABSTRACT
 
-  Kolab::LDAP::Backend::syncrepl handles OpenLDAP backend to the kolab daemon.
+  Skolab::LDAP::Backend::syncrepl handles OpenLDAP backend to the kolab daemon.
 
 =head1 AUTHOR
 

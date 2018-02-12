@@ -57,10 +57,10 @@ use File::Temp;
 use Net::LDAP;
 use Digest::SHA1;
 use MIME::Base64;
-use Kolab::Util;
+use Skolab::Util;
 use Kolab;
 
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
 
 # won't be needed (i think)
 # my $kolab_prefix = (getpwnam('kolab'))[7] || die "Error: could not determine the kolab directory prefix (e.g. /kolab)";
@@ -81,7 +81,7 @@ sub qquote {
 # Hash a password
 sub hashPassword {
   my $pw = shift;
-  my $hashcmd = "$Kolab::config{'sbindir'}/slappasswd -s ".qquote($pw,":shell");
+  my $hashcmd = "$Skolab::config{'sbindir'}/slappasswd -s ".qquote($pw,":shell");
   (my $hashpw = `$hashcmd`) or die $@;
   chomp($hashpw);
   return $hashpw;
@@ -212,10 +212,10 @@ undef $ldap;
 
 # move temporary file to kolab master config
 rename($tmpfilename,$kolabconfname) || die "Error: could not install new $kolabconfname";
-system("chown $Kolab::config{'ldapserver_usr'}:$Kolab::config{'ldapserver_grp'} $kolabconfname");
+system("chown $Skolab::config{'ldapserver_usr'}:$Skolab::config{'ldapserver_grp'} $kolabconfname");
 
 print "Password changed successfully, please be patient...\n";
 
 # trigger kolabd to run update
-system("$Kolab::config{'kolabconf_script'} > /dev/null 2>&1");
+system("$Skolab::config{'kolabconf_script'} > /dev/null 2>&1");
 exit 0;

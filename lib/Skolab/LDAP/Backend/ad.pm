@@ -1,4 +1,4 @@
-package Kolab::LDAP::Backend::ad;
+package Skolab::LDAP::Backend::ad;
 
 ##  COPYRIGHT
 ##  ---------
@@ -28,8 +28,8 @@ use 5.008;
 use strict;
 use warnings;
 use Kolab;
-use Kolab::Util;
-use Kolab::LDAP;
+use Skolab::Util;
+use Skolab::LDAP;
 use Net::LDAP;
 use Net::LDAP::Control;
 use vars qw($ldap $cyrus);
@@ -57,19 +57,19 @@ sub startup { 1; }
 
 sub shutdown
 {
-    Kolab::log('AD', 'Shutting down');
+    Skolab::log('AD', 'Shutting down');
     exit(0);
 }
 
 sub abort
 {
-    Kolab::log('AD', 'Aborting');
+    Skolab::log('AD', 'Aborting');
     exit(1);
 }
 
 sub changeCallback
 {
-    Kolab::log('AD', 'Change notification received', KOLAB_DEBUG);
+    Skolab::log('AD', 'Change notification received', KOLAB_DEBUG);
 
     ###   $_[0]   isa     Net::LDAP::Message
     ###   $_[1]   shouldbea   Net::LDAP::Entry
@@ -80,38 +80,38 @@ sub changeCallback
     my $issearch = $mesg->isa("Net::LDAP::Search");
 
     if (!$issearch) {
-    Kolab::log('AD', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
+    Skolab::log('AD', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
     if ($mesg->code == 88) {
-        Kolab::log('AD', 'changeCallback() -> Exit code received, returning', KOLAB_DEBUG);
+        Skolab::log('AD', 'changeCallback() -> Exit code received, returning', KOLAB_DEBUG);
         return;
     } elsif ($mesg->code) {
-        Kolab::log('AD', "mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
+        Skolab::log('AD', "mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
         &abort;
     }   
     } else {
-    Kolab::log('AD', 'mesg is a search object, not testing code', KOLAB_DEBUG);
+    Skolab::log('AD', 'mesg is a search object, not testing code', KOLAB_DEBUG);
     }
 
     if (!$entry) {
-    Kolab::log('AD', 'changeCallback() called with a null entry', KOLAB_DEBUG);
+    Skolab::log('AD', 'changeCallback() called with a null entry', KOLAB_DEBUG);
     return;
     } elsif (!$entry->isa("Net::LDAP::Entry")) {
-    Kolab::log('AD', 'changeCallback() called with an invalid entry', KOLAB_DEBUG);
+    Skolab::log('AD', 'changeCallback() called with an invalid entry', KOLAB_DEBUG);
     return;
     }
 
-    if (!Kolab::LDAP::isObject($entry, $Kolab::config{'user_object_class'})) {
-    Kolab::log('AD', "Entry is not a `" . $Kolab::config{'user_object_class'} . "', returning", KOLAB_DEBUG);
+    if (!Skolab::LDAP::isObject($entry, $Skolab::config{'user_object_class'})) {
+    Skolab::log('AD', "Entry is not a `" . $Skolab::config{'user_object_class'} . "', returning", KOLAB_DEBUG);
     return;
     }
 
-    my $deleted = $entry->get_value($Kolab::config{'user_field_deleted'}) || 0;
+    my $deleted = $entry->get_value($Skolab::config{'user_field_deleted'}) || 0;
     if ($deleted) {
-    Kolab::LDAP::deleteObject($ldap, $cyrus, $entry);
+    Skolab::LDAP::deleteObject($ldap, $cyrus, $entry);
     return;
     }
 
-    Kolab::LDAP::createObject($ldap, $cyrus, $entry);
+    Skolab::LDAP::createObject($ldap, $cyrus, $entry);
 }
 
 sub run
@@ -124,59 +124,59 @@ sub run
 
     END {
     alarm 0;
-    Kolab::LDAP::destroy($ldap);
+    Skolab::LDAP::destroy($ldap);
     }
 
     my $mesg;
 
-    Kolab::log('AD', 'Listener starting up');
+    Skolab::log('AD', 'Listener starting up');
 
-    $cyrus = Kolab::Cyrus::create;
+    $cyrus = Skolab::Cyrus::create;
 
-    Kolab::log('AD', 'Cyrus connection established', KOLAB_DEBUG);
+    Skolab::log('AD', 'Cyrus connection established', KOLAB_DEBUG);
 
     while (1) {
-    Kolab::log('AD', 'Creating LDAP connection to AD server', KOLAB_DEBUG);
+    Skolab::log('AD', 'Creating LDAP connection to AD server', KOLAB_DEBUG);
 
-    $ldap = Kolab::LDAP::create(
-        $Kolab::config{'user_ldap_ip'},
-        $Kolab::config{'user_ldap_port'},
-        $Kolab::config{'user_bind_dn'},
-        $Kolab::config{'user_bind_pw'},
+    $ldap = Skolab::LDAP::create(
+        $Skolab::config{'user_ldap_ip'},
+        $Skolab::config{'user_ldap_port'},
+        $Skolab::config{'user_bind_dn'},
+        $Skolab::config{'user_bind_pw'},
         1
     );
 
     if (!$ldap) {
-        Kolab::log('AD', 'Sleeping 5 seconds...');
+        Skolab::log('AD', 'Sleeping 5 seconds...');
         sleep 5;
         next;
     }
 
-    Kolab::log('AD', 'LDAP connection established', KOLAB_DEBUG);
+    Skolab::log('AD', 'LDAP connection established', KOLAB_DEBUG);
 
-    Kolab::LDAP::ensureAsync($ldap);
+    Skolab::LDAP::ensureAsync($ldap);
 
-    Kolab::log('AD', 'Async checked', KOLAB_DEBUG);
+    Skolab::log('AD', 'Async checked', KOLAB_DEBUG);
 
     my $ctrl = Net::LDAP::Control->new(
         type    => '1.2.840.113556.1.4.528',
         critical    => 'true'
     );
 
-    Kolab::log('AD', 'Control created', KOLAB_DEBUG);
+    Skolab::log('AD', 'Control created', KOLAB_DEBUG);
 
-    my @userdns = split(/;/, $Kolab::config{'user_dn_list'});
+    my @userdns = split(/;/, $Skolab::config{'user_dn_list'});
     my $userdn;
 
-    Kolab::log('AD', 'User DN list = ' . $Kolab::config{'user_dn_list'}, KOLAB_DEBUG);
+    Skolab::log('AD', 'User DN list = ' . $Skolab::config{'user_dn_list'}, KOLAB_DEBUG);
 
     if (length(@userdns) == 0) {
-    Kolab::log('AD', 'No user DNs specified, exiting', KOLAB_ERROR);
+    Skolab::log('AD', 'No user DNs specified, exiting', KOLAB_ERROR);
     exit(1);
     }
 
     foreach $userdn (@userdns) {
-        Kolab::log('AD', "Registering change notification on DN `$userdn'");
+        Skolab::log('AD', "Registering change notification on DN `$userdn'");
 
         $mesg = $ldap->search (
         base    => $userdn,
@@ -186,27 +186,27 @@ sub run
         filter      => '(objectClass=*)',
         attrs   => [
             '*',
-            $Kolab::config{'user_field_guid'},
-            $Kolab::config{'user_field_modified'},
-            $Kolab::config{'user_field_quota'},
-            $Kolab::config{'user_field_deleted'},
+            $Skolab::config{'user_field_guid'},
+            $Skolab::config{'user_field_modified'},
+            $Skolab::config{'user_field_quota'},
+            $Skolab::config{'user_field_deleted'},
         ],
         );
 
-        Kolab::log('AD', "Change notification registered on `$userdn'");
+        Skolab::log('AD', "Change notification registered on `$userdn'");
     }
 
     eval {
         local $SIG{ALRM} = sub {
         alarm 0;
-        Kolab::log('AD', 'Connection refresh period expired; tearing down connection');
+        Skolab::log('AD', 'Connection refresh period expired; tearing down connection');
 
-        Kolab::LDAP::destroy($ldap);
+        Skolab::LDAP::destroy($ldap);
         next;
         };
 
-        Kolab::log('AD', 'Waiting for changes (refresh period = ' . $Kolab::config{'conn_refresh_period'} . ' minutes)...');
-        alarm $Kolab::config{'conn_refresh_period'} * 60;
+        Skolab::log('AD', 'Waiting for changes (refresh period = ' . $Skolab::config{'conn_refresh_period'} . ' minutes)...');
+        alarm $Skolab::config{'conn_refresh_period'} * 60;
         $mesg->sync;
         alarm 0;
     };
@@ -221,11 +221,11 @@ __END__
 
 =head1 NAME
 
-Kolab::LDAP::Backend::ad - Perl extension for an Active Directory backend
+Skolab::LDAP::Backend::ad - Perl extension for an Active Directory backend
 
 =head1 ABSTRACT
 
-  Kolab::LDAP::Backend::ad handles an Active Directory backend to the
+  Skolab::LDAP::Backend::ad handles an Active Directory backend to the
   kolab daemon.
 
 =head1 COPYRIGHT AND AUTHORS

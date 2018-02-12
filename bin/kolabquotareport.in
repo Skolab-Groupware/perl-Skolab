@@ -55,24 +55,24 @@ use DB_File;
 use Mail::Message;
 use Cyrus::IMAP::Admin;
 use Kolab;
-use Kolab::Util;
-use Kolab::LDAP;
+use Skolab::Util;
+use Skolab::LDAP;
 use vars qw($opt_d);
 
-Kolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
 
-Kolab::LDAP::startup($Kolab::config{'kolab_statedir'});
+Skolab::LDAP::startup($Skolab::config{'kolab_statedir'});
 
 getopts('d');
 if ($opt_d) {
-    foreach my $key (sort keys %Kolab::config) {
-        print "$key : " . $Kolab::config{$key} . "\n";
+    foreach my $key (sort keys %Skolab::config) {
+        print "$key : " . $Skolab::config{$key} . "\n";
     }
     exit 0;
 }
 
 my $warnmessage = '';
-my $quotawarnpct = $Kolab::config{'cyrus-quotawarn'};
+my $quotawarnpct = $Skolab::config{'cyrus-quotawarn'};
 
 sub mailadmin {
   my ( $mailbox, $used, $total, $pct ) = @_;
@@ -116,11 +116,11 @@ sub createreport {
 
 
 ### Connect to Cyrus
-my $cyrus = Cyrus::IMAP::Admin->new($Kolab::config{'connect_addr'});
+my $cyrus = Cyrus::IMAP::Admin->new($Skolab::config{'connect_addr'});
 $cyrus || die 'Unable to connect to local Cyrus admin interface\n';
 $cyrus->authenticate(
-					 'User'          => $Kolab::config{'cyrus_admin'},
-					 'Password'      => $Kolab::config{'cyrus_admin_pw'},
+					 'User'          => $Skolab::config{'cyrus_admin'},
+					 'Password'      => $Skolab::config{'cyrus_admin_pw'},
 					 'mechanisms'    => 'plaintext', )
   || die("Unable to authenticate with Cyrus admin interface, Error = `" . $cyrus->error. "'");
 
