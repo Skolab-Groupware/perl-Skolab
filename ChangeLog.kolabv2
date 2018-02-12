@@ -1,0 +1,662 @@
+2010-07-17  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm:
+
+	kolab/issue977 (Kolab suppresses ldap error messages)
+	kolab/issue978 (incorrect $ldap->abandon; call)
+
+2010-06-28  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm:
+
+	Removed hack for kolab/issue3472 (web client user prefs not
+	deleted when user gets deleted)
+
+2010-06-27  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (deleteObject):
+
+	Support a hooks directory that allows to extend the deletion of
+	users.
+
+	kolab/issue3472 (web client user prefs not deleted when user gets
+	deleted)
+
+2010-04-27  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_bootstrap.in: Check for availability of submission port,
+	see kolab/issue4311 (Activate port 587 for email submission)
+
+2010-03-30  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (createObject): kolab/issue4275 (LDAP.pm quota error)
+
+2010-03-23  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/Cyrus.pm (createCalendar): kolab/issue4237 (additional
+	event.default folder created by kolabd (rt#6038))
+
+2010-03-11  Gunnar Wrobel  <p@rdus.de>
+
+	* bin/kolabpasswd.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords (rt#5558))
+
+2010-03-05  Gunnar Wrobel  <p@rdus.de>
+
+	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords (rt#5558))
+
+2009-02-11  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm:
+	  solve kolab/issue4024 (Lots of tmp files in kolab's configuration
+	  directory), introduced 2009-12-13. 
+
+2010-01-01 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: solve kolab/issue4009: kolab_bootstrap contains
+	  dangerous code, could remove wrong files
+
+2009-12-30 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: assign the variable Kolab::config{"is_master"}
+	  to prevent warnings during the execution of kolabconf.
+	  Verify if files that are to be moved or chown'ed exist.  If not
+	  skip the operation.  
+
+2009-12-28 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: removed the suffix ".in" in the call to
+	  Kolab::Conf::rebuildTemplates
+
+2009-12-16  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/LDAP.pm (deleteObject): kolab/issue3940 (Deleting
+	users does not work if master Kolab server is not master LDAP
+	(rt5889))
+
+2009-12-14  Gunnar Wrobel <wrobel@pardus.de>
+
+	* bin/kolabpasswd.in: kolab/issue919 (kolab server has problems
+	with some characters in passwords)
+
+	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords)
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm, sbin/kolab_bootstrap.in:
+	  Added arguments to rebuildTemplates(): dorunonchange and templates.
+	  Use those in kolab_bootstrap (in replacement of bootstrapConfig()).
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm: Touch configuration only when there is a change.
+	  This avoid postfix complaining about "database X.db is older than 
+	  source file X".
+	  Additionnay, renamed %templatehaschanged to %confighaschanged.
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm, sbin/kolabconf.in: $Kolab::do_reload is now an
+	  argument to Kolab::Conf::rebuildTemplates().
+
+2009-12-13  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm, sbin/kolabconf.in: new @@@print@@@ macro
+	  available for: getLDAPReplicas(), getLDAPAccess(),
+	  getCyrusGroups(), getPostfixMap(map). This removed the use of
+	  %special_templates, %haschanged, Kolab::Conf::reload()
+
+2009-12-07  Gunnar Wrobel <wrobel@pardus.de>
+
+	* lib/Kolab/LDAP.pm (createObject): kolab/issue1448 (Users might
+	add an account on the nonHome Server and write emails in there.)
+
+	* bin/kolab_smtpdpolicy.in (check_restricted_sender): 
+	kolab/issue1340 (RFC: restrict users to sending mail only to
+	internal recipients)
+
+2009-12-04  Gunnar Wrobel <wrobel@pardus.de>
+
+	* bin/kolab_smtpdpolicy.in (check_restricted_sender):
+	kolab/issue1340 (RFC: restrict users to sending mail only to
+	internal recipients)
+
+	Only the first stub that reacts solely to "-" (Denying all
+	recipients).
+
+2009-11-24  Gunnar Wrobel <wrobel@pardus.de>
+
+	* Makefile.PL: kolab/issue3952 (Version in kolabconf is not
+	replaced in the build process)
+
+2009-11-24 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolabconf.in, lib/Kolab/Conf.pm: renamed variable do_reload
+	  to $Kolab::do_reload, to make it a global variable.  This is needed
+	  to solve kolab/issue3951: kolabconf -n (noreload) restarts services
+	  if RUNONCHANGE is used
+
+2009-11-17 Gunnar Wrobel <wrobel@pardus.de>
+
+	* bin/kolabpasswd.in: kolab/issue919 (kolab server has problems
+	with some characters in passwords)
+
+	* sbin/kolab_bootstrap.in: kolab/issue919 (kolab server has
+	problems with some characters in passwords)
+
+2009-07-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_bootstrap.in: Read bind_pw_hash from Kolab master server,
+	fixes kolab/issue3764 (kolab.conf: bind_pw_hash not set on slaves,
+	causes OpenLDAP restarts)
+	* lib/Kolab.pm: bump version number
+
+2009-05-07 Richard Bos <richard@radoeka.nl>
+
+	* sbin/kolab_bootstrap.in: Change $Kolab::config{'LDAPD'} to just
+	  openldap, see kolab/issue3604
+
+2009-05-07  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Removed special handling of imapd (except for
+	imapd.group.template)
+
+2009-05-05  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Execute duplicate RUNONCHANGE commands only once.
+	Part of kolab/issue1679 ([kolabconf] Update template META mechanism to
+	support service restarts)
+
+2009-04-16  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (deleteObject): Workaround for kolab/issue3472.
+
+2009-03-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Removed special handling of saslauthd.
+	* lib/Kolab/Conf.pm: Removed special handling of apache, amavisd and
+	clamav and remove duplicate "change detected" debug message.
+	* lib/Kolab/Conf.pm: Expand $map in debug message.
+	* lib/Kolab/Conf.pm: Removed postfix reload and postmap calls.
+
+2009-03-16  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm: Creating the Calendar folder caused an
+	KOLAB_ERROR to be logged, changed to KOLAB_DEBUG.
+
+2009-03-16  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_imappartitions.in, MANIFEST, Makefile.PL, sbin/.cvsignore:
+	Added script to list imap partitions.
+	* lib/Kolab/Cyrus.pm, lib/Kolab/LDAP.pm: Select random imap partition
+	from output of kolab_imappartitions script if available.
+
+2009-03-04  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/Conf.pm: Add retry (every minute for 10 times, then every
+	five minutes until successful) to syncrepl configuration.
+
+2009-02-18  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm: Prevent "Use of uninitialized value in string eq"
+	if attribute kolabhomeserveronly is not set.
+
+2009-02-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_bootstrap.in: kolab/issue3407 (kolab_bootstrap: improve
+	message about importing the CA certificate)
+
+2009-02-10  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* sbin/kolab_bootstrap.in: Improved the ssh handling for slave setups.
+	* Makefile.PL: Install manpages for scripts in sbin (first part of
+	kolab/issue3363)
+
+2009-02-09  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm: Create user mailbox on the kolabHomeServer only,
+	if attribute kolabHomeServerOnly is true.
+	* lib/Kolab/LDAP.pm: Continue sync if connecting the IMAP server
+	fails, just skip actions that would need it.
+
+2009-01-20  Mathieu Parent <math.parent@gmail.com>
+
+	* bin/*.in, sbin/*.in: POD manpages for perl-kolab (kolab/issue3355) 
+
+2009-01-17  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/LDAP.pm: in sub createObject: describe why mailboxes are also
+	created on others servers (mentioned in kolab/issue3253)
+
+2008-12-30  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm: slapd.replicas.template and slapd.access.template
+	can be absent (kolab/issue3321)
+
+2008-11-26  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab.pm: Check syncrepl_cookie_file while using `syncrepl'
+	directory_mode.
+	* lib/Kolab/LDAP/Backend/syncrepl.pm: default syncrepl_cookie_file to
+	'/tmp/kolab_syncrepl_cookie_file' and create if it doesn't exist.
+
+2008-11-17  Mathieu Parent <math.parent@gmail.com>
+
+	* lib/Kolab/Conf.pm: 
+	  - RUNONCHANGE should also be triggered
+	    when creating a file
+	  - it was not catching for some special config
+	    files (postfix, slapd, ...)
+	  - the debug log was not showing the
+	    template name
+	  see kolab/issue1679 ([kolabconf] Update template META mechanism
+	  to support service restarts).
+
+2008-11-08  Gunnar Wrobel  <p@rdus.de>
+
+	* bin/kolabquotawarn (fatal_exit): Replace hardcoded path.
+
+	* bin/kolabquotareport: Fixed reading a config variable.
+
+2008-10-19  Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/LDAP/Backend/syncrepl.pm: keep syncrepl cookie on disk
+	between sessions (kolab/issue3152)
+
+2008-10-16  Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/LDAP/Backend/syncrepl.pm: updated.  Updates provided by
+	Mathieu Parent
+
+
+2008-10-10  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab.pm: Allow returning only the global information when
+	bootstrapping.
+
+	* lib/Kolab/LDAP.pm: Use the correct configuration variables for
+	the cache files. Added experimental kolabimapserver entry.
+
+	* bin/*: Collect all perl tools in this one single package.
+
+2008-10-03  Gunnar Wrobel  <p@rdus.de>
+
+	* bin/kolabquotawarn.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* bin/kolabpasswd.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* bin/kolab_bootstrap.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* bin/kolabd.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* bin/kolabcheckperm.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* bin/kolabquotareport.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* bin/kolab_smtpdpolicy.in: Moved script from kolabd package into
+	perl-kolab.
+
+	* Makefile.PL: Added routines for script installations.
+
+2008-09-09 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm: updated to improve readability
+
+2008-09-08 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm: added code to include warnings in a configuration
+	  file, by replacing the macro @@@warning@@@ in the config file.
+	  See kolab/issue1671
+
+2008-09-06 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm:
+	  - changed if {}; if {}, etc into if {}; elsif {}, etc.
+	    Added a warning for incorrect keys in the META section
+	    of a template file.
+	  - Added support to define the comment character in the
+	    META part of a template file
+
+2008-09-01 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm: allow different spacing (multiple spaces or tabs)
+	  instead of only 1 space in the @@@if conditionals.
+
+2008-08-29 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm: added code to support the conditional:
+	  @@@if exists( /full/path/to/file )@@@ as proposed by Thomas in
+	  kolab/issue3006
+
+2008-08-27 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm: removed code specific for slapd.conf
+	  See kolab/issue3005
+
+2008-08-20 Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/Conf.pm: added function bootstrapConfig to create config
+	  files needed during kolab bootstrapping, see kolab/issue1755
+
+2008-08-14  Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab.pm: add syncrepl support, see kolab/issue1755
+
+2008-08-09 Richard Bos <richard@radoeka.nl>
+
+	* Kolab-Conf/Conf.pm.in: added syncrepl support (see kolab/issue1755)
+
+2008-07-17  Richard Bos <richard@radoeka.nl>
+
+	* lib/Kolab/LDAP/Backend/syncrepl.pm: add kolab/issue1755
+	* MANIFEST: added the file lib/Kolab/LDAP/Backend/syncrepl.pm
+	* lib/Kolab.pm: added supported backend types
+
+2008-07-09  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm (createObject): kolab/issue2517 (group accounts
+	lead to more rights than necessary for the "calendar" user):
+	Create Calendar folder on resource/group account creation and
+	set ACL/annotation accordingly.
+
+2008-07-03  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (mapAcls):
+
+	kolab/issue2760 (Deleting shared folders does not work)
+
+2008-07-01  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP/Backend/slurpd.pm (run):
+
+	kolab/issue2827 (Deleting users does not work reliably)
+
+2008-03-28  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/LDAP/Backend/fds.pm: New File.
+
+	* MANIFEST: Added Backend/fds.pm
+
+2008-03-13  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP/Backend/slurpd.pm (run):
+
+	Wait for our children.
+	kolab/issue2478 (kolabd memory leak)
+
+2008-03-07  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP/Backend/slurpd.pm (run):
+
+	kolab/issue2478 (kolabd memory leak)
+
+2008-03-05  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* lib/Kolab.pm: Fix kolab/issue2358 (mistmatch between cyrus-admins
+	and cyrus-admin)
+
+2008-02-15  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/Cyrus.pm (create): Reverted last change. (It was
+	totally wrong and kolab even refused to start...).
+
+2008-02-14  Sascha Wilde  <wilde@intevation.de>
+
+	* lib/Kolab/Cyrus.pm (create): Added call to reloadConfig, without
+	this create failed (as $Kolab::config returned empty values).
+
+2008-02-04  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* lib/Kolab/LDAP.pm: Fix synchronization of mailboxes with newer perl.
+	kolab/issue2411 (perl error in LDAP.pm)
+
+2008-01-07  Thomas Arendsen Hein <thomas@intevation.de>
+
+	* bin/kolabconf.in: Added missing newlines in kolabconf -h.
+
+2008-01-02  Marcus Hüwe   <suse-tux@gmx.de>
+
+	* Makefile.PL:
+
+	Fixed build for older versions of ExtUtils::MakeMaker.
+
+2008-01-01  Marcus Hüwe   <suse-tux@gmx.de>
+
+	* bin/kolabconf.in:
+
+	Removed superfluous print statement.
+
+2007-12-07  Gunnar Wrobel  <p@rdus.de>
+
+	* Makefile.PL (MY::postamble):
+
+	Fix the install location for kolabconf for the newest MakeMaker.
+
+2007-11-28  Gunnar Wrobel  <p@rdus.de>
+
+	* lib/Kolab/LDAP.pm (syncDomains, createObject):
+
+	Added syncing for the domins the user specified. We need one
+	calendar user in each domain and resource/group accounts should
+	allow the calendar user to access the mailbox.
+
+	kolab/issue1313 (resmngr cannot create calendar folder in multidomain setup)
+
+2007-10-23  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab.pm: Show component and log level when sending debug
+	log to stdout.
+
+2007-10-17  Thomas Arendsen Hein  <thomas@intevation.de>
+
+	* lib/Kolab.pm: kolab/issue934 (Remove FTP FreeBusy Service (proftpd))
+
+	* lib/Kolab/Conf.pm: kolab/issue934 (Remove FTP FreeBusy Service (proftpd))
+
+2007-09-06  Gunnar Wrobel  <p@rdus.de>
+
+	* Conf.pm:
+
+	Allowed config variable replacement within the META section of
+	the templates. This reduces our dependence on the dist_conf
+	mechanism and we can use variables from kolab.globals
+	instead. Now add on packages can install their own templates.
+
+	Whitespace cleanup.
+
+2007-08-07  Gunnar Wrobel  <p@rdus.de>
+
+	* Conf.pm:
+
+	Fixed kolab/issue1879 (kolabconf poor error message in buildCyrusConfig)
+	https://intevation.de/roundup/kolab/issue1879
+
+2007-08-01    Gunnar Wrobel  <p@rdus.de>
+
+	Created the kolabconf package by moving kolabconf and the
+	Conf.pm perl module into one package. The package is now a
+	clean perl package.
+
+	Converted the perl-kolab package into a standard perl library.
+
+2007-07-31    Gunnar Wrobel  <p@rdus.de>
+
+	* Kolab/Kolab.pm.in:
+	* Kolab-Conf/Conf.pm.in:
+
+	Require that the configuration load call is provided with the path
+	to the global Kolab configuration settings. This way we remove the
+	knowledge that the kolabd package exist from the Kolab.pm script.
+
+	In addition the reload() function was moved to the Conf.pm
+	module.
+
+2007-07-27    Gunnar Wrobel  <p@rdus.de>
+
+	* Kolab-LDAP/LDAP.pm.in (startup):
+
+	Require that the startup call is provided with the path to the
+	statedir. This way we remove knowledge of the kolabd package from
+	LDAP.pm script
+
+	* Kolab-LDAP-Backend-slurpd/slurpd.pm.in (run):
+
+	Removed explicit reference to the kolabconf script. The path is
+	now read from the Kolab Server configuration. This removes the
+	knowledge that the kolabd package exists from the slurpd.pm
+	script.
+
+2007-07-26  Gunnar Wrobel  <p@rdus.de>
+
+	* Makefile.am:
+	* Kolab-Mailer/*:
+
+	Removed the Kolab-Mailer module. It was only used by the
+	"dirserv"-code.
+
+	* Makefile.am:
+	* Kolab/Kolab.pm.in:
+	* Kolab-LDAP/LDAP.pm.in:
+	* Kolab-LDAP-Backend-dirservd/*:
+	* Kolab-DirServ/*:
+
+	Removed outdated "dirserv"-support from perl-kolab.
+
+2007-06-21  Marcus Hüwe		<suse-tux@gmx.de>
+
+	* Makefile.am: added Makefile dependencies
+
+2007-01-06 Joergen Fjeld <jhf@linpro.no>
+
+	* Kolab-Conf/Conf.pm.in (build):
+
+	Patch applied by Martin Konold:
+
+	- fixes order of domains see also https://intevation.de/roundup/kolab/issue1550
+
+2006-12-04  Gunnar Wrobel  <wrobel@pardus.de>
+
+	* Kolab-Conf/Conf.pm.in (build): Only print "No configuration
+	variable corresponding to `$1' exists" in case we are NOT skipping
+	the section.
+
+	* Kolab-Conf/Conf.pm.in (build): Only print "No configuration
+	variable corresponding to `$1' exists" in case we are NOT skipping
+	the section.
+
+2006-03-20 Marcus Hüwe <suse-tux@gmx.de>
+	Patch commited by Richard Bos
+	* Kolab-Conf/Conf.pm.in: introduce a new variable phpinit_dir for the
+	  directory that holds the php.ini file to be used.
+
+2006-01-15 Richard Bos <richard@radoeka.nl>
+	* Kolab-Conf/Conf.pm.in: use the new variable sasl_authdconffile
+	  instead of @sasl_confdir@/saslauthd.conf
+
+2006-01-14 Marcus Hüwe <suse-tux@gmx.de>
+	Patch commited by Richard Bos
+	* configure.ac: replaced --enable-dist with --with-dist
+	  Added dist_conf file check.  If dist_conf file specified with
+	  --with-dist is not present fail configure.
+	* perl-kolab.spec.in: replaced --enable-dist with --with-dist
+	* Kolab-Conf/Conf.pm.in: introduce a new variable phpinit_dir for the
+	  directory that holds the php.ini file to be used.
+
+2006-01-14 Richard Bos <richard@radoeka.nl>
+	* Kolab/Kolab.pm.in: check for valid uid/gid values with perl define
+	  instead of the value.  The current check failed for root, as that
+	  returns '0' (zero) that was interpreted as false...
+	* Changed the real login names, kolab, kolab-n and kolab-r to resp.
+	  @kolab_mgrp@, @kolab_usr@ and @kolab_rusr@.  The same thing
+	  was done for the groups
+
+2006-01-07 Richard Bos <richard@radoeka.nl>
+	* Kolab-Conf/Conf.pm.in: do not crash when the file to be checked
+	  does not exists.
+	  Give a hint _which_ config file can not be moved
+
+2006-01-03 Richard Bos <richard@radoeka.nl>
+	* Makefile.am: distribute only the files to be distributed
+	  from the dist_conf directory
+	  Added a distclean-local rule to remove the directory autom4te.cache
+
+2005-12-30 Richard Bos <richard@radoeka.nl>
+	* Kolab/Makefile.am,
+	  Kolab-Conf/Makefile.am,
+	  Kolab-Cyrus/Makefile.am,
+	  Kolab-DirServ/Makefile.am,
+	  Kolab-LDAP/Makefile.am,
+	  Kolab-LDAP-Backend/Makefile.am,
+	  Kolab-LDAP-Backend-ad/Makefile.am,
+	  Kolab-LDAP-Backend-dirservd/Makefile.am,
+	  Kolab-LDAP-Backend-slurpd/Makefile.am,
+	  Kolab-Mailer/Makefile.am,
+	  Kolab-Util/Makefile.am: removed.  Not needed anymore due
+	  to conversion from autoperl to autotools
+
+2005-12-30 Marcus Hüwe <suse-tux@gmx.de>
+	Patch committed by Richard Bos, see issue1047
+	* Kolab/Kolab.pm.in: replaced @bindir@/openpkg with @KOLABRC@
+
+2005-12-29 Martin Konold <martin.konold@erfrakon.de>
+	* configure: removed, not needed anymore due to the conversion to
+	  autotools from autoperl. See issue1038
+
+2005-12-19 Richard Bos <richard@radoeka.nl>
+	* configure.ac: added no-dist-gzip to AM_INIT_AUTOMAKE
+	* Makefile.cvs: reflected change in configure.ac, to create only bzipped
+	  tarbals.  Changed 'make dist' into 'make distcheck'
+
+2005-12-17 Richard Bos <richard@radoeka.nl>
+	* dist_conf/gentoo, dist_conf/kolab: removed, they are
+	  not needed anymore as the dist_conf files from kolabd
+	  are used.
+
+2005-12-17 Richard Bos <richard@radoeka.nl>
+	* NEWS: added
+	* Makefile.cvs,
+	  perl-kolab.spec.in: updated so the build completes
+	  with the new autoconfiscated perl-kolab
+
+2005-12-17 Marcus Hüwe <suse-tux@gmx.de>
+	Patch committed by Richard Bos
+	* bootstrap: added
+	* ChangeLog: added
+	* Kolab/Kolab.pm,
+	  Kolab-Conf/Conf.pm,
+	  Kolab-DirServ/DirServ.pm,
+	  Kolab-LDAP/LDAP.pm,
+	  Kolab-LDAP-Backend-slurpd/slurpd.pm,
+	  Kolab-Mailer/Mailer.pm: are working now with the updated
+	  kolabd/kolabd/dist_conf file
+	* Kolab/Makefile.am,
+	  Kolab-Mailer/Makefile.am,
+	  Kolab-Conf/Makefile.am,
+	  Kolab-LDAP/Makefile.am,
+	  Kolab-Util/Makefile.am,
+	  Kolab-Cyrus/Makefile.am,
+	  Kolab-LDAP-Backend/Makefile.am,
+	  Kolab-LDAP-Backend-ad/Makefile.am,
+	  Kolab-LDAP-Backend-slurpd/Makefile.am,
+	  Kolab-DirServ/Makefile.am,
+	  Kolab-LDAP-Backend-dirservd/Makefile.am,
+	  Makefile.am: are removed
+	* Kolab/Makefile.PL,
+	  Kolab-Mailer/Makefile.PL,
+	  Kolab-Conf/Makefile.PL,
+	  Kolab-LDAP/Makefile.PL,
+	  Kolab-Util/Makefile.PL,
+	  Kolab-Cyrus/Makefile.PL,
+	  Kolab-LDAP-Backend/Makefile.PL,
+	  Kolab-LDAP-Backend-ad/Makefile.PL,
+	  Kolab-LDAP-Backend-slurpd/Makefile.PL,
+	  Kolab-DirServ/Makefile.PL,
+	  Kolab-LDAP-Backend-dirservd/Makefile.PL: are removed
