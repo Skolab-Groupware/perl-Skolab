@@ -4,59 +4,24 @@
 ## DP: Debian specific invocation of services
 
 @DPATCH@
-Index: b/lib/Kolab/Conf.pm
-===================================================================
 --- a/lib/Kolab/Conf.pm
 +++ b/lib/Kolab/Conf.pm
-@@ -855,38 +855,28 @@
- {
-     if ($haschanged{'slapd'}) {
-         &Kolab::log('K', 'Restarting OpenLDAP...');
--        system("$Kolab::config{'KOLABRC'} rc openldap restart &");
-+        system("invoke-rc.d slapd restart &");
-     }
- 
-     if ($haschanged{'saslauthd'}) {
-         &Kolab::log('K', 'Restarting SASLAuthd...');
--        system("$Kolab::config{'KOLABRC'} rc sasl stop; sleep 1; $Kolab::config{sbindir}/saslauthd -a ldap -n 5");
-+        system("invoke-rc.d saslauthd restart");
-     }
- 
-     if ($haschanged{'apache'}) {
-         &Kolab::log('K', 'Reloading Apache...');
--        system("$Kolab::config{sbindir}/apachectl graceful");
-+        system("invoke-rc.d apache2 graceful");
-     }
- 
-     if ($haschanged{'postfix'}) {
-         &Kolab::log('K', 'Reloading Postfix...');
--        system("$Kolab::config{sbindir}/postfix reload");
-+        system("invoke-rc.d postfix reload");
-     }
- 
-     if ($haschanged{'imapd'}) {
-         &Kolab::log('K', 'Restarting imapd...');
- 	# Would it be enough with a reload here? /steffen
--        system("$Kolab::config{'KOLABRC'} rc imapd restart");
--    }
--
--    if ($haschanged{'amavisd'}) {
--        &Kolab::log('K', 'Restarting amavisd...');
--        system("$Kolab::config{'KOLABRC'} rc amavisd restart");
--    }
--
--    if ($haschanged{'clamav'}) {
--        &Kolab::log('K', 'Restarting clamav...');
--        system("$Kolab::config{'KOLABRC'} rc clamav restart");
-+        system("invoke-rc.d kolab-cyrus restart");
-     }
- 
-     %Kolab::Conf::haschanged = ();
-Index: b/sbin/kolab_bootstrap.in
-===================================================================
+@@ -642,10 +642,11 @@
+         # $cmd can contain:
+         # - /usr/sbin/postmap: should always be executed
+         # - openpkg rc imapd restart (in openpkg distribution)
++        # - invoke-rc.d slapd restart (in Debian distribution)
+         # - kolabsrv rc post reload  (in other distributions)
+         # The commands with ' rc ' may only be executed when reloading is not
+         # prohibited by the user with the "-n" option.
+-        if ($args{doreload} || $cmd !~ / rc \S+ re(start|load)/) {
++        if ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) \S+ re(start|load)/) {
+             Kolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+             system($cmd);
+         } else {
 --- a/sbin/kolab_bootstrap.in
 +++ b/sbin/kolab_bootstrap.in
-@@ -112,7 +112,7 @@
+@@ -118,7 +118,7 @@
      print ("Error: Found $name running on Port $port\n");
      print ("Check your installation!\n");
      print ("You must stop the service $name before running Kolab\n");
@@ -65,41 +30,41 @@ Index: b/sbin/kolab_bootstrap.in
      exit 1;
    }
  }
-@@ -645,7 +645,7 @@
+@@ -678,7 +678,7 @@
  
     if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
        print "\nkill temporary slapd\n\n";
--      system("$Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} stop");
+-      system("$Kolab::config{'KOLABRC'} rc openldap stop");
 +      system("invoke-rc.d slapd stop");
        sleep 1; # actually race should be impossible
        system("killall -9 slapd >/dev/null 2>&1");
     }
-@@ -698,7 +698,7 @@
+@@ -731,7 +731,7 @@
    ##### Slave server setup
  
    print "stop running slapd (if any)\n";
--  kolab_system("$Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} stop");
+-  kolab_system("$Kolab::config{'KOLABRC'} rc openldap stop");
 +  kolab_system("invoke-rc.d slapd stop");
  
    # Make sure that no rogue demons are running
    tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
-@@ -822,9 +822,9 @@
+@@ -856,9 +856,9 @@
  is copied over to this slave. Please make sure that this slave is entered into the list
  of kolabhosts on the master before proceeding.
  EOS
--    kolab_system("ssh -C $master_host \'$Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} stop".
+-    kolab_system("ssh -C $master_host \'$Kolab::config{'KOLABRC'} rc openldap stop".
 +    kolab_system("ssh -C $master_host \'invoke-rc.d slapd stop".
                   " && $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pcf - openldap-data".
--                 " && $Kolab::config{'KOLABRC'} rc $Kolab::config{'LDAPD'} start\'".
+-                 " && $Kolab::config{'KOLABRC'} rc openldap start\'".
 +                 " && invoke-rc.d slapd start\'".
                   " | $Kolab::config{'TAR'} -C $Kolab::config{'ldapserver_statedir'} -pxf -");
    }
  
-@@ -916,6 +916,6 @@
+@@ -951,6 +951,6 @@
  
  #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
  print "kolab is now ready to run!\n";
 -print "please run '$Kolab::config{'KOLABRC'} rc all start'\n";
 +print "please restart all the daemons\n";
- print ("Use login=manager and passwd=" . Encode::decode_utf8($bind_pw) . " when you log into\n");
+ print ("Use login=manager and passwd=$bind_pw when you log into\n");
  print ("the webinterface https://$fqdn$Kolab::config{'kolab_wui'} !\n");

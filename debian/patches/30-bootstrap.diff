@@ -4,11 +4,9 @@ Author: Noèl Köthe <noel@debian.org>
 
 Upstream status: Parts can be or have been included
 
-Index: b/sbin/kolab_bootstrap.in
-===================================================================
 --- a/sbin/kolab_bootstrap.in
 +++ b/sbin/kolab_bootstrap.in
-@@ -221,7 +221,7 @@
+@@ -261,7 +261,7 @@
  
  print ("Excellent all required Ports are available!\n");
  
@@ -17,9 +15,9 @@ Index: b/sbin/kolab_bootstrap.in
  if ($?==0) {
    print ("\nFound existing configuration\n");
    print "\nBootstrapping Kolab will overwrite old configuration\n";
-@@ -320,6 +320,18 @@
-   print "Proceeding with master server setup\n\n";
- }
+@@ -376,6 +376,18 @@
+ 
+ $Kolab::config{"is_master"} = $is_master;
  
 +# enable saslauthd by default
 +copy("/etc/default/saslauthd", "/etc/default/saslauthd.orig") || die "could not read /etc/default/saslauthd.orig";
@@ -36,7 +34,7 @@ Index: b/sbin/kolab_bootstrap.in
  if ( $is_master eq "true" ) {
    ##### Master server setup
    getopt('f');
-@@ -408,6 +420,9 @@
+@@ -465,6 +477,9 @@
      }
    };
  
@@ -46,8 +44,8 @@ Index: b/sbin/kolab_bootstrap.in
    my $confname = "$Kolab::config{'sasl_smtpconffile'}";
    copy("@CONFIG_DIR@/templates/smtpd.conf.template", $confname) || die "could not write to $confname";
  
-@@ -441,12 +456,15 @@
-       Kolab::Conf::bootstrapConfig();
+@@ -506,13 +521,16 @@
+         );
        $Kolab::config{"bootstrap_config"} = 'false';
  
 +      #ldap server should access to certificate key
@@ -57,22 +55,14 @@ Index: b/sbin/kolab_bootstrap.in
        print "temporarily starting slapd\n";
        $ldap_uri = "ldap://127.0.0.1:389/";
        # ensure that the database has correct permissions
-       system("chown $Kolab::config{'ldapserver_rusr'}:$Kolab::config{'ldapserver_grp'} $Kolab::config{'ldapserver_dir'}/*");
+       @files = <$Kolab::config{'ldapserver_dir'}/*>;
+       system("chown $Kolab::config{'ldapserver_rusr'}:$Kolab::config{'ldapserver_grp'} $Kolab::config{'ldapserver_dir'}/*") if (@files);
 -      (system("$Kolab::config{'libexecdir'}/openldap/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
 +      (system("/usr/sbin/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
        print ("Waiting for OpenLDAP to start\n");
        sleep 10;
  
-@@ -781,7 +799,7 @@
-   chmod 0600, $kolab_config;
-   kolab_chown "$Kolab::config{'kolab_musr'}","$Kolab::config{'kolab_mgrp'}",$kolab_config;
- 
--  if ($kolab_config{'directory_mode'} ne "syncrepl" ) {
-+  if ($Kolab::config{'directory_mode'} ne "syncrepl" ) {
-     print << 'EOS';
- Now the master server needs to be stopped briefly while the contents of the LDAP database
- is copied over to this slave. Please make sure that this slave is entered into the list
-@@ -878,6 +896,9 @@
+@@ -949,6 +967,9 @@
    chmod 0600, $kolab_config;
  }
  

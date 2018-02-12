@@ -7,45 +7,30 @@ Author: Mathieu Parent <math.parent@gmail.com>
 
 Upstream status: https://issues.kolab.org/issue3000
 
-Index: libkolab-perl-2.2.4-20100624/lib/Kolab/Conf.pm
-===================================================================
---- libkolab-perl-2.2.4-20100624.orig/lib/Kolab/Conf.pm	2010-09-13 21:18:54.000000000 +0200
-+++ libkolab-perl-2.2.4-20100624/lib/Kolab/Conf.pm	2010-09-14 08:28:22.000000000 +0200
-@@ -295,7 +295,7 @@
-                 $haschanged{'saslauthd'} = 1;
-             } elsif ($cfg =~ /apache/) {
-                 $haschanged{'apache'} = 1;
--            } elsif ($cfg =~ /openldap/) {
-+            } elsif ($cfg =~ /openldap/ || $cfg =~ /slapd/) {
-                 $haschanged{'slapd'} = 1;
-             } elsif ($cfg =~ /(imapd|cyrus)/) {
-                 $haschanged{'imapd'} = 1;
-@@ -854,8 +854,17 @@
- sub reload
- {
-     if ($haschanged{'slapd'}) {
--        &Kolab::log('K', 'Restarting OpenLDAP...');
--        system("invoke-rc.d slapd restart &");
-+        &Kolab::log('K', 'Stopping OpenLDAP...');
-+        system("invoke-rc.d slapd stop");
-+        &Kolab::log('K', 'Deleting old slapd config...');
-+        system("rm -rf $Kolab::config{'ldapserver_confdir'}/slapd.d");
-+        &Kolab::log('K', 'Converting slapd config... (most errors here can be ignored)');
-+        system("mkdir $Kolab::config{'ldapserver_confdir'}/slapd.d");
-+        system("slaptest -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -F $Kolab::config{'ldapserver_confdir'}/slapd.d");
-+        system("chown -R openldap $Kolab::config{'ldapserver_confdir'}/slapd.d");
-+        system("chgrp -R openldap $Kolab::config{'ldapserver_confdir'}/slapd.d");
-+        &Kolab::log('K', 'Starting OpenLDAP...');
-+        system("invoke-rc.d slapd start");
-     }
- 
-     if ($haschanged{'saslauthd'}) {
-Index: libkolab-perl-2.2.4-20100624/sbin/kolab_bootstrap.in
-===================================================================
---- libkolab-perl-2.2.4-20100624.orig/sbin/kolab_bootstrap.in	2010-09-14 08:13:09.000000000 +0200
-+++ libkolab-perl-2.2.4-20100624/sbin/kolab_bootstrap.in	2010-09-14 08:27:09.000000000 +0200
-@@ -489,6 +489,14 @@
-       Kolab::Conf::bootstrapConfig();
+--- a/lib/Kolab/Conf.pm
++++ b/lib/Kolab/Conf.pm
+@@ -649,6 +649,17 @@
+         if ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) \S+ re(start|load)/) {
+             Kolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+             system($cmd);
++        } elsif ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) (slapd|openldap) re(start|load)/) {
++            &Kolab::log('K', 'Stopping OpenLDAP...');
++            system("invoke-rc.d slapd stop");
++            &Kolab::log('K', 'Deleting slapd.d/ config...');
++            system("rm -rf $Kolab::config{'ldapserver_confdir'}/slapd.d");
++            &Kolab::log('K', 'Converting slapd config... (most errors here can be ignored)');
++            system("mkdir $Kolab::config{'ldapserver_confdir'}/slapd.d");
++            system("slaptest -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -F $Kolab::config{'ldapserver_confdir'}/slapd.d");
++            system("chown -R openldap:openldap $Kolab::config{'ldapserver_confdir'}/slapd.d");
++            &Kolab::log('K', 'Starting OpenLDAP...');
++            system("invoke-rc.d slapd start");
+         } else {
+             Kolab::log('T', 'Reload not allowed, not executing command: '.$cmd, KOLAB_DEBUG );
+         }
+--- a/sbin/kolab_bootstrap.in
++++ b/sbin/kolab_bootstrap.in
+@@ -521,6 +521,14 @@
+         );
        $Kolab::config{"bootstrap_config"} = 'false';
  
 +      print "Deleting old slapd config...\n";
@@ -59,12 +44,12 @@ Index: libkolab-perl-2.2.4-20100624/sbin/kolab_bootstrap.in
        #ldap server should access to certificate key
        system("adduser --quiet $Kolab::config{'ldapserver_rusr'} $Kolab::config{'pki_grp'}");
  
-@@ -497,7 +505,7 @@
-       $ldap_uri = "ldap://127.0.0.1:389/";
+@@ -530,7 +538,7 @@
        # ensure that the database has correct permissions
-       system("chown $Kolab::config{'ldapserver_rusr'}:$Kolab::config{'ldapserver_grp'} $Kolab::config{'ldapserver_dir'}/*");
+       @files = <$Kolab::config{'ldapserver_dir'}/*>;
+       system("chown $Kolab::config{'ldapserver_rusr'}:$Kolab::config{'ldapserver_grp'} $Kolab::config{'ldapserver_dir'}/*") if (@files);
 -      (system("/usr/sbin/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.conf -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
-+      (system("/usr/sbin/slapd -h ldap://127.0.0.1:389/ -F $Kolab::config{'ldapserver_confdir'}/slapd.d -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
++      (system("/usr/sbin/slapd -h ldap://127.0.0.1:389/ -f $Kolab::config{'ldapserver_confdir'}/slapd.d -u $Kolab::config{'ldapserver_rusr'} -g $Kolab::config{'ldapserver_grp'}") == 0 ) || die( "Could not start temporary slapd: $!" );
        print ("Waiting for OpenLDAP to start\n");
        sleep 10;
  

@@ -4,11 +4,9 @@ Author: Mathieu Parent <math.parent@gmail.com>
 
 Upstream status: Changes are ongoing on HEAD
 
-Index: b/Makefile.PL
-===================================================================
 --- a/Makefile.PL
 +++ b/Makefile.PL
-@@ -170,11 +170,11 @@
+@@ -118,11 +118,11 @@
  
  # older versions of ExtUtils:MakeMaker don't support INSTALLVENDORSCRIPT
  my $installscript = "";
@@ -24,15 +22,3 @@ Index: b/Makefile.PL
  
  WriteMakefile(
      NAME              => 'perl-kolab',
-Index: b/kolab.mk
-===================================================================
---- a/kolab.mk
-+++ b/kolab.mk
-@@ -1,5 +1,6 @@
- # Set KOLABDIR to the base directory of the OpenPKG/Kolab installation:
--KOLABDIR = $(shell openpkg rpm -q --qf '%{INSTALLPREFIX}\n' openpkg)
-+#KOLABDIR = $(shell openpkg rpm -q --qf '%{INSTALLPREFIX}\n' openpkg)
-+KOLABDIR = /notexistentdir
- 
- ifeq ($(KOLABDIR),)
-   $(error Could not determine KOLABDIR!)

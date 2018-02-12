@@ -4,11 +4,9 @@ Author: Mathieu Parent <math.parent@gmail.com>
 
 Upstream status: Specific to Debian
 
-Index: b/sbin/kolab_bootstrap.in
-===================================================================
 --- a/sbin/kolab_bootstrap.in
 +++ b/sbin/kolab_bootstrap.in
-@@ -498,7 +498,7 @@
+@@ -564,7 +564,7 @@
          'postfix-mynetworks' => $mynetworkinterfaces,
          #'postfix-relayhost' => "",
          #'postfix-transport' => "",
