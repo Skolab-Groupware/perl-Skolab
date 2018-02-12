@@ -446,12 +446,12 @@ sub createObject
 
     # No action for groups or external
     return if( $objuidfield eq '' );
-    my $uid = lc(trim($object->get_value($objuidfield))) || 0;
+    my $uid = lc(trim($object->get_value($objuidfield) || "")) || 0;
     return unless $uid;
     return if( $objuidfield eq 'mail' && !$object->get_value('uid') );
 
-    my $kolabhomeserver = lc($object->get_value('kolabhomeserver'));
-    my $kolabimapserver = lc($object->get_value('kolabimapserver'));
+    my $kolabhomeserver = lc($object->get_value('kolabhomeserver') || "");
+    my $kolabimapserver = lc($object->get_value('kolabimapserver') || "");
     my $islocal = 1;
     my $del = $object->get_value($Kolab::config{$p . '_field_deleted'}, asref => 1);
     if( ref($del) eq 'ARRAY' && @$del > 0 ) {
