@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolabquotawarn - Kolab quota warn tool
+skolabquotawarn - Skolab quota warn tool
 
 =head1 SYNOPSIS
 
-B<kolabquotawarn> [B<-d>]
+B<skolabquotawarn> [B<-d>]
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -56,15 +56,15 @@ use DB_File;
 use Mail::Message;
 use Mail::Transport::SMTP;
 use Cyrus::IMAP::Admin;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::LDAP;
 use File::Basename;
 use vars qw($opt_d);
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
-Skolab::LDAP::startup($Skolab::config{'kolab_statedir'});
+Skolab::LDAP::startup($Skolab::config{'skolab_statedir'});
 
 getopts('d');
 if ($opt_d) {
@@ -115,12 +115,12 @@ my $verbose = 0;
 my $warninterval = 60*60*24; # seconds between warnings
 my $warnmessage = '';
 my $quotawarnpct = $Skolab::config{'cyrus-quotawarn'};
-fatal_exit( "Can't read configuration, please make sure that kolabquotawarn runs with sufficient privileges")
+fatal_exit( "Can't read configuration, please make sure that skolabquotawarn runs with sufficient privileges")
   unless $quotawarnpct
   && $Skolab::config{'cyrus_admin'}
   && $Skolab::config{'cyrus_admin_pw'};
 my %quotawarn_db;
-my $warnh = new IO::File "< $Skolab::config{'kolab_quotawarning'}";
+my $warnh = new IO::File "< $Skolab::config{'skolab_quotawarning'}";
 if( defined($warnh) ) {
   $warnmessage = join( '', $warnh->getlines );
   $warnmessage =~ s/<admin>/MAILER-DAEMON/g;
@@ -129,7 +129,7 @@ if( defined($warnh) ) {
   fatal_exit( "Can't open quotawarning.txt" );
 }
 
-dbmopen( %quotawarn_db, "$Skolab::config{'kolab_statedir'}/quotawarn.db", 0666 )
+dbmopen( %quotawarn_db, "$Skolab::config{'skolab_statedir'}/quotawarn.db", 0666 )
   || fatal_exit ('Unable to open quotawarn db');
 
 if( $opt_d ) {
@@ -169,7 +169,7 @@ sub mailuser {
   }
 }
 
-sub kolablistquotas {
+sub skolablistquotas {
   my ( $cyrus, $pattern, $ref, $warnpct ) = @_;
   my @mailboxes = $cyrus->list($pattern, $ref);
   foreach my $mailbox (@mailboxes) {
@@ -222,8 +222,8 @@ $cyrus->authenticate(
   || fatal_exit("Unable to authenticate with Cyrus admin interface");
 
 ### Mail offending users
-kolablistquotas( $cyrus, 'user/*', '*', $quotawarnpct );
+skolablistquotas( $cyrus, 'user/*', '*', $quotawarnpct );
 #print "\nSHARED FOLDERS:\n---------------\n";
-#kolablistquotas( $cyrus, 'user.*', '*', 80 );
+#skolablistquotas( $cyrus, 'user.*', '*', 80 );
 
 mylog( $syslog_priority, "shutting down") if $verbose;
