@@ -11,24 +11,24 @@ Upstream status: https://issues.kolab.org/issue3000
 +++ b/lib/Skolab/Conf.pm
 @@ -649,6 +649,17 @@
          if ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) \S+ re(start|load)/) {
-             Skolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+             Skolab::log('T', 'Executing command: '.$cmd, SKOLAB_DEBUG );
              system($cmd);
 +        } elsif ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) (slapd|openldap) re(start|load)/) {
-+            &Skolab::log('K', 'Stopping OpenLDAP...');
++            &Skolab::log('S', 'Stopping OpenLDAP...');
 +            system("invoke-rc.d slapd stop");
-+            &Skolab::log('K', 'Deleting slapd.d/ config...');
++            &Skolab::log('S', 'Deleting slapd.d/ config...');
 +            system("rm -rf $Skolab::config{'ldapserver_confdir'}/slapd.d");
-+            &Skolab::log('K', 'Converting slapd config... (most errors here can be ignored)');
++            &Skolab::log('S', 'Converting slapd config... (most errors here can be ignored)');
 +            system("mkdir $Skolab::config{'ldapserver_confdir'}/slapd.d");
 +            system("slaptest -f $Skolab::config{'ldapserver_confdir'}/slapd.conf -F $Skolab::config{'ldapserver_confdir'}/slapd.d");
 +            system("chown -R openldap:openldap $Skolab::config{'ldapserver_confdir'}/slapd.d");
-+            &Skolab::log('K', 'Starting OpenLDAP...');
++            &Skolab::log('S', 'Starting OpenLDAP...');
 +            system("invoke-rc.d slapd start");
          } else {
-             Skolab::log('T', 'Reload not allowed, not executing command: '.$cmd, KOLAB_DEBUG );
+             Skolab::log('T', 'Reload not allowed, not executing command: '.$cmd, SKOLAB_DEBUG );
          }
---- a/sbin/kolab_bootstrap.in
-+++ b/sbin/kolab_bootstrap.in
+--- a/sbin/skolab_bootstrap.in
++++ b/sbin/skolab_bootstrap.in
 @@ -521,6 +521,14 @@
          );
        $Skolab::config{"bootstrap_config"} = 'false';

@@ -21,4 +21,4 @@ Upstream status: Changes are ongoing on HEAD
 +#}
  
  WriteMakefile(
-     NAME              => 'perl-kolab',
+     NAME              => 'perl-skolab',
