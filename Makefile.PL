@@ -7,10 +7,10 @@ use Getopt::Long;
 use File::Copy;
 
 my $HELP = 0;
-my $CONFIG = '/kolab/etc/kolab';
-my $INSTALLSCRIPT = '/kolab/bin';
-my $INSTALLSBIN = '/kolab/sbin';
-my $INSTALLETC = '/kolab/etc/kolab';
+my $CONFIG = '/skolab/etc/skolab';
+my $INSTALLSCRIPT = '/skolab/bin';
+my $INSTALLSBIN = '/skolab/sbin';
+my $INSTALLETC = '/skolab/etc/skolab';
 
 GetOptions(
     "config=s" => \$CONFIG,
@@ -21,13 +21,13 @@ GetOptions(
     );
 
 if ($HELP) {
-  print <<'EOH';
+  print <<"EOH";
 Usage: perl Makefile.PL [--config CONFIG_DIR] [--bin BIN_DIR] [--sbin SBIN_DIR]  [--etc ETC_DIR] --help
 
 Option config
 
-  to specify the path to the kolab configuration directory. The
-  default is /kolab/etc/kolab/ but this may vary depending on your
+  to specify the path to the skolab configuration directory. The
+  default is ${CONFIG} but this may vary depending on your
   installation.
 
 Option bin
@@ -76,7 +76,7 @@ sbin/%: sbin/%.in
 	rm \$@.tmp
 	\$(FIXIN) \$@
 
-SBIN_TARGETS=sbin/kolabconf sbin/kolab_bootstrap sbin/kolab_imappartitions sbin/kolabd sbin/kolabcheckperm
+SBIN_TARGETS=sbin/skolabconf sbin/skolab_bootstrap sbin/skolab_imappartitions sbin/skolabd sbin/skolabcheckperm
 
 install_sbin: \$(SBIN_TARGETS)
 	mkdir -p \$(DESTDIR)/$INSTALLSBIN
@@ -91,14 +91,14 @@ install_etc:
 	  cp \$\$ETC \$(DESTDIR)/$INSTALLETC;        \\
 	done
 
-# Upload location for the fileserver. Configure the kolab filesserver
+# Upload location for the fileserver. Configure the skolab filesserver
 # in your ssh config at ~/.ssh/config. E.g.:
 #
-# Host=kolabfiles
+# Host=skolabfiles
 # User=wrobel
-# Hostname=files.kolab.org
+# Hostname=files.skolab.org
 #
-FILESERVER = kolabfiles
+FILESERVER = skolabfiles
 
 # Short name for uploading the snapshot.
 .PHONY:snapshot
@@ -114,7 +114,7 @@ snapshot: .sent-\$(DISTVNAME).tar\$(SUFFIX)
 }
 
 use lib "lib";
-require "Kolab.pm";
+require "Skolab.pm";
 
 # older versions of ExtUtils:MakeMaker don't support INSTALLVENDORSCRIPT
 my $installscript = "";
@@ -125,29 +125,29 @@ if ($ExtUtils::MakeMaker::VERSION >= 6.42) {
 }
 
 WriteMakefile(
-    NAME              => 'perl-kolab',
+    NAME              => 'perl-skolab',
     VERSION           => $Skolab::VERSION,
     INSTALLDIRS       => 'vendor',
-    EXE_FILES         => [ 'bin/kolab_smtpdpolicy',
-                           'bin/kolabquotareport',
-                           'bin/kolabdcachetool',
-                           'bin/kolabpasswd',
-                           'bin/kolabquotawarn'],
+    EXE_FILES         => [ 'bin/skolab_smtpdpolicy',
+                           'bin/skolabquotareport',
+                           'bin/skolabdcachetool',
+                           'bin/skolabpasswd',
+                           'bin/skolabquotawarn'],
     MAN1PODS          => {
-                           'bin/kolab_smtpdpolicy'     => 'blib/man1/kolab_smtpdpolicy.1p',
-                           'bin/kolabquotareport'      => 'blib/man1/kolabquotareport.1p',
-                           'bin/kolabdcachetool'       => 'blib/man1/kolabdcachetool.1p',
-                           'bin/kolabpasswd'           => 'blib/man1/kolabpasswd.1p',
-                           'bin/kolabquotawarn'        => 'blib/man1/kolabquotawarn.1p',
-                           'sbin/kolab_bootstrap'      => 'blib/man1/kolab_bootstrap.1p',
-                           'sbin/kolab_imappartitions' => 'blib/man1/kolab_imappartitions.1p',
-                           'sbin/kolabcheckperm'       => 'blib/man1/kolabcheckperm.1p',
-                           'sbin/kolabconf'            => 'blib/man1/kolabconf.1p',
-                           'sbin/kolabd'               => 'blib/man1/kolabd.1p',
+                           'bin/skolab_smtpdpolicy'     => 'blib/man1/skolab_smtpdpolicy.1p',
+                           'bin/skolabquotareport'      => 'blib/man1/skolabquotareport.1p',
+                           'bin/skolabdcachetool'       => 'blib/man1/skolabdcachetool.1p',
+                           'bin/skolabpasswd'           => 'blib/man1/skolabpasswd.1p',
+                           'bin/skolabquotawarn'        => 'blib/man1/skolabquotawarn.1p',
+                           'sbin/skolab_bootstrap'      => 'blib/man1/skolab_bootstrap.1p',
+                           'sbin/skolab_imappartitions' => 'blib/man1/skolab_imappartitions.1p',
+                           'sbin/skolabcheckperm'       => 'blib/man1/skolabcheckperm.1p',
+                           'sbin/skolabconf'            => 'blib/man1/skolabconf.1p',
+                           'sbin/skolabd'               => 'blib/man1/skolabd.1p',
                          },
     $installscript    => $INSTALLSCRIPT,
     ABSTRACT          => 
-'perl-kolab provides a basic set of perl modules required for the
-Kolab Groupware server.',
+'perl-skolab provides a basic set of perl modules required for the
+Skolab Groupware server.',
     AUTHOR            => 'Stuart Bingë and others (see AUTHORS file)'
     );
