@@ -32,7 +32,7 @@ use URI;
 use Net::LDAP;
 use Skolab::Util;
 #use Skolab::LDAP;
-use vars qw(%config $reloadOk);
+use vars qw(%config);
 
 require Exporter;
 
@@ -41,7 +41,6 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = (
     'all' => [ qw(
         %config
-	$reloadOk
         &reloadConfig
         &reload
         &log
@@ -89,6 +88,7 @@ sub reloadConfig
     my $ldap;
 
     my $error = 0;
+    my $ret = undef;
 
     # `log_level' specifies what severity of messages we want to see in the logs.
     #   Possible values are:
@@ -103,7 +103,8 @@ sub reloadConfig
 
     # Return if we should only read the base information.
     if ($globals_only) {
-	return;
+       $ret = 1;
+       return $ret;
     }
 
     # Determine the root of the skolab installation, and read `skolab.globals'
@@ -114,8 +115,8 @@ sub reloadConfig
     $tempval = (getpwnam($config{'skolab_musr'}))[7];
     if (! defined $tempval) {
         $config{'log_level'} = SKOLAB_WARN;
-        &log('C', 'Unable to determine the skolab user main directory', SKOLAB_ERROR);
-	$error = 1;
+        &log('C', 'Unable to determine the kolab user main directory', SKOLAB_ERROR);
+        $ret = 0;
     }
 
     # Now read `skolab.conf', overwriting values read from `skolab.globals'
@@ -130,43 +131,43 @@ sub reloadConfig
     $config{'skolab_uid'} = (getpwnam($config{'skolab_musr'}))[2];
     if (!defined $config{'skolab_uid'}) {
         &log('C', "Unable to determine the uid of user '$config{'skolab_musr'}'", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     $config{'skolab_gid'} = (getgrnam($config{'skolab_mgrp'}))[2];
     if (!defined $config{'skolab_gid'}) {
         &log('C', "Unable to determine the gid of user '$config{'skolab_mgrp'}'", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     $config{'skolab_n_uid'} = (getpwnam($config{'skolab_usr'}))[2];
     if (!defined $config{'skolab_n_uid'}) {
         &log('C', "Unable to determine the uid of user '$config{'skolab_usr'}", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     $config{'skolab_n_gid'} = (getgrnam($config{'skolab_grp'}))[2];
     if (!defined $config{'skolab_n_gid'}) {
         &log('C', "Unable to determine the gid of user $config{'skolab_grp'}", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     $config{'skolab_r_uid'} = (getpwnam($config{'skolab_rusr'}))[2];
     if (!defined $config{'skolab_r_uid'}) {
         &log('C', "Unable to determine the uid of user '$config{'skolab_rusr'}'", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     $config{'skolab_r_gid'} = (getgrnam($config{'skolab_rgrp'}))[2];
     if (!defined $config{'skolab_r_gid'}) {
         &log('C', "Unable to determine the gid of user '$config{'skolab_rgrp'}'", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     # Make sure the critical variables we need were defined in skolab.conf
     if (!exists $config{'bind_dn'} || !exists $config{'bind_pw'} || !exists $config{'ldap_uri'} || !exists $config{'base_dn'}) {
         &log('C', "One or more required configuration variables (`bind_dn', `bind_pw', `ldap_uri' and/or `base_dn') are missing in `skolab.conf'", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     }
 
     # Make a hash of the bind password available too
@@ -179,7 +180,7 @@ sub reloadConfig
     # Retrieve the LDAP values of the main skolab object to complete our config hash
     if (!($tempval = URI->new($config{'ldap_uri'}))) {
         &log('C', "Unable to parse ldap_uri `" . $config{'ldap_uri'} . "'", SKOLAB_ERROR);
-	$error = 1;
+        $ret = 0;
     } else {
         $config{'ldap_ip'} = $tempval->host;
         $config{'ldap_port'} = $tempval->port;
@@ -196,13 +197,13 @@ sub reloadConfig
 
         if (!($ldap = Net::LDAP->new($config{'ldap_uri'}, verify => 'none' ))) {
             &log('C', "Unable to connect to LDAP server `" . $config{'ldap_ip'} . ":" . $config{'ldap_port'} . "'", SKOLAB_ERROR);
-	    $error = 1;
+            $ret = 0;
         }
 
         $mesg = $ldap->bind($config{'bind_dn'}, password => $config{'bind_pw'}) if $ldap;
         if ($ldap && $mesg->code) {
             &log('C', "Unable to bind to DN `" . $config{'bind_dn'} . "'", SKOLAB_ERROR);
-	    $error = 1;
+            $ret = 0;
         }
 
         #$ldap = Skolab::LDAP::create(
@@ -234,7 +235,7 @@ sub reloadConfig
             } else {
                 &log('C', "Unable to find skolab object `" . $config{'skolab_dn'} . "'", SKOLAB_ERROR);
 #                exit(1);
-		$error = 1;
+                $ret = 0;
             }
         } else {
             &log('C', "Unable to read configuration data from LDAP", SKOLAB_WARN);
@@ -281,7 +282,7 @@ sub reloadConfig
     if (($config{'directory_mode'} eq 'syncrepl') && !defined $config{'syncrepl_cookie_file'}) {
         &log('C', "Configuration variable `syncrepl_cookie_file' is missing ".
             "in `skolab.globals' or `skolab.globals' while using `syncrepl' directory_mode", SKOLAB_ERROR);
-	    $error = 1;
+            $ret = 0;
     }
 
     # `conn_refresh_period' specifies how many minutes to wait before forceably
@@ -311,7 +312,7 @@ sub reloadConfig
     if (!($tempval = URI->new($config{'user_ldap_uri'}))) {
         &log('C', "Unable to parse user_ldap_uri `" . $config{'user_ldap_uri'} . "'", SKOLAB_ERROR);
 #        exit(1);
-	$error = 1;
+        $ret = 0;
     } else {
         $config{'user_ldap_ip'} = $tempval->host;
         $config{'user_ldap_port'} = $tempval->port;
@@ -354,7 +355,7 @@ sub reloadConfig
     if (!($tempval = URI->new($config{'sf_ldap_uri'}))) {
         &log('C', "Unable to parse sf_ldap_uri `" . $config{'sf_ldap_uri'} . "'", SKOLAB_ERROR);
 #        exit(1);
-	$error = 1;
+        $ret = 0;
     } else {
         $config{'sf_ldap_ip'} = $tempval->host;
         $config{'sf_ldap_port'} = $tempval->port;
@@ -388,7 +389,7 @@ sub reloadConfig
     if (!($tempval = URI->new($config{'group_ldap_uri'}))) {
         &log('C', "Unable to parse group_ldap_uri `" . $config{'group_ldap_uri'} . "'", SKOLAB_ERROR);
 #        exit(1);
-	$error = 1;
+        $ret = 0;
     } else {
         $config{'group_ldap_ip'} = $tempval->host;
         $config{'group_ldap_port'} = $tempval->port;
@@ -426,7 +427,13 @@ sub reloadConfig
     }
 
     &log('C', 'Finished reloading configuration');
-    $reloadOk = !$error;
+    if (!(defined($ret))) {
+      # If it's still the initial value, i.e., undef, everything worked out
+      # fine. Otherwise, it would be 0/false by now.
+      $ret = 1;
+    }
+
+    return $ret;
 }
 
 sub log
@@ -452,12 +459,12 @@ sub log
 __END__
 =head1 NAME
 
-Kolab - Perl extension for general Kolab settings.
+Skolab - Perl extension for general Skolab settings.
 
 =head1 ABSTRACT
 
-  Kolab contains code used for loading the configuration values from
-  kolab.conf and LDAP, as well as functions for logging.
+  Skolab contains code used for loading the configuration values from
+  skolab.conf and LDAP, as well as functions for logging.
 
 =head1 COPYRIGHT AND AUTHORS
 

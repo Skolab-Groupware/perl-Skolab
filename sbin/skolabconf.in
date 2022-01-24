@@ -62,7 +62,7 @@ use Skolab::Conf;
 use Skolab::LDAP;
 use vars qw($opt_d $opt_n $opt_h);
 
-Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
+my $reloadOk = Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
 openlog('skolabconf', 'cons, pid', ($Skolab::config{'syslog_facility'} || 'user'));
 
@@ -98,7 +98,7 @@ if($opt_n) {
     $do_reload = 0;
 }
 
-if( !$Skolab::reloadOk ) {
+if( !$reloadOk ) {
     my $msg = "Error loading configuration. Maybe the LDAP server is not running. Please check the system log for errors.";
     print STDERR "$msg\n";
     Skolab::log('SC', $msg);
