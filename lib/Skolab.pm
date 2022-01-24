@@ -60,7 +60,7 @@ our @EXPORT = qw(
 # The Skolab version number for the perl-skolab package
 our $SKOLAB_BASE_VERSION = "2.4";
 
-# Are current releases cvs based or is this a real release?
+# Are current releases git-based or is this a real release?
 my $SKOLAB_GIT = 1;
 
 our $SKOLAB_RELEASE = sprintf "%0004d%02d%02d", ((gmtime)[5] + 1900), ((gmtime)[4] + 1), (gmtime)[3];
