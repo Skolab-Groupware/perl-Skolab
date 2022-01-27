@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolab_imappartitions - List all imap partition
+skolab_imappartitions - List all imap partition
 
 =head1 SYNOPSIS
 
-B<kolab_imappartitions>
+B<skolab_imappartitions>
 
 =head1 COPYRIGHT AND AUTHORS
 
@@ -33,16 +33,16 @@ Project's homepage; see
 =cut
 
 use strict;
-use Kolab;
+use Skolab;
 use IO::File;
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
 my $imap_conf = "$Skolab::config{'imap_confdir'}/imapd.conf";
 
 my $file;
 if (!($file = IO::File->new($imap_conf, 'r'))) {
-    Skolab::log('T', "Unable to open IMAP configuration file `$imap_conf': $!", KOLAB_ERROR);
+    Skolab::log('T', "Unable to open IMAP configuration file `$imap_conf': $!", SKOLAB_ERROR);
     # Error, use default partition
     print "\n";
     exit(1);

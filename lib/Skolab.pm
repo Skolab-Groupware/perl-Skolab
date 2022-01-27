@@ -1,4 +1,4 @@
-package Kolab;
+package Skolab;
 
 ##  COPYRIGHT
 ##  ---------
@@ -51,38 +51,38 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-    &KOLAB_SILENT
-    &KOLAB_ERROR
-    &KOLAB_WARN
-    &KOLAB_INFO
-    &KOLAB_DEBUG
+    &SKOLAB_SILENT
+    &SKOLAB_ERROR
+    &SKOLAB_WARN
+    &SKOLAB_INFO
+    &SKOLAB_DEBUG
 );
 
-# The Kolab version number for the perl-kolab package
+# The Skolab version number for the perl-skolab package
 our $SKOLAB_BASE_VERSION = "2.4";
 
 # Are current releases cvs based or is this a real release?
-my $KOLAB_GIT = 1;
+my $SKOLAB_GIT = 1;
 
-our $KOLAB_RELEASE = sprintf "%0004d%02d%02d", ((gmtime)[5] + 1900), ((gmtime)[4] + 1), (gmtime)[3];
+our $SKOLAB_RELEASE = sprintf "%0004d%02d%02d", ((gmtime)[5] + 1900), ((gmtime)[4] + 1), (gmtime)[3];
 
 if ($SKOLAB_GIT) {
-    our $KOLAB_VERSION = $SKOLAB_BASE_VERSION . "+git";
-    our $VERSION = $KOLAB_VERSION . $KOLAB_RELEASE;
+    our $SKOLAB_VERSION = $SKOLAB_BASE_VERSION . "+git";
+    our $VERSION = $SKOLAB_VERSION . $SKOLAB_RELEASE;
 } else {
-    our $KOLAB_VERSION = $SKOLAB_BASE_VERSION;
-    our $VERSION = $KOLAB_VERSION;
+    our $SKOLAB_VERSION = $SKOLAB_BASE_VERSION;
+    our $VERSION = $SKOLAB_VERSION;
 }
 
-sub KOLAB_SILENT()      { 0 }
-sub KOLAB_ERROR()       { 1 }
-sub KOLAB_WARN()        { 2 }
-sub KOLAB_INFO()        { 3 }
-sub KOLAB_DEBUG()       { 4 }
+sub SKOLAB_SILENT()      { 0 }
+sub SKOLAB_ERROR()       { 1 }
+sub SKOLAB_WARN()        { 2 }
+sub SKOLAB_INFO()        { 3 }
+sub SKOLAB_DEBUG()       { 4 }
 
 sub reloadConfig
 {
-    my $kolab_globals = shift;
+    my $skolab_globals = shift;
     my $globals_only = shift || 0;
 
     my $tempval;
@@ -98,74 +98,74 @@ sub reloadConfig
     #     3 - Info, Warnings & Errors       (DEFAULT)
     #     4 - Debug (i.e. everything)
 
-    # First read `kolab.globals'
-    %config = readConfig(%config, $kolab_globals);
+    # First read `skolab.globals'
+    %config = readConfig(%config, $skolab_globals);
 
     # Return if we should only read the base information.
     if ($globals_only) {
 	return;
     }
 
-    # Determine the root of the kolab installation, and read `kolab.globals'
+    # Determine the root of the skolab installation, and read `skolab.globals'
     # Notice that the location of the files is handled by dist_conf,
     # so we don't use $tempval for anything other than storing it in
     # $config{'prefix'}. Once prefix is not in use anywhere, we can remove
     # this code. /steffen
-    $tempval = (getpwnam($config{'kolab_musr'}))[7];
+    $tempval = (getpwnam($config{'skolab_musr'}))[7];
     if (! defined $tempval) {
-        $config{'log_level'} = KOLAB_WARN;
-        &log('C', 'Unable to determine the kolab user main directory', KOLAB_ERROR);	
+        $config{'log_level'} = SKOLAB_WARN;
+        &log('C', 'Unable to determine the skolab user main directory', SKOLAB_ERROR);
 	$error = 1;
     }
 
-    # Now read `kolab.conf', overwriting values read from `kolab.globals'
-    %config = readConfig(\%config, $config{'kolab_locals'});
+    # Now read `skolab.conf', overwriting values read from `skolab.globals'
+    %config = readConfig(\%config, $config{'skolab_locals'});
 
     $config{'debug'} = 0 if (!exists $config{'debug'});
-    $config{'log_level'} = KOLAB_WARN if (!exists $config{'log_level'});
+    $config{'log_level'} = SKOLAB_WARN if (!exists $config{'log_level'});
 
     &log('C', 'Reloading configuration');
 
-    # Get the UID/GID of the 'kolab' users
-    $config{'kolab_uid'} = (getpwnam($config{'kolab_musr'}))[2];
-    if (!defined $config{'kolab_uid'}) {
-        &log('C', "Unable to determine the uid of user '$config{'kolab_musr'}'", KOLAB_ERROR);
+    # Get the UID/GID of the 'skolab' users
+    $config{'skolab_uid'} = (getpwnam($config{'skolab_musr'}))[2];
+    if (!defined $config{'skolab_uid'}) {
+        &log('C', "Unable to determine the uid of user '$config{'skolab_musr'}'", SKOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_gid'} = (getgrnam($config{'kolab_mgrp'}))[2];
-    if (!defined $config{'kolab_gid'}) {
-        &log('C', "Unable to determine the gid of user '$config{'kolab_mgrp'}'", KOLAB_ERROR);
+    $config{'skolab_gid'} = (getgrnam($config{'skolab_mgrp'}))[2];
+    if (!defined $config{'skolab_gid'}) {
+        &log('C', "Unable to determine the gid of user '$config{'skolab_mgrp'}'", SKOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_n_uid'} = (getpwnam($config{'kolab_usr'}))[2];
-    if (!defined $config{'kolab_n_uid'}) {
-        &log('C', "Unable to determine the uid of user '$config{'kolab_usr'}", KOLAB_ERROR);
+    $config{'skolab_n_uid'} = (getpwnam($config{'skolab_usr'}))[2];
+    if (!defined $config{'skolab_n_uid'}) {
+        &log('C', "Unable to determine the uid of user '$config{'skolab_usr'}", SKOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_n_gid'} = (getgrnam($config{'kolab_grp'}))[2];
-    if (!defined $config{'kolab_n_gid'}) {
-        &log('C', "Unable to determine the gid of user $config{'kolab_grp'}", KOLAB_ERROR);
+    $config{'skolab_n_gid'} = (getgrnam($config{'skolab_grp'}))[2];
+    if (!defined $config{'skolab_n_gid'}) {
+        &log('C', "Unable to determine the gid of user $config{'skolab_grp'}", SKOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_r_uid'} = (getpwnam($config{'kolab_rusr'}))[2];
-    if (!defined $config{'kolab_r_uid'}) {
-        &log('C', "Unable to determine the uid of user '$config{'kolab_rusr'}'", KOLAB_ERROR);
+    $config{'skolab_r_uid'} = (getpwnam($config{'skolab_rusr'}))[2];
+    if (!defined $config{'skolab_r_uid'}) {
+        &log('C', "Unable to determine the uid of user '$config{'skolab_rusr'}'", SKOLAB_ERROR);
 	$error = 1;
     }
 
-    $config{'kolab_r_gid'} = (getgrnam($config{'kolab_rgrp'}))[2];
-    if (!defined $config{'kolab_r_gid'}) {
-        &log('C', "Unable to determine the gid of user '$config{'kolab_rgrp'}'", KOLAB_ERROR);
+    $config{'skolab_r_gid'} = (getgrnam($config{'skolab_rgrp'}))[2];
+    if (!defined $config{'skolab_r_gid'}) {
+        &log('C', "Unable to determine the gid of user '$config{'skolab_rgrp'}'", SKOLAB_ERROR);
 	$error = 1;
     }
 
-    # Make sure the critical variables we need were defined in kolab.conf
+    # Make sure the critical variables we need were defined in skolab.conf
     if (!exists $config{'bind_dn'} || !exists $config{'bind_pw'} || !exists $config{'ldap_uri'} || !exists $config{'base_dn'}) {
-        &log('C', "One or more required configuration variables (`bind_dn', `bind_pw', `ldap_uri' and/or `base_dn') are missing in `kolab.conf'", KOLAB_ERROR);
+        &log('C', "One or more required configuration variables (`bind_dn', `bind_pw', `ldap_uri' and/or `base_dn') are missing in `skolab.conf'", SKOLAB_ERROR);
 	$error = 1;
     }
 
@@ -176,32 +176,32 @@ sub reloadConfig
       chomp($config{'bind_pw_hash'});
     }
 
-    # Retrieve the LDAP values of the main kolab object to complete our config hash
+    # Retrieve the LDAP values of the main skolab object to complete our config hash
     if (!($tempval = URI->new($config{'ldap_uri'}))) {
-        &log('C', "Unable to parse ldap_uri `" . $config{'ldap_uri'} . "'", KOLAB_ERROR);
+        &log('C', "Unable to parse ldap_uri `" . $config{'ldap_uri'} . "'", SKOLAB_ERROR);
 	$error = 1;
     } else {
         $config{'ldap_ip'} = $tempval->host;
         $config{'ldap_port'} = $tempval->port;
     }
 
-    # `kolab_dn' points to the main kolab object in LDAP
-    #   Defaults to `k=kolab,$base_dn' if not specified (for backwards compatibility)
-    $config{'kolab_dn'} = "k=kolab," . $config{'base_dn'} if (!exists $config{'kolab_dn'});
-    if ($config{'kolab_dn'} eq '') {
-        &log('C', "`kolab_dn' is empty; skipping LDAP read");
+    # `skolab_dn' points to the main skolab object in LDAP
+    #   Defaults to `k=skolab,$base_dn' if not specified (for backwards compatibility)
+    $config{'skolab_dn'} = "k=skolab," . $config{'base_dn'} if (!exists $config{'skolab_dn'});
+    if ($config{'skolab_dn'} eq '') {
+        &log('C', "`skolab_dn' is empty; skipping LDAP read");
     } else {
         my $mesg;
         my $ldapobject;
 
         if (!($ldap = Net::LDAP->new($config{'ldap_uri'}, verify => 'none' ))) {
-            &log('C', "Unable to connect to LDAP server `" . $config{'ldap_ip'} . ":" . $config{'ldap_port'} . "'", KOLAB_ERROR);
+            &log('C', "Unable to connect to LDAP server `" . $config{'ldap_ip'} . ":" . $config{'ldap_port'} . "'", SKOLAB_ERROR);
 	    $error = 1;
         }
 
         $mesg = $ldap->bind($config{'bind_dn'}, password => $config{'bind_pw'}) if $ldap;
         if ($ldap && $mesg->code) {
-            &log('C', "Unable to bind to DN `" . $config{'bind_dn'} . "'", KOLAB_ERROR);
+            &log('C', "Unable to bind to DN `" . $config{'bind_dn'} . "'", SKOLAB_ERROR);
 	    $error = 1;
         }
 
@@ -214,7 +214,7 @@ sub reloadConfig
         #);
         if ($ldap) {
             $mesg = $ldap->search(
-                base    => $config{'kolab_dn'},
+                base    => $config{'skolab_dn'},
                 scope   => 'base',
                 filter  => '(objectclass=*)'
             );
@@ -224,7 +224,7 @@ sub reloadConfig
 		    my $vals = $ldapobject->get_value($tempval, asref => 1 );
 		    if( !ref($vals) ) {
 		      # Not a ref at all???
-		      &log('C', "Attribute $tempval does not exist", KOLAB_WARN );
+                      &log('C', "Attribute $tempval does not exist", SKOLAB_WARN );
 		    } elsif( @{$vals} == 1 ) {
 		      $config{lc($tempval)} = $vals->[0];
 		    } else {
@@ -232,12 +232,12 @@ sub reloadConfig
 		    }
                 }
             } else {
-                &log('C', "Unable to find kolab object `" . $config{'kolab_dn'} . "'", KOLAB_ERROR);
+                &log('C', "Unable to find skolab object `" . $config{'skolab_dn'} . "'", SKOLAB_ERROR);
 #                exit(1);
 		$error = 1;
             }
         } else {
-            &log('C', "Unable to read configuration data from LDAP", KOLAB_WARN);
+            &log('C', "Unable to read configuration data from LDAP", SKOLAB_WARN);
         }
     }
 
@@ -261,7 +261,7 @@ sub reloadConfig
     $config{'cyrus_admin'} = $cmanager if (!exists $config{'cyrus_admin'});
     $config{'cyrus_admin_pw'} = $config{'bind_pw'} if (!exists $config{'cyrus_admin_pw'});
 
-    # `directory_mode' specifies what backend to use (for the main kolab
+    # `directory_mode' specifies what backend to use (for the main skolab
     # object - for the other objects see their respective XXX_directory_mode).
     # Defaults to `slurpd'
     #
@@ -280,7 +280,7 @@ sub reloadConfig
     $config{'directory_replication_mode_is_syncrepl'} = 'TRUE' if ($config{'directory_mode'} eq 'syncrepl');
     if (($config{'directory_mode'} eq 'syncrepl') && !defined $config{'syncrepl_cookie_file'}) {
         &log('C', "Configuration variable `syncrepl_cookie_file' is missing ".
-            "in `kolab.globals' or `kolab.globals' while using `syncrepl' directory_mode", KOLAB_ERROR);
+            "in `skolab.globals' or `skolab.globals' while using `syncrepl' directory_mode", SKOLAB_ERROR);
 	    $error = 1;
     }
 
@@ -290,7 +290,7 @@ sub reloadConfig
     # Defaults to one hour.
 #    $config{'conn_refresh_period'} = 60 if (!exists $config{'conn_refresh_period'});
 
-    # `slurpd_port' specifies what port the kolab slurpd replication daemon listens on
+    # `slurpd_port' specifies what port the skolab slurpd replication daemon listens on
     # Defaults to 9999 for backwards compatibility
 #    $config{'slurpd_port'} = 9999 if (!exists $config{'slurpd_port'});
 
@@ -299,9 +299,9 @@ sub reloadConfig
     # `ldap_uri', `bind_dn', `bind_pw' and `base_dn', respectively.
     #
     #   NOTE: `user_dn_list' is a semi-colon separated list of DNs, as opposed
-    #   to a single DN (such as `kolab_dn').
+    #   to a single DN (such as `skolab_dn').
     #
-    #   TODO: Expand this to allow all separate entities (kolab object, users,
+    #   TODO: Expand this to allow all separate entities (skolab object, users,
     #   shared folders, etc) to exist in user-specified locations
     #
     #   TODO: Check Postfix LDAP aliasing when user_dn_list contains more than
@@ -309,7 +309,7 @@ sub reloadConfig
     $config{'user_ldap_uri'} = $config{'ldap_uri'} if (!exists $config{'user_ldap_uri'});
 
     if (!($tempval = URI->new($config{'user_ldap_uri'}))) {
-        &log('C', "Unable to parse user_ldap_uri `" . $config{'user_ldap_uri'} . "'", KOLAB_ERROR);
+        &log('C', "Unable to parse user_ldap_uri `" . $config{'user_ldap_uri'} . "'", SKOLAB_ERROR);
 #        exit(1);
 	$error = 1;
     } else {
@@ -341,7 +341,7 @@ sub reloadConfig
         $config{'user_field_quota'} = 'userquota' if (!exists $config{'user_field_quota'});
     } else {
         # slurd/default
-        $config{'user_field_deleted'} = 'kolabdeleteflag' if (!exists $config{'user_field_deleted'});
+        $config{'user_field_deleted'} = 'skolabdeleteflag' if (!exists $config{'user_field_deleted'});
         $config{'user_field_modified'} = 'modifytimestamp' if (!exists $config{'user_field_modified'});
         $config{'user_field_guid'} = 'entryUUID' if (!exists $config{'user_field_guid'});
         $config{'user_field_quota'} = 'cyrus-userquota' if (!exists $config{'user_field_quota'});
@@ -352,7 +352,7 @@ sub reloadConfig
     $config{'sf_ldap_uri'} = $config{'ldap_uri'} if (!exists $config{'sf_ldap_uri'});
 
     if (!($tempval = URI->new($config{'sf_ldap_uri'}))) {
-        &log('C', "Unable to parse sf_ldap_uri `" . $config{'sf_ldap_uri'} . "'", KOLAB_ERROR);
+        &log('C', "Unable to parse sf_ldap_uri `" . $config{'sf_ldap_uri'} . "'", SKOLAB_ERROR);
 #        exit(1);
 	$error = 1;
     } else {
@@ -365,7 +365,7 @@ sub reloadConfig
     $config{'sf_dn_list'} = $config{'base_dn'} if (!exists $config{'sf_dn_list'});
     $config{'sf_directory_mode'} = $config{'directory_mode'} if (!exists $config{'sf_directory_mode'});
 
-    $config{'sf_object_class'} = 'kolabsharedfolder' if (!exists $config{'sf_object_class'});
+    $config{'sf_object_class'} = 'skolabsharedfolder' if (!exists $config{'sf_object_class'});
 
     if ($config{'sf_directory_mode'} eq 'ad') {
         # AD
@@ -375,7 +375,7 @@ sub reloadConfig
         $config{'sf_field_quota'} = 'userquota' if (!exists $config{'sf_field_quota'});
     } else {
         # slurd/default
-        $config{'sf_field_deleted'} = 'kolabdeleteflag' if (!exists $config{'sf_field_deleted'});
+        $config{'sf_field_deleted'} = 'skolabdeleteflag' if (!exists $config{'sf_field_deleted'});
         $config{'sf_field_modified'} = 'modifytimestamp' if (!exists $config{'sf_field_modified'});
         $config{'sf_field_guid'} = 'entryUUID' if (!exists $config{'sf_field_guid'});
         $config{'sf_field_quota'} = 'cyrus-userquota' if (!exists $config{'sf_field_quota'});
@@ -386,7 +386,7 @@ sub reloadConfig
     $config{'group_ldap_uri'} = $config{'ldap_uri'} if (!exists $config{'group_ldap_uri'});
 
     if (!($tempval = URI->new($config{'group_ldap_uri'}))) {
-        &log('C', "Unable to parse group_ldap_uri `" . $config{'group_ldap_uri'} . "'", KOLAB_ERROR);
+        &log('C', "Unable to parse group_ldap_uri `" . $config{'group_ldap_uri'} . "'", SKOLAB_ERROR);
 #        exit(1);
 	$error = 1;
     } else {
@@ -399,7 +399,7 @@ sub reloadConfig
     $config{'group_dn_list'} = $config{'base_dn'} if (!exists $config{'group_dn_list'});
     $config{'group_directory_mode'} = $config{'directory_mode'} if (!exists $config{'group_directory_mode'});
 
-    $config{'group_object_class'} = 'kolabgroupofnames' if (!exists $config{'group_object_class'});
+    $config{'group_object_class'} = 'skolabgroupofnames' if (!exists $config{'group_object_class'});
 
     if ($config{'group_directory_mode'} eq 'ad') {
         # AD
@@ -408,7 +408,7 @@ sub reloadConfig
         $config{'group_field_guid'} = 'entryUUID' if (!exists $config{'group_field_guid'});
     } else {
         # slurd/default
-        $config{'group_field_deleted'} = 'kolabdeleteflag' if (!exists $config{'group_field_deleted'});
+        $config{'group_field_deleted'} = 'skolabdeleteflag' if (!exists $config{'group_field_deleted'});
         $config{'group_field_modified'} = 'modifytimestamp' if (!exists $config{'group_field_modified'});
         $config{'group_field_guid'} = 'entryUUID' if (!exists $config{'group_field_guid'});
     }
@@ -433,13 +433,13 @@ sub log
 {
     my $prefix = shift;
     my $text = shift;
-    my $priority = shift || KOLAB_INFO;
+    my $priority = shift || SKOLAB_INFO;
 
-    if ($priority == KOLAB_ERROR) {
+    if ($priority == SKOLAB_ERROR) {
         $text = $prefix . ' Error: ' . $text;
-    } elsif ($priority == KOLAB_WARN) {
+    } elsif ($priority == SKOLAB_WARN) {
         $text = $prefix . ' Warning: ' . $text;
-    } elsif ($priority == KOLAB_DEBUG) {
+    } elsif ($priority == SKOLAB_DEBUG) {
         $text = $prefix . ' Debug: ' . $text;
     } else {
         $text = $prefix . ': ' . $text;

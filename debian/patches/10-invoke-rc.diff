@@ -11,21 +11,21 @@
          # - /usr/sbin/postmap: should always be executed
          # - openpkg rc imapd restart (in openpkg distribution)
 +        # - invoke-rc.d slapd restart (in Debian distribution)
-         # - kolabsrv rc post reload  (in other distributions)
+         # - skolabsrv rc post reload  (in other distributions)
          # The commands with ' rc ' may only be executed when reloading is not
          # prohibited by the user with the "-n" option.
 -        if ($args{doreload} || $cmd !~ / rc \S+ re(start|load)/) {
 +        if ($args{doreload} || $cmd !~ /(^invoke-rc.d| rc) \S+ re(start|load)/) {
-             Skolab::log('T', 'Executing command: '.$cmd, KOLAB_DEBUG );
+             Skolab::log('T', 'Executing command: '.$cmd, SKOLAB_DEBUG );
              system($cmd);
          } else {
---- a/sbin/kolab_bootstrap.in
-+++ b/sbin/kolab_bootstrap.in
+--- a/sbin/skolab_bootstrap.in
++++ b/sbin/skolab_bootstrap.in
 @@ -118,7 +118,7 @@
      print ("Error: Found $name running on Port $port\n");
      print ("Check your installation!\n");
-     print ("You must stop the service $name before running Kolab\n");
--    print ("You may try to execute \"$Skolab::config{'KOLABRC'} rc all stop\" initially\n");
+     print ("You must stop the service $name before running Skolab\n");
+-    print ("You may try to execute \"$Skolab::config{'SKOLABRC'} rc all stop\" initially\n");
 +    print ("You may try to execute \"/etc/init.d/\$DAEMON stop\" initially\n");
      exit 1;
    }
@@ -34,7 +34,7 @@
  
     if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
        print "\nkill temporary slapd\n\n";
--      system("$Skolab::config{'KOLABRC'} rc openldap stop");
+-      system("$Skolab::config{'SKOLABRC'} rc openldap stop");
 +      system("invoke-rc.d slapd stop");
        sleep 1; # actually race should be impossible
        system("killall -9 slapd >/dev/null 2>&1");
@@ -43,28 +43,28 @@
    ##### Slave server setup
  
    print "stop running slapd (if any)\n";
--  kolab_system("$Skolab::config{'KOLABRC'} rc openldap stop");
-+  kolab_system("invoke-rc.d slapd stop");
+-  skolab_system("$Skolab::config{'SKOLABRC'} rc openldap stop");
++  skolab_system("invoke-rc.d slapd stop");
  
    # Make sure that no rogue demons are running
    tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
 @@ -856,9 +856,9 @@
  is copied over to this slave. Please make sure that this slave is entered into the list
- of kolabhosts on the master before proceeding.
+ of skolabhosts on the master before proceeding.
  EOS
--    kolab_system("ssh -C $master_host \'$Skolab::config{'KOLABRC'} rc openldap stop".
-+    kolab_system("ssh -C $master_host \'invoke-rc.d slapd stop".
+-    skolab_system("ssh -C $master_host \'$Skolab::config{'SKOLABRC'} rc openldap stop".
++    skolab_system("ssh -C $master_host \'invoke-rc.d slapd stop".
                   " && $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pcf - openldap-data".
--                 " && $Skolab::config{'KOLABRC'} rc openldap start\'".
+-                 " && $Skolab::config{'SKOLABRC'} rc openldap start\'".
 +                 " && invoke-rc.d slapd start\'".
                   " | $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pxf -");
    }
  
 @@ -951,6 +951,6 @@
  
- #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
- print "kolab is now ready to run!\n";
--print "please run '$Skolab::config{'KOLABRC'} rc all start'\n";
+ #system("@CONFIG_DIR@/skolab_sslcert.sh $fqdn");
+ print "skolab is now ready to run!\n";
+-print "please run '$Skolab::config{'SKOLABRC'} rc all start'\n";
 +print "please restart all the daemons\n";
  print ("Use login=manager and passwd=$bind_pw when you log into\n");
- print ("the webinterface https://$fqdn$Skolab::config{'kolab_wui'} !\n");
+ print ("the webinterface https://$fqdn$Skolab::config{'skolab_wui'} !\n");

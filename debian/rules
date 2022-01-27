@@ -5,23 +5,23 @@ NULL=
 include /usr/share/cdbs/1/class/perl-makemaker.mk
 include /usr/share/cdbs/1/rules/debhelper.mk
 
-DEB_MAKEMAKER_NORMAL_ARGS = --config=/etc/kolab		\
+DEB_MAKEMAKER_NORMAL_ARGS = --config=/etc/skolab		\
                             --bin=/usr/bin			\
                             --sbin=/usr/sbin			\
-                            --etc=/etc/kolab			\
+                            --etc=/etc/skolab			\
                             $(NULL)
 
 clean::
 	rm -f Makefile.old
-	rm -f bin/kolab_smtpdpolicy
-	rm -f bin/kolabdcachetool
-	rm -f bin/kolabpasswd
-	rm -f bin/kolabquotareport
-	rm -f bin/kolabquotawarn
-	rm -f sbin/kolab_bootstrap
-	rm -f sbin/kolabcheckperm
-	rm -f sbin/kolabconf
-	rm -f sbin/kolabd
+	rm -f bin/skolab_smtpdpolicy
+	rm -f bin/skolabdcachetool
+	rm -f bin/skolabpasswd
+	rm -f bin/skolabquotareport
+	rm -f bin/skolabquotawarn
+	rm -f sbin/skolab_bootstrap
+	rm -f sbin/skolabcheckperm
+	rm -f sbin/skolabconf
+	rm -f sbin/skolabd
 	rm -f MYMETA.json
 	rm -f MYMETA.yml
 	rm -f Makefile

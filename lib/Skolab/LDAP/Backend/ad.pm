@@ -27,7 +27,7 @@ package Skolab::LDAP::Backend::ad;
 use 5.008;
 use strict;
 use warnings;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::LDAP;
 use Net::LDAP;
@@ -69,7 +69,7 @@ sub abort
 
 sub changeCallback
 {
-    Skolab::log('AD', 'Change notification received', KOLAB_DEBUG);
+    Skolab::log('AD', 'Change notification received', SKOLAB_DEBUG);
 
     ###   $_[0]   isa     Net::LDAP::Message
     ###   $_[1]   shouldbea   Net::LDAP::Entry
@@ -80,28 +80,28 @@ sub changeCallback
     my $issearch = $mesg->isa("Net::LDAP::Search");
 
     if (!$issearch) {
-    Skolab::log('AD', 'mesg is not a search object, testing code...', KOLAB_DEBUG);
+    Skolab::log('AD', 'mesg is not a search object, testing code...', SKOLAB_DEBUG);
     if ($mesg->code == 88) {
-        Skolab::log('AD', 'changeCallback() -> Exit code received, returning', KOLAB_DEBUG);
+        Skolab::log('AD', 'changeCallback() -> Exit code received, returning', SKOLAB_DEBUG);
         return;
     } elsif ($mesg->code) {
-        Skolab::log('AD', "mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", KOLAB_DEBUG);
+        Skolab::log('AD', "mesg->code = `" . $mesg->code . "', mesg->msg = `" . $mesg->error . "'", SKOLAB_DEBUG);
         &abort;
     }   
     } else {
-    Skolab::log('AD', 'mesg is a search object, not testing code', KOLAB_DEBUG);
+    Skolab::log('AD', 'mesg is a search object, not testing code', SKOLAB_DEBUG);
     }
 
     if (!$entry) {
-    Skolab::log('AD', 'changeCallback() called with a null entry', KOLAB_DEBUG);
+    Skolab::log('AD', 'changeCallback() called with a null entry', SKOLAB_DEBUG);
     return;
     } elsif (!$entry->isa("Net::LDAP::Entry")) {
-    Skolab::log('AD', 'changeCallback() called with an invalid entry', KOLAB_DEBUG);
+    Skolab::log('AD', 'changeCallback() called with an invalid entry', SKOLAB_DEBUG);
     return;
     }
 
     if (!Skolab::LDAP::isObject($entry, $Skolab::config{'user_object_class'})) {
-    Skolab::log('AD', "Entry is not a `" . $Skolab::config{'user_object_class'} . "', returning", KOLAB_DEBUG);
+    Skolab::log('AD', "Entry is not a `" . $Skolab::config{'user_object_class'} . "', returning", SKOLAB_DEBUG);
     return;
     }
 
@@ -133,10 +133,10 @@ sub run
 
     $cyrus = Skolab::Cyrus::create;
 
-    Skolab::log('AD', 'Cyrus connection established', KOLAB_DEBUG);
+    Skolab::log('AD', 'Cyrus connection established', SKOLAB_DEBUG);
 
     while (1) {
-    Skolab::log('AD', 'Creating LDAP connection to AD server', KOLAB_DEBUG);
+    Skolab::log('AD', 'Creating LDAP connection to AD server', SKOLAB_DEBUG);
 
     $ldap = Skolab::LDAP::create(
         $Skolab::config{'user_ldap_ip'},
@@ -152,26 +152,26 @@ sub run
         next;
     }
 
-    Skolab::log('AD', 'LDAP connection established', KOLAB_DEBUG);
+    Skolab::log('AD', 'LDAP connection established', SKOLAB_DEBUG);
 
     Skolab::LDAP::ensureAsync($ldap);
 
-    Skolab::log('AD', 'Async checked', KOLAB_DEBUG);
+    Skolab::log('AD', 'Async checked', SKOLAB_DEBUG);
 
     my $ctrl = Net::LDAP::Control->new(
         type    => '1.2.840.113556.1.4.528',
         critical    => 'true'
     );
 
-    Skolab::log('AD', 'Control created', KOLAB_DEBUG);
+    Skolab::log('AD', 'Control created', SKOLAB_DEBUG);
 
     my @userdns = split(/;/, $Skolab::config{'user_dn_list'});
     my $userdn;
 
-    Skolab::log('AD', 'User DN list = ' . $Skolab::config{'user_dn_list'}, KOLAB_DEBUG);
+    Skolab::log('AD', 'User DN list = ' . $Skolab::config{'user_dn_list'}, SKOLAB_DEBUG);
 
     if (length(@userdns) == 0) {
-    Skolab::log('AD', 'No user DNs specified, exiting', KOLAB_ERROR);
+    Skolab::log('AD', 'No user DNs specified, exiting', SKOLAB_ERROR);
     exit(1);
     }
 
@@ -226,7 +226,7 @@ Skolab::LDAP::Backend::ad - Perl extension for an Active Directory backend
 =head1 ABSTRACT
 
   Skolab::LDAP::Backend::ad handles an Active Directory backend to the
-  kolab daemon.
+  skolab daemon.
 
 =head1 COPYRIGHT AND AUTHORS
 

@@ -33,7 +33,7 @@ use Convert::ASN1 qw(:io);
 use Net::LDAP;
 use Net::LDAP::Constant qw(LDAP_SUCCESS LDAP_PROTOCOL_ERROR);
 use Net::LDAP::ASN qw(LDAPRequest LDAPResponse LDAPResult);
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::LDAP;
 use vars qw($conn $server);
@@ -245,7 +245,7 @@ sub run
 	Listen      => 10
      );
     if (!$server) {
-        Skolab::log('SD', "Unable to open TCP listen server on $listenaddr:$listenport, Error = $@", KOLAB_ERROR);
+        Skolab::log('SD', "Unable to open TCP listen server on $listenaddr:$listenport, Error = $@", SKOLAB_ERROR);
 	sleep 1;
 	goto TRYCONNECT;
     }
@@ -254,13 +254,13 @@ sub run
 
     while ($conn = $server->accept()) {
       # PENDING: Only accept connections from localhost and
-      # hosts listed in the kolabhost attribute
+      # hosts listed in the skolabhost attribute
 
 	my($peerport, $peeraddr) = sockaddr_in($conn->peername);
 	$peeraddr = inet_ntoa( $peeraddr );
         Skolab::log('SD', "Incoming connection accepted, peer=$peeraddr");
 	if( $Skolab::config{'slurpd_accept_addr'} && $peeraddr ne $Skolab::config{'slurpd_accept_addr'} ) {
-	    Skolab::log('SD', "Unauthorized connection from $peeraddr, closing connection", KOLAB_WARN);
+            Skolab::log('SD', "Unauthorized connection from $peeraddr, closing connection", SKOLAB_WARN);
 	    $conn->close;
 	    undef $conn;
 	    next;
@@ -288,20 +288,20 @@ sub run
 		      exit(0);
 		  }
 		  waitpid($kidpid, 0);
-		  Skolab::log('SD', "Running $Skolab::config{'kolabconf_script'}");
-		  system($Skolab::config{'kolabconf_script'}) == 0
-		    or Skolab::log('SD', "Failed to run $Skolab::config{'kolabconf_script'}: $?", KOLAB_ERROR);
-		  Skolab::log('SD', "$Skolab::config{'kolabconf_script'} complete");
+                  Skolab::log('SD', "Running $Skolab::config{'skolabconf_script'}");
+                  system($Skolab::config{'skolabconf_script'}) == 0
+                    or Skolab::log('SD', "Failed to run $Skolab::config{'skolabconf_script'}: $?", SKOLAB_ERROR);
+                  Skolab::log('SD', "$Skolab::config{'skolabconf_script'} complete");
 		}
             }
 
             Skolab::log('SD', 'Waiting for LDAP updates');
 
             for ($ready = 1; $conn && $ready; $ready = $select->can_read(0)) {
-                Skolab::log('SD', 'Reading ASN', KOLAB_DEBUG);
+                Skolab::log('SD', 'Reading ASN', SKOLAB_DEBUG);
                 my $newoffset = asn_read($conn, $pdu, $offset);
 		if( !$conn->connected() or $offset == $newoffset ) {
-		  Skolab::log('SD', 'Connection closed', KOLAB_DEBUG);
+                  Skolab::log('SD', 'Connection closed', SKOLAB_DEBUG);
 		  $conn->close;
 		  undef $conn;
 		}
@@ -312,13 +312,13 @@ sub run
             if ($pdu) {
                 $request = $LDAPRequest->decode($pdu);
                 if (!$request) {
-                    Skolab::log('SD', "Unable to decode slurpd request, Error = `" . $LDAPRequest->error . "'", KOLAB_ERROR);
+                    Skolab::log('SD', "Unable to decode slurpd request, Error = `" . $LDAPRequest->error . "'", SKOLAB_ERROR);
 		    $conn->close if $conn;
 		    undef $conn;
 		    undef $pdu;
                 } else {
 		    $_ = getRequestType($request);
-		    Skolab::log('SD', "Request $_ received", KOLAB_DEBUG);
+                    Skolab::log('SD', "Request $_ received", SKOLAB_DEBUG);
 		    undef $pdu;
 
 		    SWITCH: {
@@ -329,7 +329,7 @@ sub run
                       if (/modDNRequest/) { $pdu = responseModDN($request); $changes = 1; last SWITCH; }
 
                       if( $conn ) {
-		        Skolab::log('SD', 'Unknown request, connection closed', KOLAB_DEBUG);
+                        Skolab::log('SD', 'Unknown request, connection closed', SKOLAB_DEBUG);
 		        $conn->close;
 		        undef $conn;
 		      }
@@ -338,7 +338,7 @@ sub run
 	    }
 
             if ($pdu) {
-                Skolab::log('SD', 'Writing response', KOLAB_DEBUG);
+                Skolab::log('SD', 'Writing response', SKOLAB_DEBUG);
                 syswrite($conn, $pdu, length($pdu));
                 $response = $LDAPResponse->decode($pdu);
                 if (!$response) {
@@ -366,7 +366,7 @@ Skolab::LDAP::Backend::slurpd - Perl extension for a slurpd backend
 =head1 ABSTRACT
 
   Skolab::LDAP::Backend::slurpd handles a slurpd backend to the
-  kolab daemon.
+  skolab daemon.
 
 =head1 COPYRIGHT AND AUTHORS
 

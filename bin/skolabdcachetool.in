@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolabdcachetool - Kolab cache tool
+skolabdcachetool - Skolab cache tool
 
 =head1 SYNOPSIS
 
-B<kolabdcachetool> I<CACHE> I<FUNCTION>
+B<skolabdcachetool> I<CACHE> I<FUNCTION>
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -47,7 +47,7 @@ use strict;
 use Getopt::Long;
 use DB_File;
 use POSIX qw(strftime);
-use Kolab;
+use Skolab;
 
 my $progname = `basename $0`;
 chomp($progname);
@@ -68,10 +68,10 @@ my (%db, %db2, %sorted);
 
 usage if ($func !~ /list/i && $func !~ /del/i && $func !~ /flush/i);
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
 if ($cache =~ /mbox/i) {
-    dbmopen(%db, $Skolab::config{'kolab_mailboxuiddb'}, 0666)
+    dbmopen(%db, $Skolab::config{'skolab_mailboxuiddb'}, 0666)
         || die "Unable to open mail uid cache";
 } elsif ($cache =~ /gyard/i) {
     dbmopen(%db, $Skolab::config{'graveyard_uidcache'}, 0666)

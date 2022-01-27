@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolabcheckperm - Kolab permission checking tool
+skolabcheckperm - SKolab permission checking tool
 
 =head1 SYNOPSIS
 
-B<kolabcheckperm>
+B<skolabcheckperm>
 
 =head1 COPYRIGHT AND AUTHORS
 
@@ -32,10 +32,10 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 =cut
 
 use strict;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::Conf;
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
 exit( Skolab::Conf::checkPermissions>0?0:-1 );

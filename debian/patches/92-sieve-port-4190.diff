@@ -2,10 +2,10 @@ Description: Use port 4190 instead of 2000 for sieve
 Bug: https://issues.kolab.org/issue4373
 Bug-Debian: http://bugs.debian.org/599031
 
---- a/sbin/kolab_bootstrap.in
-+++ b/sbin/kolab_bootstrap.in
+--- a/sbin/skolab_bootstrap.in
++++ b/sbin/skolab_bootstrap.in
 @@ -256,7 +256,7 @@
- checkPort("kolab daemon", 9999);
+ checkPort("skolab daemon", 9999);
  checkPort("ldap server", 389);
  checkPort("ldaps server", 636);
 -checkPort("sieve server", 2000);
