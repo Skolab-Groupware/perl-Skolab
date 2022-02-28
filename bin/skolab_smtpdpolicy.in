@@ -2,16 +2,16 @@
 
 =head1 NAME
 
-kolab_smtpdpolicy - Kolab SMTP policy
+skolab_smtpdpolicy - Skolab SMTP policy
 
 =head1 SYNOPSIS
 
-B<kolab_smtpdpolicy> [B<-v>]
+B<skolab_smtpdpolicy> [B<-v>]
 
 =head1 DESCRIPTION
 
-kolabdelegated Postfix SMTPD policy server for Kolab. This server implements
-various policies for Kolab:
+skolabdelegated Postfix SMTPD policy server for Skolab. This server implements
+various policies for Skolab:
 
 1) Only authenticated users can use sender <username>@$domain
 
@@ -29,7 +29,7 @@ out over time.
 To run this from /etc/postfix/master.cf:
 
     policy  unix  -       n       n       -       -       spawn
-      user=kolab-n argv=/usr/bin/perl /usr/libexec/postfix/kolab_smtpdpolicy
+      user=skolab-n argv=/usr/bin/perl /usr/libexec/postfix/skolab_smtpdpolicy
 
 To use this from Postfix SMTPD, use in /etc/postfix/main.cf:
 
@@ -46,12 +46,12 @@ To use this from Postfix SMTPD, use in /etc/postfix/main.cf:
 NOTE: specify check_policy_service AFTER reject_unauth_destination
 or else your system can become an open relay.
 
-To test this script by hand, execute kolab_smtpdpolicy, optionally
+To test this script by hand, execute skolab_smtpdpolicy, optionally
 with the option -v to print debugging output.
 Example for OpenPKG based installations:
 
-    # su - kolab
-    $ /kolab/etc/kolab/kolab_smtpdpolicy -v
+    # su - skolab
+    $ /skolab/etc/skolab/skolab_smtpdpolicy -v
 
 Each query is a bunch of attributes. Order does not matter, and
 the demo script uses only a few of all the attributes shown below:
@@ -142,7 +142,7 @@ my $ldap_max_tries = 5;
 #
 my $conf_allowunauth = 0;
 
-%conf = readConfig( %conf, "@CONFIG_DIR@/kolab_smtpdpolicy.conf" );
+%conf = readConfig( %conf, "@CONFIG_DIR@/skolab_smtpdpolicy.conf" );
 my $conf_ldapuri = $conf{'ldap_uri'};
 my $conf_basedn  = $conf{'basedn'};
 my $conf_binddn   = $conf{'binddn'};
@@ -190,7 +190,7 @@ sub lookup_uid {
  AGAIN:
   my $mesg = $ldap->search( base=> $conf_basedn,
 			    scope=> 'sub',
-			    filter=> "(&(objectClass=kolabinetorgperson)(|(mail=$uid)(uid=$uid)))",
+			    filter=> "(&(objectClass=skolabinetorgperson)(|(mail=$uid)(uid=$uid)))",
 			    attrs => [ 'uid'] );
   if( !$mesg->code && $mesg->count() > 0 ) {
       mylog($syslog_priority, "LDAP search returned ".$mesg->count()." objects") if $verbose;
@@ -232,15 +232,15 @@ sub lookup_sender_uids {
  AGAIN:
   my $mesg = $ldap->search( base=> $conf_basedn,
 			    scope=> 'sub',
-			    filter=> "(&(objectClass=kolabinetorgperson)(|(mail=$sender)(alias=$sender)))",
-			    attrs => [ 'uid', 'kolabDelegate' ]);
+			    filter=> "(&(objectClass=skolabinetorgperson)(|(mail=$sender)(alias=$sender)))",
+			    attrs => [ 'uid', 'skolabDelegate' ]);
   if( !$mesg->code && $mesg->count() > 0 ) {
     mylog($syslog_priority, "LDAP search returned ".$mesg->count()." objects") if $verbose;
     foreach my $entry ( $mesg->entries ) {
       mylog($syslog_priority, lc($entry->get_value('uid')." is the uid of ".$sender)) if $verbose;
       push @result, lc($entry->get_value('uid'));
       my $delegate;
-      for $delegate ($entry->get_value('kolabDelegate')) {
+      for $delegate ($entry->get_value('skolabDelegate')) {
 	$delegate = lookup_uid($delegate);
         mylog($syslog_priority, lc($delegate)." is a delegate of ".$sender) if $verbose;
      	push @result, lc($delegate);
@@ -264,7 +264,7 @@ sub check_dist_list {
  AGAIN:
   if( !$username ) {
     my $mesg = $ldap->search( base=> "cn=internal,".$conf_basedn,
-			   scope=> 'one', filter=> "(&(mail=$recipient)(objectClass=kolabgroupofnames))");
+			   scope=> 'one', filter=> "(&(mail=$recipient)(objectClass=skolabgroupofnames))");
     if( !$mesg->code && $mesg->count() > 0 ) {
       # Ups, recipient is a restricted list, reject
       mylog( $syslog_priority, "Attempt from $username to access restricted list $recipient" ) if $verbose;	
@@ -288,15 +288,15 @@ sub check_restricted_sender {
  AGAIN:
   my $mesg = $ldap->search( base=> $conf_basedn,
 			    scope=> 'sub',
-			    filter=> "(&(objectClass=kolabinetorgperson)(|(mail=$username)(uid=$username)))",
-			    attrs => [ 'kolabAllowSMTPRecipient' ]);
+			    filter=> "(&(objectClass=skolabinetorgperson)(|(mail=$username)(uid=$username)))",
+			    attrs => [ 'skolabAllowSMTPRecipient' ]);
   if( !$mesg->code && $mesg->count() > 0 ) {
     mylog($syslog_priority, "LDAP search returned ".$mesg->count()." objects") if $verbose;
     my $global_permit = 1;
     foreach my $entry ( $mesg->entries ) {
       my $allowed_recipient;
       my $permit;
-      for $allowed_recipient ($entry->get_value('kolabAllowSMTPRecipient')) {
+      for $allowed_recipient ($entry->get_value('skolabAllowSMTPRecipient')) {
           mylog($syslog_priority, lc($username." has allowed recipient ".$allowed_recipient)) if $verbose;
 	  # Return early with REJECT if the sender may not send at all ('-')
 	  return undef if $allowed_recipient eq '-';
@@ -349,8 +349,8 @@ sub smtpd_access_policy {
 
   mylog($syslog_priority, "Checking sender=\"$sender\", recipient=\"$recipient\", username=\"$username\", domains=".join(',',@conf_domain)." permithosts=".join(',',@conf_permithosts).", conf_allowunauth=$conf_allowunauth") if $verbose;
 
-  # First check if the sender is a privileged kolabhost
-  # Kolab hosts use un-authenticated smtp currently
+  # First check if the sender is a privileged skolabhost
+  # Skolab hosts use un-authenticated smtp currently
   # We also just accept the email here is conf_allowunauth is set
   return "DUNNO" if( !$username && ( $conf_allowunauth || check_permithosts($client_addr) ) );
 

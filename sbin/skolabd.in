@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolabd - Kolab daemon
+skolabd - Skolab daemon
 
 =head1 SYNOPSIS
 
-B<kolabd>
+B<skolabd>
 
 =head1 COPYRIGHT AND AUTHORS
 
@@ -44,42 +44,42 @@ Project's homepage; see <http://www.gnu.org/licenses/gpl.html>.
 
 #
 #  Module prefixes in the logs:
-#    K: kolabd
+#    S: skolabd
 #    C: Config
 #    T: Templates
 #    L: LDAP
 #    Y: Cyrus
 #    B: Backend
-#    KC: kolabconf
+#    SC: skolabconf
 #    Anything else: the various backends
 #
 
 use strict;
 use Sys::Syslog;
 use IO::File;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::LDAP;
 use Skolab::LDAP::Backend;
 use vars qw(%pids);
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
-openlog('kolabd', 'cons, pid', ($Skolab::config{'syslog_facility'} || 'user'));
+openlog('skolabd', 'cons, pid', ($Skolab::config{'syslog_facility'} || 'user'));
 
 # won't be needed now (i think)
 # my $prefix = $Skolab::config{'prefix'};
 
-my $pidfile = IO::File->new($Skolab::config{'kolab_pidfile'}, 'w+')
-    || die "Unable to open PID file `$Skolab::config{'kolab_pidfile'}";
+my $pidfile = IO::File->new($Skolab::config{'skolab_pidfile'}, 'w+')
+    || die "Unable to open PID file `$Skolab::config{'skolab_pidfile'}";
 print $pidfile $$;
 undef $pidfile;
 
 sub sigInt
 {
-    Skolab::Util::superLog('Kolab is shutting down');
+    Skolab::Util::superLog('Skolab is shutting down');
 
-    Skolab::log('K', 'SIGINT/SIGTERM detected, kill()ing children');
+    Skolab::log('S', 'SIGINT/SIGTERM detected, kill()ing children');
 
     foreach my $pid (keys %pids) {
         kill('INT', $pid);
@@ -88,28 +88,28 @@ sub sigInt
 
     Skolab::LDAP::shutdown;
 
-    Skolab::log('K', 'Exiting');
+    Skolab::log('S', 'Exiting');
     exit(0);
 }
 
 sub sigHup
 {
-    Skolab::log('K', 'Refreshing configuration');
+    Skolab::log('S', 'Refreshing configuration');
     foreach my $pid (keys %pids) {
         kill('INT', $pid);
         waitpid($pid, 0);
     }
     %pids = ();
-    Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
-    Skolab::log('K', 'Synchronising');
+    Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
+    Skolab::log('S', 'Synchronising');
     Skolab::LDAP::sync;
-    Skolab::log('K', 'Reloading addressbook.peers');
-    Skolab::log('K', 'Finished refresh');
+    Skolab::log('S', 'Reloading addressbook.peers');
+    Skolab::log('S', 'Finished refresh');
     &run;
 }
 
 sub sigDie {
-  Skolab::log( 'K', $_[0], KOLAB_ERROR );
+  Skolab::log( 'S', $_[0], SKOLAB_ERROR );
 }
 
 sub run
@@ -117,10 +117,10 @@ sub run
     my $pid;
     my $finished = 0;
     foreach my $backend (keys %Skolab::LDAP::Backend::backends) {
-        Skolab::log('K', "Forking `$backend' listener");
+        Skolab::log('S', "Forking `$backend' listener");
         $pid = fork;
         if (!defined($pid)) {
-	    Skolab::log('K', "Unable to fork `$backend' listener", KOLAB_ERROR);
+	    Skolab::log('S', "Unable to fork `$backend' listener", SKOLAB_ERROR);
             exit(1);
         }
 
@@ -131,7 +131,7 @@ sub run
         }
         Skolab::LDAP::Backend::run($backend);
 
-        Skolab::log('K', "`$backend' returned");
+        Skolab::log('S', "`$backend' returned");
 	# exit with 0 status to avoid killing daemon
 	exit(0);
     }
@@ -141,20 +141,20 @@ sub run
     $SIG{'HUP'} = \&sigHup;
     $SIG{__DIE__} = \&sigDie;
 
-    Skolab::log('K', 'Listeners spawned, wait()ing');
+    Skolab::log('S', 'Listeners spawned, wait()ing');
 
     while ($finished > 0) {
         wait;
         if ($?) {
-            Skolab::log('K', 'Abnormal child exit status encountered, aborting');
+            Skolab::log('S', 'Abnormal child exit status encountered, aborting');
             kill('INT', $$);
         } else {
-            Skolab::log('K', 'Child terminated normally');
+            Skolab::log('S', 'Child terminated normally');
         }
     }
 }
 
-print 'kolabd - Kolab Backend Daemon
+print 'skolabd - Skolab Backend Daemon
 
   Copyright (c) 2004  Klaraelvdalens Datakonsult AB
   Copyright (c) 2003  Code Fusion cc
@@ -164,23 +164,23 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ';
 
-Skolab::Util::superLog('Kolab is starting up');
+Skolab::Util::superLog('Skolab is starting up');
 
 eval {
-  Skolab::LDAP::startup($Skolab::config{'kolab_statedir'});
+  Skolab::LDAP::startup($Skolab::config{'skolab_statedir'});
 
-  Skolab::log('K', 'Loading backends');
+  Skolab::log('S', 'Loading backends');
   Skolab::LDAP::Backend::load;
   Skolab::LDAP::Backend::load('user');
   Skolab::LDAP::Backend::load('sf');
   
-  Skolab::log('K', 'Performing backend startup');
+  Skolab::log('S', 'Performing backend startup');
   &Skolab::LDAP::Backend::startup;
   
-  Skolab::log('K', 'Synchronising');
+  Skolab::log('S', 'Synchronising');
   Skolab::LDAP::sync;
   
-  Skolab::log('K', 'Synchronisation complete, starting up daemon');
+  Skolab::log('S', 'Synchronisation complete, starting up daemon');
   run;
-}; Skolab::log( 'K', $@, KOLAB_ERROR ) if $@;
+}; Skolab::log( 'S', $@, SKOLAB_ERROR ) if $@;
 

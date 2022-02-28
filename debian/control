@@ -12,9 +12,9 @@ Homepage: https://github.com/Skolab-Groupware/perl-Skolab/
 Vcs-Browser: https://github.com/Skolab-Groupware/perl-Skolab/
 Vcs-Svn: https://github.com/Skolab-Groupware/perl-Skolab/
 
-Package: libkolab-perl
+Package: libskolab-perl
 Architecture: all
-Depends: kolab-libcyrus-imap-perl,
+Depends: skolab-libcyrus-imap-perl,
          libconvert-asn1-perl,
          libmail-imapclient-perl,
          libmime-tools-perl,

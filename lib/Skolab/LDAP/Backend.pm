@@ -27,7 +27,7 @@ package Skolab::LDAP::Backend;
 use 5.008;
 use strict;
 use warnings;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use vars qw(
     %startup
@@ -73,8 +73,8 @@ sub load
     Skolab::log('B', "Loading backend `$backend'");
 
     unless (eval "require Skolab::LDAP::Backend::$backend") {
-        Skolab::log('B', "Error is: $@", KOLAB_ERROR) if $@;
-        Skolab::log('B', "Backend `$backend' does not exist or has errors, exiting", KOLAB_ERROR);
+        Skolab::log('B', "Error is: $@", SKOLAB_ERROR) if $@;
+        Skolab::log('B', "Backend `$backend' does not exist or has errors, exiting", SKOLAB_ERROR);
         exit(1);
     }
 
@@ -91,7 +91,7 @@ sub startup
         my $func = $startup{$backend};
         unless (eval '&$func') {
             $func = 'Skolab::LDAP::Backend::' . $backend . '::startup';
-            Skolab::log('B', "Error in function `$func': $@, exiting", KOLAB_ERROR);
+            Skolab::log('B', "Error in function `$func': $@, exiting", SKOLAB_ERROR);
             exit(1);
         }
     }
@@ -105,7 +105,7 @@ sub run
     my $func = $run{$backend};
     unless (eval '&$func') {
         $func = 'Skolab::LDAP::Backend::' . $backend . '::run';
-	Skolab::log('B', "Error in function `$func': $@, exiting", KOLAB_ERROR);
+        Skolab::log('B', "Error in function `$func': $@, exiting", SKOLAB_ERROR);
         exit(1);
     }
 }

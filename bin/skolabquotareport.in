@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolabquotareport - Kolab quota report tool
+skolabquotareport - Skolab quota report tool
 
 =head1 SYNOPSIS
 
-B<kolabquotareport> [B<-d>]
+B<skolabquotareport> [B<-d>]
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -54,14 +54,14 @@ use IO::File;
 use DB_File;
 use Mail::Message;
 use Cyrus::IMAP::Admin;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::LDAP;
 use vars qw($opt_d);
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
-Skolab::LDAP::startup($Skolab::config{'kolab_statedir'});
+Skolab::LDAP::startup($Skolab::config{'skolab_statedir'});
 
 getopts('d');
 if ($opt_d) {
@@ -131,4 +131,4 @@ if( scalar(@report) > 0 ) {
   print STDOUT @report;
 }
 #print "\nSHARED FOLDERS:\n---------------\n";
-#kolablistquotas( $cyrus, 'user.*', '*', 80 );
+#skolablistquotas( $cyrus, 'user.*', '*', 80 );

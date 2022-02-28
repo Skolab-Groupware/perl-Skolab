@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolabconf - Kolab configuration tool
+skolabconf - Skolab configuration tool
 
 =head1 SYNOPSIS
 
-B<kolabconf> [B<-d>] [B<-n>] [B<-h>]
+B<skolabconf> [B<-d>] [B<-n>] [B<-h>]
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -56,22 +56,22 @@ use warnings;
 use Getopt::Std;
 use Sys::Syslog;
 use IO::File;
-use Kolab;
+use Skolab;
 use Skolab::Util;
 use Skolab::Conf;
 use Skolab::LDAP;
 use vars qw($opt_d $opt_n $opt_h);
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+my $reloadOk = Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
-openlog('kolabconf', 'cons, pid', ($Skolab::config{'syslog_facility'} || 'user'));
+openlog('skolabconf', 'cons, pid', ($Skolab::config{'syslog_facility'} || 'user'));
 
 getopts('dnh');
 if ($opt_h) {
     print <<'EOS';
-kolabconf - Version @VERSION@
+skolabconf - Version @VERSION@
 
-Usage: kolabconf [-d] [-n] [-h]
+Usage: skolabconf [-d] [-n] [-h]
 
     Option d (debug) to print out the current config.
     Option n (noreload) to skip reloading services after changing configuration.
@@ -98,14 +98,14 @@ if($opt_n) {
     $do_reload = 0;
 }
 
-if( !$Skolab::reloadOk ) {
+if( !$reloadOk ) {
     my $msg = "Error loading configuration. Maybe the LDAP server is not running. Please check the system log for errors.";
     print STDERR "$msg\n";
-    Skolab::log('KC', $msg);
+    Skolab::log('SC', $msg);
     exit(-1);
 }
 
-Skolab::log('KC', 'Rebuilding templates');
+Skolab::log('SC', 'Rebuilding templates');
 Skolab::Conf::rebuildTemplates(doreload => $do_reload);
-Skolab::log('KC', 'Finished');
+Skolab::log('SC', 'Finished');
 

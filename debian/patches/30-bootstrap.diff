@@ -1,11 +1,11 @@
-Goal: kolab_bootstrap debian specificic stuff
+Goal: skolab_bootstrap debian specificic stuff
 
 Author: Noèl Köthe <noel@debian.org>
 
 Upstream status: Parts can be or have been included
 
---- a/sbin/kolab_bootstrap.in
-+++ b/sbin/kolab_bootstrap.in
+--- a/sbin/skolab_bootstrap.in
++++ b/sbin/skolab_bootstrap.in
 @@ -261,7 +261,7 @@
  
  print ("Excellent all required Ports are available!\n");
@@ -14,7 +14,7 @@ Upstream status: Parts can be or have been included
 +system("su  --shell /bin/sh --command $Skolab::config{'sbindir'}/slapcat >/dev/null 2>&1");
  if ($?==0) {
    print ("\nFound existing configuration\n");
-   print "\nBootstrapping Kolab will overwrite old configuration\n";
+   print "\nBootstrapping Skolab will overwrite old configuration\n";
 @@ -376,6 +376,18 @@
  
  $Skolab::config{"is_master"} = $is_master;
@@ -63,12 +63,12 @@ Upstream status: Parts can be or have been included
        sleep 10;
  
 @@ -949,6 +967,9 @@
-   chmod 0600, $kolab_config;
+   chmod 0600, $skolab_config;
  }
  
 +#run postfix newaliases
-+kolab_system("/usr/bin/newaliases");
++skolab_system("/usr/bin/newaliases");
 +
- #system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
- print "kolab is now ready to run!\n";
+ #system("@CONFIG_DIR@/skolab_sslcert.sh $fqdn");
+ print "skolab is now ready to run!\n";
  print "please restart all the daemons\n";

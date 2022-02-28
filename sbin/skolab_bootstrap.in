@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-kolab_bootstrap - Kolab bootstrap tool
+skolab_bootstrap - Skolab bootstrap tool
 
 =head1 SYNOPSIS
 
-B<kolab_bootstrap> [B<-b>] [B<-f>]
+B<skolab_bootstrap> [B<-b>] [B<-f>]
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -58,7 +58,7 @@ use URI;
 use Socket;
 use IO::File;
 use IO::Select;
-use Kolab;
+use Skolab;
 use Skolab::Conf;
 use Net::Domain qw(hostfqdn);
 use Net::LDAP;
@@ -72,11 +72,11 @@ use Time::localtime;
 use Digest::SHA1;
 use MIME::Base64;
 
-# Reload only kolab.globals into our configuration.
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals", 1);
+# Reload only skolab.globals into our configuration.
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals", 1);
 
-my $kolab_config = "@CONFIG_DIR@/kolab.conf";
-my %kolab_config;
+my $skolab_config = "@CONFIG_DIR@/skolab.conf";
+my %skolab_config;
 my @files;
 
 ##### Utility Functions
@@ -117,8 +117,8 @@ sub checkPort {
   if (tryConnect("localhost",$port) == 1) {
     print ("Error: Found $name running on Port $port\n");
     print ("Check your installation!\n");
-    print ("You must stop the service $name before running Kolab\n");
-    print ("You may try to execute \"$Skolab::config{'KOLABRC'} rc all stop\" initially\n");
+    print ("You must stop the service $name before running Skolab\n");
+    print ("You may try to execute \"$Skolab::config{'SKOLABRC'} rc all stop\" initially\n");
     exit 1;
   }
 }
@@ -189,7 +189,7 @@ AGAIN:
 }
 
 # Like system() but echo the line before executing
-sub kolab_system {
+sub skolab_system {
   my $arg = shift;
   print "$arg\n";
   system( $arg ) == 0
@@ -197,7 +197,7 @@ sub kolab_system {
 };
 
 # Usable chown
-sub kolab_chown {
+sub skolab_chown {
     my $u = shift;
     my $g = shift;
     my $uid = getpwnam($u);
@@ -220,17 +220,17 @@ sub newOrExistingLDAPEntry {
   }
 }
 
-sub newkolabgroupofnames {
+sub newskolabgroupofnames {
   my $ldap = shift;
   my $basedn = shift;
   my $cn = shift;
 
   if( scalar(@_) < 1 ) {
-    warn "kolabgroupofnames must contain at least one member";
+    warn "skolabgroupofnames must contain at least one member";
   }
 
   my $ldapobject = newOrExistingLDAPEntry($ldap,"cn=$cn,$basedn");
-  $ldapobject->replace('cn' => $cn, 'objectclass' => ['top','kolabgroupofnames'],
+  $ldapobject->replace('cn' => $cn, 'objectclass' => ['top','skolabgroupofnames'],
                        'member' => @_);
   $ldapobject->dn("cn=$cn,$basedn");
   my $mesg = $ldapobject->update($ldap);
@@ -238,9 +238,9 @@ sub newkolabgroupofnames {
   return $ldapobject;
 }
 
-print "\nKOLAB BOOTSTRAP\n\n";
+print "\nSKOLAB BOOTSTRAP\n\n";
 
-# Check for already running services preventing proper operation of kolab_bootstrap and Kolab
+# Check for already running services preventing proper operation of skolab_bootstrap and Skolab
 checkPort("http webserver", 80);
 checkPort("https webserver", 443);
 checkPort("imap server", 143);
@@ -251,9 +251,9 @@ checkPort("smtp server", 25);
 checkPort("smtps server", 465);
 checkPort("submission server", 587);
 checkPort("amavis server", 10024);
-checkPort("postfix reinjection from kolabfilter", 10025);
+checkPort("postfix reinjection from skolabfilter", 10025);
 checkPort("postfix reinjection from amavis", 10026);
-checkPort("kolab daemon", 9999);
+checkPort("skolab daemon", 9999);
 checkPort("ldap server", 389);
 checkPort("ldaps server", 636);
 checkPort("sieve server", 2000);
@@ -264,22 +264,22 @@ print ("Excellent all required Ports are available!\n");
 system("$Skolab::config{'sbindir'}/slapcat >/dev/null 2>&1");
 if ($?==0) {
   print ("\nFound existing configuration\n");
-  print "\nBootstrapping Kolab will overwrite old configuration\n";
+  print "\nBootstrapping Skolab will overwrite old configuration\n";
   my $tmp = getUserInput( "\nContinue", "n", "y", "n" );
   if( (lc $tmp eq 'n') || ($tmp eq '')  ) {
     print "Bootstrapping aborted - not creating new configuration\n";
     exit 0;
   }
-  print "Creating backup of old configuration (LDAP, kolab.conf and certificates)\n";
+  print "Creating backup of old configuration (LDAP, skolab.conf and certificates)\n";
 
   my $backupfiles = "$Skolab::config{'backupfiles'}";
-  if ($backupfiles ne "" && ! -s "$Skolab::config{'backupdir'}/kolab_backup-orig.tar.bz2") {
+  if ($backupfiles ne "" && ! -s "$Skolab::config{'backupdir'}/skolab_backup-orig.tar.bz2") {
     # Do a one-time backup.  This is to backup the original configuration
     # files that were configured by user.  The one-time backup is marked with
     # orig.
-    system("tar cjPf $Skolab::config{'backupdir'}/kolab_backup-orig.tar.bz2 $backupfiles");
+    system("tar cjPf $Skolab::config{'backupdir'}/skolab_backup-orig.tar.bz2 $backupfiles");
     print "The orginal configuration files have been backed up to:\n";
-    print "  $Skolab::config{'backupdir'}/kolab_backup-orig.tar.bz2\n"
+    print "  $Skolab::config{'backupdir'}/skolab_backup-orig.tar.bz2\n"
   }
   my $epochseconds = timelocal(gmtime);
   my $backupdir="$Skolab::config{'backupdir'}/backup".$epochseconds;
@@ -296,13 +296,14 @@ if ($?==0) {
   @files = <@CONFIG_DIR@/*.pem>;
   system("cd \"@CONFIG_DIR@\"; mv *.pem $backupdir") if (@files);
 
-  if (-f $kolab_config) {
-    system("mv \"$kolab_config\" $backupdir");
+  if (-f $skolab_config) {
+    system("mv \"$skolab_config\" $backupdir");
   }
 
   # Potentially dangerous code, be defensive.  The "rm -f" command could remove
   # the wrong files when the variable $Skolab::config{'ldapserver_dir'} is not
-  # assigned correctly.  See kolab/issue4009.  With the current implementation
+  # assigned correctly.  Previously linked to the Kolab bugzilla at
+  # issue.kolab.org/issue4009.  With the current implementation
   # it is of course still possible to remove the wrong files, but this is a
   # good trade off between defensive code and too much code.
   if ((defined $Skolab::config{'ldapserver_dir'})
@@ -322,29 +323,29 @@ if ($?==0) {
 
 
 # fetch fresh template
-copy("@CONFIG_DIR@/templates/kolab.conf.template", $kolab_config);
+copy("@CONFIG_DIR@/templates/skolab.conf.template", $skolab_config);
 
-%kolab_config = Skolab::readConfig(\%kolab_config, $kolab_config);
+%skolab_config = Skolab::readConfig(\%skolab_config, $skolab_config);
 
-my $fqdnhostname = $kolab_config{'fqdnhostname'} || die "could not read fqdnhostname from $kolab_config";
-my $is_master = $kolab_config{'is_master'} || "true";
-my $bind_dn = $kolab_config{'bind_dn'} || die "could not read bind_dn from $kolab_config";
-my $bind_pw = $kolab_config{'bind_pw'} || die "could not read bind_pw from $kolab_config";
-my $bind_pw_hash = $kolab_config{'bind_pw_hash'} || hashPassword( $bind_pw );
-my $ldap_uri = $kolab_config{'ldap_uri'} || die "could not read ldap_uri from $kolab_config";
-my $base_dn = $kolab_config{'base_dn'} || die "could not read base_dn from $kolab_config";
-my $php_dn = $kolab_config{'php_dn'} || die "could not read php_dn from $kolab_config";
-my $php_pw = $kolab_config{'php_pw'} || die "could not read php_pw from $kolab_config";
-my $calendar_id = $kolab_config{'calendar_id'};
-my $calendar_pw = $kolab_config{'calendar_pw'};
-my $slurpd_addr = $kolab_config{'slurpd_addr'} || die "could not read slurpd_addr from $kolab_config";
-my $slurpd_port = $kolab_config{'slurpd_port'} || die "could not read slurpd_port from $kolab_config";
-my @kolabhosts;
+my $fqdnhostname = $skolab_config{'fqdnhostname'} || die "could not read fqdnhostname from $skolab_config";
+my $is_master = $skolab_config{'is_master'} || "true";
+my $bind_dn = $skolab_config{'bind_dn'} || die "could not read bind_dn from $skolab_config";
+my $bind_pw = $skolab_config{'bind_pw'} || die "could not read bind_pw from $skolab_config";
+my $bind_pw_hash = $skolab_config{'bind_pw_hash'} || hashPassword( $bind_pw );
+my $ldap_uri = $skolab_config{'ldap_uri'} || die "could not read ldap_uri from $skolab_config";
+my $base_dn = $skolab_config{'base_dn'} || die "could not read base_dn from $skolab_config";
+my $php_dn = $skolab_config{'php_dn'} || die "could not read php_dn from $skolab_config";
+my $php_pw = $skolab_config{'php_pw'} || die "could not read php_pw from $skolab_config";
+my $calendar_id = $skolab_config{'calendar_id'};
+my $calendar_pw = $skolab_config{'calendar_pw'};
+my $slurpd_addr = $skolab_config{'slurpd_addr'} || die "could not read slurpd_addr from $skolab_config";
+my $slurpd_port = $skolab_config{'slurpd_port'} || die "could not read slurpd_port from $skolab_config";
+my @skolabhosts;
 my $domain;
 
 if (!$bind_dn || !$bind_pw || !$ldap_uri || !$base_dn) {
-   print "Please check $kolab_config (seems to be incomplete)\n";
-   die "and run kolab_bootstrap afterwards, manually";
+   print "Please check $skolab_config (seems to be incomplete)\n";
+   die "and run skolab_bootstrap afterwards, manually";
 }
 my $fqdn;
 if( $fqdnhostname =~ /\@\@\@/ ) {
@@ -364,7 +365,7 @@ if( $is_master eq "false" ) {
   $tmp = "1";
 }
 
-my $tmp2 = getUserInput( "Do you want to set up (1) a master Kolab server or (2) a slave",
+my $tmp2 = getUserInput( "Do you want to set up (1) a master Skolab server or (2) a slave",
                          $tmp, "1", "2");
 if ( $tmp2 eq "2" ) {
   $is_master = "false";
@@ -387,7 +388,7 @@ if ( $is_master eq "true" ) {
 
   $domain = getUserInput("Please enter your Maildomain - if you do not know your mail domain use the fqdn from above", $domain);
   print "proceeding with Maildomain $domain\n";
-  print "Kolab primary email addresses will be of the type user\@$domain \n";
+  print "Skolab primary email addresses will be of the type user\@$domain \n";
 
 
   if ( $opt_f || $base_dn =~ /\@\@\@/ || $bind_dn =~ /\@\@\@/ || $bind_pw =~ /\@\@\@/ ) {
@@ -398,11 +399,11 @@ if ( $is_master eq "true" ) {
         $base_dn .= "dc=$dc,";
       }
       chop $base_dn;
-      $base_dn = getUserInput("Top level DN for Kolab", $base_dn);
+      $base_dn = getUserInput("Top level DN for Skolab", $base_dn);
       print " base_dn : $base_dn\n";
     }
     if ($bind_dn =~ /\@\@\@/) {
-      $bind_dn =~ s/\@\@\@kolab_basedn\@\@\@/$base_dn/g;
+      $bind_dn =~ s/\@\@\@skolab_basedn\@\@\@/$base_dn/g;
       print " bind_dn : $bind_dn\n";
     }
     if ($bind_pw =~ /\@\@\@/) {
@@ -415,7 +416,7 @@ if ( $is_master eq "true" ) {
 
     # Generate passwords
     if ($php_dn =~ /\@\@\@/) {
-      $php_dn =~ s/\@\@\@kolab_basedn\@\@\@/$base_dn/g;
+      $php_dn =~ s/\@\@\@skolab_basedn\@\@\@/$base_dn/g;
     }
     if ($php_pw =~ /\@\@\@/) {
       $php_pw = `$Skolab::config{'bindir'}/openssl rand -base64 30`;
@@ -427,7 +428,7 @@ if ( $is_master eq "true" ) {
       chomp $calendar_pw;
     }
 
-    my $fd = IO::File->new($kolab_config, "w+") || die "could not open $kolab_config";
+    my $fd = IO::File->new($skolab_config, "w+") || die "could not open $skolab_config";
     binmode($fd, ":encoding(UTF-8)");
     print $fd "fqdnhostname : $fqdn\n";
     print $fd "is_master : $is_master\n";
@@ -444,19 +445,19 @@ if ( $is_master eq "true" ) {
     print $fd "slurpd_addr : $slurpd_addr\n";
     print $fd "slurpd_port : $slurpd_port\n";
     undef $fd;
-    print "done modifying $kolab_config\n\n";
-    chmod 0600, $kolab_config;
-    kolab_chown "$Skolab::config{'kolab_musr'}","$Skolab::config{'kolab_mgrp'}", $kolab_config;
+    print "done modifying $skolab_config\n\n";
+    chmod 0600, $skolab_config;
+    skolab_chown "$Skolab::config{'skolab_musr'}","$Skolab::config{'skolab_mgrp'}", $skolab_config;
     print "IMPORTANT NOTE:\n";
     print "use login=manager and passwd=$bind_pw when you log into the webinterface!\n\n";
   }
 
-  # Set up slapd to replicate to slave server's kolabds
-  @kolabhosts = ( $fqdn );
+  # Set up slapd to replicate to slave server's skolabds
+  @skolabhosts = ( $fqdn );
   while(1) {
-    my $tmp = getUserInput("Enter fully qualified hostname of slave kolab server e.g. thishost.domain.tld (empty when done)");
+    my $tmp = getUserInput("Enter fully qualified hostname of slave skolab server e.g. thishost.domain.tld (empty when done)");
     if( $tmp ) {
-      push @kolabhosts, $tmp;
+      push @skolabhosts, $tmp;
       #$cfg .= "replica host=$tmp\n";
       #$cfg .= "  binddn=\"cn=replicator\"\n";
       #$cfg .= "  bindmethod=simple credentials=secret\n\n";
@@ -476,8 +477,8 @@ if ( $is_master eq "true" ) {
       # Make sure that no rogue daemons are running
       tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
         ."Please stop any running ldap server and bootstrap again\n";
-      tryConnect( '127.0.0.1', 9999 ) && die "A process is already listening to port 9999 (kolabd)\n"
-        ."Please stop any running kolabd and bootstrap again\n";
+      tryConnect( '127.0.0.1', 9999 ) && die "A process is already listening to port 9999 (skolabd)\n"
+        ."Please stop any running skolabd and bootstrap again\n";
       if( `ps -elf|grep 's[l]urpd'` ) {
         print "Error: Detected running slurpd processes.\n";
         print "Please make sure the OpenLDAP server is stopped properly!\n";
@@ -531,15 +532,15 @@ if ( $is_master eq "true" ) {
         $mesg = $ldap->add( $base_dn, attr=> \@attrs);
       }
       $mesg && $mesg->code && warn "failed to write basedn entry : ", $mesg->error;
-      my $ldapobject = newOrExistingLDAPEntry( $ldap, "k=kolab,$base_dn" );
+      my $ldapobject = newOrExistingLDAPEntry( $ldap, "k=skolab,$base_dn" );
 
-      # create kolab config object
+      # create skolab config object
       my $mynetworkinterfaces = "127.0.0.0/8";
       print "mynetworkinterfaces: ".$mynetworkinterfaces."\n";
 
       $ldapobject->replace(
-        'k' => 'kolab',
-        'kolabhost' => \@kolabhosts,
+        'k' => 'skolab',
+        'skolabhost' => \@skolabhosts,
         'postfix-mydomain' => $domain,
         #'postfix-relaydomains' => "",
         'postfix-mydestination' => "$domain",
@@ -559,17 +560,17 @@ if ( $is_master eq "true" ) {
         'apache-allow-unauthenticated-fb' => "FALSE",
         'uid' => "freebusy",
         'userPassword' => "freebusy",
-        'objectclass' => ['top', 'kolab' ] );
+        'objectclass' => ['top', 'skolab' ] );
       # Get rid of fqdnhostname, it will cause pain and suffering...
       #$ldapobject->delete( 'fqdnhostname' );
-      $ldapobject->dn("k=kolab,$base_dn");
+      $ldapobject->dn("k=skolab,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
       undef $ldapobject;
 
       # create internal user topnode
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=internal,$base_dn" );
-      $ldapobject->replace('cn' => 'internal', 'objectclass' => ['top','kolabnamedobject']);
+      $ldapobject->replace('cn' => 'internal', 'objectclass' => ['top','skolabnamedobject']);
       $ldapobject->dn("cn=internal,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
@@ -577,7 +578,7 @@ if ( $is_master eq "true" ) {
 
       # create domain groups topnode
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=domains,cn=internal,$base_dn" );
-      $ldapobject->replace('cn' => 'domains', 'objectclass' => ['top','kolabnamedobject']);
+      $ldapobject->replace('cn' => 'domains', 'objectclass' => ['top','skolabnamedobject']);
       $ldapobject->dn("cn=domains,cn=internal,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
@@ -585,7 +586,7 @@ if ( $is_master eq "true" ) {
 
       # create external user topnode
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=external,$base_dn" );
-      $ldapobject->replace('cn' => 'external', 'objectclass' => ['top','kolabnamedobject']);
+      $ldapobject->replace('cn' => 'external', 'objectclass' => ['top','skolabnamedobject']);
       $ldapobject->dn("cn=external,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
@@ -593,7 +594,7 @@ if ( $is_master eq "true" ) {
 
       # create groups user topnode
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=groups,$base_dn" );
-      $ldapobject->replace('cn' => 'groups', 'objectclass' => ['top','kolabnamedobject']);
+      $ldapobject->replace('cn' => 'groups', 'objectclass' => ['top','skolabnamedobject']);
       $ldapobject->dn("cn=groups,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
@@ -601,19 +602,19 @@ if ( $is_master eq "true" ) {
 
       # create resources user topnode
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=resources,$base_dn" );
-      $ldapobject->replace('cn' => 'resources', 'objectclass' => ['top','kolabnamedobject']);
+      $ldapobject->replace('cn' => 'resources', 'objectclass' => ['top','skolabnamedobject']);
       $ldapobject->dn("cn=resources,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
       undef $ldapobject;
 
       # create admin group
-      newkolabgroupofnames( $ldap, "cn=internal,$base_dn", 'admin', $bind_dn );
+      newskolabgroupofnames( $ldap, "cn=internal,$base_dn", 'admin', $bind_dn );
 
       # create manager user
       $ldapobject = newOrExistingLDAPEntry( $ldap, $bind_dn );
       $ldapobject->replace('cn' => 'manager', 'sn' => 'n/a', 'uid' => 'manager',
-                           'userPassword' => $bind_pw_hash, 'objectclass' => ['top','inetorgperson','kolabinetorgperson']);
+                           'userPassword' => $bind_pw_hash, 'objectclass' => ['top','inetorgperson','skolabinetorgperson']);
       $ldapobject->dn($bind_dn);
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
@@ -623,7 +624,7 @@ if ( $is_master eq "true" ) {
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=nobody,cn=internal,$base_dn" );
       $ldapobject->replace('cn' => 'nobody', 'sn' => 'n/a n/a', 'uid' => 'nobody',
                            'userPassword' => hashPassword($php_pw),
-                           'objectclass' => ['top','inetorgperson','kolabinetorgperson']);
+                           'objectclass' => ['top','inetorgperson','skolabinetorgperson']);
       $ldapobject->dn("cn=nobody,cn=internal,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
@@ -633,17 +634,17 @@ if ( $is_master eq "true" ) {
       $ldapobject = newOrExistingLDAPEntry( $ldap, "cn=$calendar_id@" . $domain . ",cn=internal,$base_dn" );
       $ldapobject->replace('cn' => $calendar_id . '@' . $domain, 'sn' => 'n/a n/a', 'uid' => $calendar_id . '@' . $domain,
                            'userPassword' => hashPassword($calendar_pw),
-                           'objectclass' => ['top','inetorgperson','kolabinetorgperson']);
+                           'objectclass' => ['top','inetorgperson','skolabinetorgperson']);
       $ldapobject->dn("cn=$calendar_id@" . $domain . ",cn=internal,$base_dn");
       $mesg = $ldapobject->update($ldap);
       $mesg && $mesg->code && warn "failed to write entry: ", $mesg->error;
       undef $ldapobject;
 
       # create mainainter group
-      newkolabgroupofnames( $ldap, "cn=internal,$base_dn", 'maintainer', $bind_dn );
+      newskolabgroupofnames( $ldap, "cn=internal,$base_dn", 'maintainer', $bind_dn );
 
       # create domain-mainainter group
-      newkolabgroupofnames( $ldap, "cn=internal,$base_dn", 'domain-maintainer', $bind_dn );
+      newskolabgroupofnames( $ldap, "cn=internal,$base_dn", 'domain-maintainer', $bind_dn );
 
       $ldap->unbind;
    }
@@ -670,25 +671,25 @@ if ( $is_master eq "true" ) {
      undef $cfg;
    }
 
-   #print " running @CONFIG_DIR@/kolab -v -o -l$ldap_uri\n";
-   print "running $Skolab::config{'sbindir'}/kolabconf -n\n";
+   #print " running @CONFIG_DIR@/skolab -v -o -l$ldap_uri\n";
+   print "running $Skolab::config{'sbindir'}/skolabconf -n\n";
 
-   #system("@CONFIG_DIR@/kolab -v -o -l$ldap_uri");
-   system("$Skolab::config{'sbindir'}/kolabconf -n");
+   #system("@CONFIG_DIR@/skolab -v -o -l$ldap_uri");
+   system("$Skolab::config{'sbindir'}/skolabconf -n");
 
    if ($ldap_uri =~ /127\.0\.0\.1/ || $ldap_uri =~ /localhost/) {
       print "\nkill temporary slapd\n\n";
-      system("$Skolab::config{'KOLABRC'} rc openldap stop");
+      system("$Skolab::config{'SKOLABRC'} rc openldap stop");
       sleep 1; # actually race should be impossible
       system("killall -9 slapd >/dev/null 2>&1");
    }
   }
 
   print <<'EOS';
-Kolab can create and manage a certificate authority that can be
-used to create SSL certificates for use within the Kolab environment.
+Skolab can create and manage a certificate authority that can be
+used to create SSL certificates for use within the Skolab environment.
 You can choose to skip this section if you already have certificates
-for the Kolab server.
+for the Skolab server.
 EOS
 
   my $tmp = getUserInput( "Do you want to create CA and certificates", "y", "y", "n");
@@ -701,21 +702,21 @@ Skipping certificate creation. Please copy your certificate to
 EOS
   } else {
     print <<'EOS';
-Now we need to create a cerificate authority (CA) for Kolab and a server
+Now we need to create a cerificate authority (CA) for Skolab and a server
 certificate. You will be prompted for a passphrase for the CA.
 ################################################################################
 EOS
-    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newca $fqdn");
-    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
-    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem");
-    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -sign @CONFIG_DIR@/newreq.pem @CONFIG_DIR@/cert.pem");
-    kolab_system("chgrp $Skolab::config{'pki_grp'} @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
-    kolab_system("chmod 0640 @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
-    my $cafile = $Skolab::config{'kolab_cafile'};
+    skolab_system("$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -newca $fqdn");
+    skolab_system("$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
+    skolab_system("$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem");
+    skolab_system("$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -sign @CONFIG_DIR@/newreq.pem @CONFIG_DIR@/cert.pem");
+    skolab_system("chgrp $Skolab::config{'pki_grp'} @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
+    skolab_system("chmod 0640 @CONFIG_DIR@/key.pem @CONFIG_DIR@/cert.pem");
+    my $cafile = $Skolab::config{'skolab_cafile'};
     if ($cafile eq '') {
       $cafile = "@CONFIG_DIR@/ca/cacert.pem";
     } else {
-      kolab_system("cp @CONFIG_DIR@/ca/cacert.pem $cafile && chmod 0644 $cafile");
+      skolab_system("cp @CONFIG_DIR@/ca/cacert.pem $cafile && chmod 0644 $cafile");
     }
     print <<EOS;
 CA and certificate creation complete.
@@ -731,13 +732,13 @@ EOS
   ##### Slave server setup
 
   print "stop running slapd (if any)\n";
-  kolab_system("$Skolab::config{'KOLABRC'} rc openldap stop");
+  skolab_system("$Skolab::config{'SKOLABRC'} rc openldap stop");
 
   # Make sure that no rogue demons are running
   tryConnect( '127.0.0.1', 389 ) && die "A process is already listening to port 389 (ldap)\n"
     ."Please stop any running ldap server and bootstrap again\n";
-  tryConnect( '127.0.0.1', 9999 ) && die "A process is already listening to port 9999 (kolabd)\n"
-    ."Please stop any running kolabd and bootstrap again\n";
+  tryConnect( '127.0.0.1', 9999 ) && die "A process is already listening to port 9999 (skolabd)\n"
+    ."Please stop any running skolabd and bootstrap again\n";
   # 051210: the check below used to be: if( `ps -elf|grep slurpd|grep -v grep` ) \rbos
   if( `ps -elf|grep s[l]urpd` ) {
     print "WARNING: Detected running slurpd processes.\n";
@@ -794,14 +795,14 @@ EOS
   #$entry = $mesg->entry(0);
   #$calendar_pw = $entry->get_value( 'userPassword' );
 
-  $mesg = $ldap->search(base=> "k=kolab,$base_dn", scope=> 'exact',
+  $mesg = $ldap->search(base=> "k=skolab,$base_dn", scope=> 'exact',
                         filter=> "(objectClass=*)");
   if ($mesg && $mesg->count != 1) {
-    print "No Kolab object found, please check your input\n";
+    print "No Skolab object found, please check your input\n";
     goto SLAVESTART;
   }
-  my $kolabhosts = $mesg->entry(0)->get_value( 'kolabhost', asref => 1 );
-  foreach(@$kolabhosts) {
+  my $skolabhosts = $mesg->entry(0)->get_value( 'skolabhost', asref => 1 );
+  foreach(@$skolabhosts) {
     if( lc($_) eq lc($fqdn) ) {
         goto SLAVEOK;
     }
@@ -813,7 +814,7 @@ EOS
   my $master_host = $ldapuri->host();
 
   print "Reading bind_pw_hash, php_pw and calendar_pw from master, please type in master server's root password when asked\n";
-  my $get_master_conf = "ssh -C $master_host 'cat @CONFIG_DIR@/kolab.conf'";
+  my $get_master_conf = "ssh -C $master_host 'cat @CONFIG_DIR@/skolab.conf'";
   print "$get_master_conf\n";
   open( CONF, "$get_master_conf|");
   my $conf;
@@ -829,7 +830,7 @@ EOS
   (print "Error reading nobody password" && goto SLAVESTART) unless( $php_pw );
   (print "Error reading calendar password" && goto SLAVESTART) unless( $calendar_pw );
 
-  my $fd = IO::File->new($kolab_config, "w+") || die "could not open $kolab_config";
+  my $fd = IO::File->new($skolab_config, "w+") || die "could not open $skolab_config";
   binmode($fd, ":encoding(UTF-8)");
   print $fd "fqdnhostname : $fqdn\n";
   print $fd "is_master : $is_master\n";
@@ -846,26 +847,26 @@ EOS
   print $fd "slurpd_addr : $slurpd_addr\n";
   print $fd "slurpd_port : $slurpd_port\n";
   undef $fd;
-  print "done modifying $kolab_config\n\n";
-  chmod 0600, $kolab_config;
-  kolab_chown "$Skolab::config{'kolab_musr'}","$Skolab::config{'kolab_mgrp'}",$kolab_config;
+  print "done modifying $skolab_config\n\n";
+  chmod 0600, $skolab_config;
+  skolab_chown "$Skolab::config{'skolab_musr'}","$Skolab::config{'skolab_mgrp'}",$skolab_config;
 
   if ($Skolab::config{'directory_mode'} ne "syncrepl" ) {
     print << 'EOS';
 Now the master server needs to be stopped briefly while the contents of the LDAP database
 is copied over to this slave. Please make sure that this slave is entered into the list
-of kolabhosts on the master before proceeding.
+of skolabhosts on the master before proceeding.
 EOS
-    kolab_system("ssh -C $master_host \'$Skolab::config{'KOLABRC'} rc openldap stop".
+    skolab_system("ssh -C $master_host \'$Skolab::config{'SKOLABRC'} rc openldap stop".
                  " && $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pcf - openldap-data".
-                 " && $Skolab::config{'KOLABRC'} rc openldap start\'".
+                 " && $Skolab::config{'SKOLABRC'} rc openldap start\'".
                  " | $Skolab::config{'TAR'} -C $Skolab::config{'ldapserver_statedir'} -pxf -");
   }
 
   # FIXME: we should get rid of this construct because it makes the code hard to read.
   #        A if (-e @sysconfdir@/rc.conf) statement should be enough.
   if ("$Skolab::config{'WITHOPENPKG'}" eq "yes") {
-    print "Updating configuration, please ignore any initial errors from kolabconf\n\n";
+    print "Updating configuration, please ignore any initial errors from skolabconf\n\n";
     my $cfg;
     open(FH, "<$Skolab::config{'sysconfdir'}/rc.conf") || die;
     $cfg .= $_ while (<FH>);
@@ -906,18 +907,18 @@ master server and the passphrase for the CA key on the master.
 EOS
 
     # Create cert req
-    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
-    kolab_system("$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem ");
+    skolab_system("$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -newkey $fqdn @CONFIG_DIR@/key.pem");
+    skolab_system("$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -newreq $fqdn @CONFIG_DIR@/key.pem @CONFIG_DIR@/newreq.pem ");
     # Log into master and sign cert request
-    kolab_system("scp @CONFIG_DIR@/newreq.pem $master_host:@CONFIG_DIR@/$fqdn-req.pem");
-    kolab_system("ssh -C $master_host \"$Skolab::config{'kolab_scriptsdir'}/kolab_ca.sh -sign @CONFIG_DIR@/$fqdn-req.pem @CONFIG_DIR@/$fqdn.pem;\"");
-    kolab_system("scp $master_host:@CONFIG_DIR@/$fqdn.pem @CONFIG_DIR@/cert.pem");
-    kolab_system("ssh -C $master_host \"rm @CONFIG_DIR@/$fqdn.pem @CONFIG_DIR@/$fqdn-req.pem\"");
+    skolab_system("scp @CONFIG_DIR@/newreq.pem $master_host:@CONFIG_DIR@/$fqdn-req.pem");
+    skolab_system("ssh -C $master_host \"$Skolab::config{'skolab_scriptsdir'}/skolab_ca.sh -sign @CONFIG_DIR@/$fqdn-req.pem @CONFIG_DIR@/$fqdn.pem;\"");
+    skolab_system("scp $master_host:@CONFIG_DIR@/$fqdn.pem @CONFIG_DIR@/cert.pem");
+    skolab_system("ssh -C $master_host \"rm @CONFIG_DIR@/$fqdn.pem @CONFIG_DIR@/$fqdn-req.pem\"");
     die("Creation of @CONFIG_DIR@/cert.pem failed") unless -f "@CONFIG_DIR@/cert.pem";
-    kolab_system("chgrp $Skolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/key.pem;");
-    kolab_system("chmod 0640 @CONFIG_DIR@/key.pem;");
-    kolab_system("chgrp $Skolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/cert.pem;");
-    kolab_system("chmod 0640 @CONFIG_DIR@/cert.pem;");
+    skolab_system("chgrp $Skolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/key.pem;");
+    skolab_system("chmod 0640 @CONFIG_DIR@/key.pem;");
+    skolab_system("chgrp $Skolab::config{'ldapserver_rgrp'} @CONFIG_DIR@/cert.pem;");
+    skolab_system("chmod 0640 @CONFIG_DIR@/cert.pem;");
 
     print <<'EOS';
 ################################################################################
@@ -926,9 +927,9 @@ Certificate creation done!
 EOS
   }
 
-  kolab_system("$Skolab::config{'sbindir'}/kolabconf -n");
+  skolab_system("$Skolab::config{'sbindir'}/skolabconf -n");
 
-  $fd = IO::File->new($kolab_config, "w+") || die "could not open $kolab_config";
+  $fd = IO::File->new($skolab_config, "w+") || die "could not open $skolab_config";
   binmode($fd, ":encoding(UTF-8)");
   print $fd "fqdnhostname : $fqdn\n";
   print $fd "is_master : $is_master\n";
@@ -945,12 +946,12 @@ EOS
   print $fd "slurpd_addr : $slurpd_addr\n";
   print $fd "slurpd_port : $slurpd_port\n";
   undef $fd;
-  print "done modifying $kolab_config\n\n";
-  chmod 0600, $kolab_config;
+  print "done modifying $skolab_config\n\n";
+  chmod 0600, $skolab_config;
 }
 
-#system("@CONFIG_DIR@/kolab_sslcert.sh $fqdn");
-print "kolab is now ready to run!\n";
-print "please run '$Skolab::config{'KOLABRC'} rc all start'\n";
+#system("@CONFIG_DIR@/skolab_sslcert.sh $fqdn");
+print "skolab is now ready to run!\n";
+print "please run '$Skolab::config{'SKOLABRC'} rc all start'\n";
 print ("Use login=manager and passwd=$bind_pw when you log into\n");
-print ("the webinterface https://$fqdn$Skolab::config{'kolab_wui'} !\n");
+print ("the webinterface https://$fqdn$Skolab::config{'skolab_wui'} !\n");

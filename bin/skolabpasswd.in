@@ -2,20 +2,21 @@
 
 =head1 NAME
 
-kolabpasswd - Kolab password tool.
+skolabpasswd - Skolab password tool.
 
 =head1 SYNOPSIS
 
-B<kolabpasswd>
+B<skolabpasswd>
 
 =head1 DESCRIPTION
 
-The kolabpasswd script is used for changing the manager password on a Kolab Server.
-In multi-location Kolab setups the script must be run on each individual host 
+The skolabpasswd script is used for changing the manager password on a
+Skolab Server.
+In multi-location Skolab setups the script must be run on each individual host 
 separately.
 
 After changing the manager password it is highly recommended to restart 
-the Kolab server.
+the Skolab server.
 
 In the future this utility may be enhanced to allow to change the passwords of 
 normal users and special system accounts.
@@ -58,12 +59,12 @@ use Net::LDAP;
 use Digest::SHA1;
 use MIME::Base64;
 use Skolab::Util;
-use Kolab;
+use Skolab;
 
-Skolab::reloadConfig("@CONFIG_DIR@/kolab.globals");
+Skolab::reloadConfig("@CONFIG_DIR@/skolab.globals");
 
 # won't be needed (i think)
-# my $kolab_prefix = (getpwnam('kolab'))[7] || die "Error: could not determine the kolab directory prefix (e.g. /kolab)";
+# my $skolab_prefix = (getpwnam('skolab'))[7] || die "Error: could not determine the skolab directory prefix (e.g. /skolab)";
 
 # Shell double-quote a string
 # Borrored from Sysadm::Install
@@ -117,14 +118,14 @@ sub hashPassword2 {
   return $hashpw;
 }
 
-# open old kolab master config file
-my $kolabconfname = "@CONFIG_DIR@/kolab.conf";
+# open old skolab master config file
+my $skolabconfname = "@CONFIG_DIR@/skolab.conf";
 
 # read old config data
-my %config = readConfig($kolabconfname);
-my $kolabconf = IO::File->new('@CONFIG_DIR@/kolab.conf','r')
-                || die "kolabpasswd: Fatal Error: could not open kolab config at $kolabconfname";
-binmode($kolabconf, ":encoding(UTF-8)");
+my %config = readConfig($skolabconfname);
+my $skolabconf = IO::File->new('@CONFIG_DIR@/skolab.conf','r')
+                || die "skolabpasswd: Fatal Error: could not open skolab config at $skolabconfname";
+binmode($skolabconf, ":encoding(UTF-8)");
 
 my $account = 'manager';
 my $account_dn = $config{'bind_dn'};
@@ -140,14 +141,14 @@ print "Changing password for $account";
 
 # open ldap connection and verify old password
 my $ldap = Net::LDAP->new( $config{'ldap_uri'})
-         || die "\nkolabpasswd: Fatal Error: could not connect to LDAP Server";
+         || die "\nskolabpasswd: Fatal Error: could not connect to LDAP Server";
 
 do {
   print "\nOld Password: ";
   ReadMode 'noecho';
   my $old_password = ReadLine 0; chomp $old_password;
 
-  $mesg = $ldap->bind( $account_dn, password => $old_password ) || die "\nkolabpasswd: Failed to bind to LDAP server";
+  $mesg = $ldap->bind( $account_dn, password => $old_password ) || die "\nskolabpasswd: Failed to bind to LDAP server";
   if( $mesg->code ) { print "\nError: ".$mesg->error.". Please try again\n"; }
 } while ( $mesg->code );
    
@@ -172,7 +173,7 @@ $tmpfilename = $tmp->filename;
 $bind_pw_hash = hashPassword($new_password);
 
 # copy and replace old config to temporary file
-foreach ($kolabconf->getlines()) {
+foreach ($skolabconf->getlines()) {
     if( $account eq 'manager' ) {
 	if (/^(bind_pw\s:\s).*$/) {
 	    print $tmp $1.$new_password."\n";
@@ -198,7 +199,7 @@ foreach ($kolabconf->getlines()) {
     }
 }
 undef $tmp;
-undef $kolabconf;
+undef $skolabconf;
 
 # open ldap connection and update manager password
 $ldap = Net::LDAP->new( $config{'ldap_uri'})
@@ -210,12 +211,12 @@ $ldap->modify($account_dn, replace => {'userPassword' => $bind_pw_hash } )
 $ldap->unbind;
 undef $ldap;
 
-# move temporary file to kolab master config
-rename($tmpfilename,$kolabconfname) || die "Error: could not install new $kolabconfname";
-system("chown $Skolab::config{'ldapserver_usr'}:$Skolab::config{'ldapserver_grp'} $kolabconfname");
+# move temporary file to skolab master config
+rename($tmpfilename,$skolabconfname) || die "Error: could not install new $skolabconfname";
+system("chown $Skolab::config{'ldapserver_usr'}:$Skolab::config{'ldapserver_grp'} $skolabconfname");
 
 print "Password changed successfully, please be patient...\n";
 
-# trigger kolabd to run update
-system("$Skolab::config{'kolabconf_script'} > /dev/null 2>&1");
+# trigger skolabd to run update
+system("$Skolab::config{'skolabconf_script'} > /dev/null 2>&1");
 exit 0;

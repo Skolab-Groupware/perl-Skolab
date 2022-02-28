@@ -19,7 +19,7 @@ The package version will be set in
 
 e.g.
 
-  our $SSKOLAB_BASE_VERSION = "2.4.0";
+  our $SKOLAB_BASE_VERSION = "2.4.0";
   my  $SKOLAB_GIT = 1;
 
 ### Release versions
@@ -33,10 +33,10 @@ Before tagging the next release the version number needs to be increased
 to the new Skolab Server version (e.g. 2.4.0) and the Git switch needs to
 be set to 0:
 
-  our $SSKOLAB_BASE_VERSION = "2.4.0";
+  our $SKOLAB_BASE_VERSION = "2.4.0";
   my  $SKOLAB_GIT = 0;
 
-After updating $SSKOLAB_BASE_VERSION and $SKOLAB_GIT you can commit these
+After updating $SKOLAB_BASE_VERSION and $SKOLAB_GIT you can commit these
 changes and tag the release.
 
 Now you can create the source tarball which will look like:

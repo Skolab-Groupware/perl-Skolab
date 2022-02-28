@@ -29,7 +29,7 @@ use strict;
 use warnings;
 use Cyrus::IMAP::Admin;
 use Skolab::Util;
-use Kolab;
+use Skolab;
 
 require Exporter;
 
@@ -62,7 +62,7 @@ sub create
     my $cyrus = Cyrus::IMAP::Admin->new($Skolab::config{'connect_addr'});
 
     if (!$cyrus) {
-        Skolab::log('Y', 'Unable to connect to local Cyrus admin interface', KOLAB_ERROR);
+        Skolab::log('Y', 'Unable to connect to local Cyrus admin interface', SKOLAB_ERROR);
 	return 0;
     }
 
@@ -71,7 +71,7 @@ sub create
         'Password'      => $Skolab::config{'cyrus_admin_pw'},
         'Mechanism'    => 'LOGIN',
     )) {
-        Skolab::log('Y', "Unable to authenticate with Cyrus admin interface, Error = `" . $cyrus->error . "'", KOLAB_ERROR);
+        Skolab::log('Y', "Unable to authenticate with Cyrus admin interface, Error = `" . $cyrus->error . "'", SKOLAB_ERROR);
 	return 0;
     }
 
@@ -104,10 +104,10 @@ sub createMailbox
     if ($uid && ($uid ne $Skolab::config{'cyrus_admin'}) && ($uid ne "freebusy") && ($uid ne "nobody") && !defined($mailbox)) {
         Skolab::log('Y', "Creating mailbox `$cyruid' on ".($partition?"partition `$partition'":"default partition"));
         if (!$cyrus->create($cyruid, $partition)) {
-            Skolab::log('Y', "Unable to create mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+            Skolab::log('Y', "Unable to create mailbox `$cyruid', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
         }
     } else {
-        Skolab::log('Y', "Skipping mailbox creation for $uid (curuid='$cyruid', mailbox='".join(',',@{$mailbox})."'", KOLAB_DEBUG);
+        Skolab::log('Y', "Skipping mailbox creation for $uid (curuid='$cyruid', mailbox='".join(',',@{$mailbox})."'", SKOLAB_DEBUG);
     }
 }
 
@@ -125,21 +125,21 @@ sub createCalendar
     my %info;
     foreach my $mailbox (@mailboxes) {
 	my $u = @{$mailbox}[0];
-	%info = $cyrus->info($u, ('/vendor/kolab/folder-type'));
-	my $key = '/mailbox/{' . $u . '}/vendor/kolab/folder-type';
+        %info = $cyrus->info($u, ('/vendor/skolab/folder-type'));
+        my $key = '/mailbox/{' . $u . '}/vendor/skolab/folder-type';
 	if (exists($info{$key}) && $info{$key} eq 'event.default') {
 	    $calendar = $u;
 	}
     }
 
     if ($calendar) {
-        Skolab::log('Y', "Skipping calendar creation for $user\@$domain as $calendar is a default calendar.", KOLAB_DEBUG);
+        Skolab::log('Y', "Skipping calendar creation for $user\@$domain as $calendar is a default calendar.", SKOLAB_DEBUG);
     } else {
-        Skolab::log('Y', "Creating default calendar for $user\@$domain.", KOLAB_DEBUG);
+        Skolab::log('Y', "Creating default calendar for $user\@$domain.", SKOLAB_DEBUG);
 	createMailbox($cyrus, $folder, 0);
 	setFolderType($cyrus, $folder, 0, 'event.default');
 	setACL($cyrus, $folder, 0, $acl);
-        Skolab::log('Y', "Successfully created default calendar for $user\@$domain.", KOLAB_DEBUG);
+        Skolab::log('Y', "Successfully created default calendar for $user\@$domain.", SKOLAB_DEBUG);
     }
 }
 
@@ -162,12 +162,12 @@ sub setQuota
       if( $quota == 0 ) {
 	Skolab::log('Y', "Removing quota from mailbox `$cyruid'");
 	if (!$cyrus->setquota($cyruid)) {
-	  Skolab::log('Y', "Unable to remove quota for mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+          Skolab::log('Y', "Unable to remove quota for mailbox `$cyruid', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
 	}
       } else {
 	Skolab::log('Y', "Setting quota of mailbox `$cyruid' to $quota");
 	if (!$cyrus->setquota($cyruid, 'STORAGE', $quota)) {
-	  Skolab::log('Y', "Unable to set quota for mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+          Skolab::log('Y', "Unable to set quota for mailbox `$cyruid', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
 	}
       }
     }
@@ -182,10 +182,10 @@ sub deleteMailbox
 
     Skolab::log('Y', "Removing mailbox `$cyruid'");
     if (!$cyrus->setacl($cyruid, $Skolab::config{'cyrus_admin'}, 'c')) {
-        Skolab::log('Y', "Unable to reset ACL of mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+        Skolab::log('Y', "Unable to reset ACL of mailbox `$cyruid', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
     }
     if (!$cyrus->delete($cyruid)) {
-        Skolab::log('Y', "Unable to remove mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+        Skolab::log('Y', "Unable to remove mailbox `$cyruid', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
     }
 }
 
@@ -199,28 +199,28 @@ sub setACL
     Skolab::log('Y', "Setting up ACL of mailbox `$cyruid'");
     my %acls = $cyrus->listacl( $cyruid );
     my ($user, $entry, $acl);
-    Skolab::log('Y', "Removing users from ACL of $cyruid (users are \"".join(', ', keys %acls)."\")", KOLAB_DEBUG);
+    Skolab::log('Y', "Removing users from ACL of $cyruid (users are \"".join(', ', keys %acls)."\")", SKOLAB_DEBUG);
     foreach $user ( keys %acls) {
         Skolab::log('Y', "Removing `$user' from the ACL of mailbox `$cyruid'");
         if (!$cyrus->deleteacl($cyruid, $user)) {
-            Skolab::log('Y', "Unable to remove `$user' from the ACL of mailbox `$cyruid', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+            Skolab::log('Y', "Unable to remove `$user' from the ACL of mailbox `$cyruid', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
         }
     }
 
-    Skolab::log('Y', "Add users from ACL of $cyruid", KOLAB_DEBUG);
+    Skolab::log('Y', "Add users from ACL of $cyruid", SKOLAB_DEBUG);
     my $newacl = shift;
     foreach $entry (@$newacl) {
-        Skolab::log('Y', "Setting up ACL `$entry'", KOLAB_DEBUG);
+        Skolab::log('Y', "Setting up ACL `$entry'", SKOLAB_DEBUG);
         ($user, $acl) = split(/ /, $entry , 2);
-        Skolab::log('Y', "Split `$user' and `$acl'", KOLAB_DEBUG);
+        Skolab::log('Y', "Split `$user' and `$acl'", SKOLAB_DEBUG);
         $user = trim($user);
         $acl = trim($acl);
         Skolab::log('Y', "Setting the ACL of user `$user' in mailbox `$cyruid' to $acl");
         if (!$cyrus->setacl($cyruid, $user, $acl)) {
-            Skolab::log('Y', "Unable to set the ACL of user `$user' in mailbox `$cyruid' to $acl, Error = `" . $cyrus->error . "'", KOLAB_WARN);
+            Skolab::log('Y', "Unable to set the ACL of user `$user' in mailbox `$cyruid' to $acl, Error = `" . $cyrus->error . "'", SKOLAB_WARN);
         }
     }
-    Skolab::log('Y', "Finished modifying ACL of $cyruid", KOLAB_DEBUG);
+    Skolab::log('Y', "Finished modifying ACL of $cyruid", SKOLAB_DEBUG);
 }
 
 sub setFolderType {
@@ -230,8 +230,8 @@ sub setFolderType {
   my $foldertype = shift || 'mail';
   my $cyruid = &createUid($uid, $sf);
     
-  if (!$cyrus->mboxconfig($cyruid, '/vendor/kolab/folder-type', $foldertype)) {
-    Skolab::log('Y', "Unable to set the folder type for mailbox `$cyruid' to `$foldertype', Error = `" . $cyrus->error . "'", KOLAB_WARN);
+  if (!$cyrus->mboxconfig($cyruid, '/vendor/skolab/folder-type', $foldertype)) {
+    Skolab::log('Y', "Unable to set the folder type for mailbox `$cyruid' to `$foldertype', Error = `" . $cyrus->error . "'", SKOLAB_WARN);
   }
 }
 
@@ -241,7 +241,7 @@ __END__
 
 =head1 NAME
 
-Skolab::Cyrus - Perl extension for interfacing with the Kolab Cyrus
+Skolab::Cyrus - Perl extension for interfacing with the Skolab Cyrus
 admin module.
 
 =head1 ABSTRACT
